@@ -1,4 +1,5 @@
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
+import 'package:flutter_test_goldens/src/logging.dart';
 
 /// Compares new [screenshots] to existing [goldens] and reports any mismatches between them.
 GoldenCollectionMismatches compareGoldenCollections(
@@ -54,7 +55,7 @@ GoldenCollectionMismatches compareGoldenCollections(
 /// Compares every pixel between [golden] and [screenshot] and returns the total
 /// number of pixels that are different between the two images.
 int _calculatePixelMismatch(GoldenImage golden, GoldenImage screenshot) {
-  print("Running a pixel comparison for ${golden.id}");
+  FtgLog.pipeline.fine("Running a pixel comparison for ${golden.id}");
   int mismatchCount = 0;
   for (int x = 0; x < golden.image.width; x += 1) {
     for (int y = 0; y < golden.image.height; y += 1) {
@@ -63,7 +64,7 @@ int _calculatePixelMismatch(GoldenImage golden, GoldenImage screenshot) {
       }
     }
   }
-  print("Found $mismatchCount mismatched pixels");
+  FtgLog.pipeline.fine("Found $mismatchCount mismatched pixels");
 
   return mismatchCount;
 }

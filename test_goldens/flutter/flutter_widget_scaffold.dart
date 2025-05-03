@@ -13,7 +13,6 @@ class FlutterWidgetScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("Building golden scaffold with WHITE background");
     return MaterialApp(
       theme: ThemeData(
         fontFamily: goldenBricks,

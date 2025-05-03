@@ -30,6 +30,9 @@ void main() {
           await tester.pumpAndSettle();
         })
         .takePhoto(find.byKey(goldenKey), "typed text")
-        .renderOrCompareGolden("textfield_interactions", FilmStripLayout.column);
+        .renderOrCompareGolden(
+          goldenName: "textfield_interactions",
+          layout: FilmStripLayout.column,
+        );
   });
 }

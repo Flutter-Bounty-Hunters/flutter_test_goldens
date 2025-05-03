@@ -1,8 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
-import 'package:flutter_test_runners/flutter_test_runners.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
 import '../flutter_widget_scaffold.dart';
@@ -26,7 +27,10 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "hover")
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden("button_elevated_interactions", FilmStripLayout.row);
+        .renderOrCompareGolden(
+          goldenName: "button_elevated_interactions",
+          layout: FilmStripLayout.row,
+        );
   });
 
   testGoldenSceneOnMac("text button interactions", (tester) async {
@@ -47,7 +51,10 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "hover")
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden("button_text_interactions", FilmStripLayout.row);
+        .renderOrCompareGolden(
+          goldenName: "button_text_interactions",
+          layout: FilmStripLayout.row,
+        );
   });
 
   testGoldenSceneOnMac("icon button interactions", (tester) async {
@@ -77,7 +84,10 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "hover")
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden("button_icon_interactions", FilmStripLayout.row);
+        .renderOrCompareGolden(
+          goldenName: "button_icon_interactions",
+          layout: FilmStripLayout.row,
+        );
   });
 
   testGoldenSceneOnMac("floating action button interactions", (tester) async {
@@ -98,11 +108,20 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "hover")
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden("button_fab_interactions", FilmStripLayout.row);
+        .renderOrCompareGolden(
+          goldenName: "button_fab_interactions",
+          layout: FilmStripLayout.row,
+        );
   });
 
   testGoldenSceneOnMac("extended floating action button interactions", (tester) async {
     final goldenKey = GlobalKey();
+
+    final backgroundImageBytes = File("test_goldens/assets/flutter_background.png").readAsBytesSync();
+    final imageProvider = MemoryImage(backgroundImageBytes);
+    await tester.runAsync(() async {
+      await precacheImage(imageProvider, tester.binding.rootElement!);
+    });
 
     await FilmStrip(tester)
         .setupWithPump(() {
@@ -125,6 +144,15 @@ void main() {
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
         // .takePhoto(find.byType(FlutterWidgetScaffold), "pressed")
-        .renderOrCompareGolden("button_extended_fab_interactions", FilmStripLayout.row);
+        .renderOrCompareGolden(
+          goldenName: "button_extended_fab_interactions",
+          layout: FilmStripLayout.row,
+          goldenBackground: Image.memory(
+            backgroundImageBytes,
+            fit: BoxFit.cover,
+          ),
+          qrCodeColor: Colors.white,
+          qrCodeBackgroundColor: const Color(0xFF035db8),
+        );
   });
 }

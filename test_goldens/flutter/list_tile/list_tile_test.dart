@@ -1,14 +1,11 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_runners/flutter_test_runners.dart';
 
 import '../flutter_widget_scaffold.dart';
 
 void main() {
-  testWidgetsOnMac("list tile interactions", (tester) async {
+  testGoldenSceneOnMac("list tile interactions", (tester) async {
     await TestFonts.loadAppFonts();
 
     final goldenKey = GlobalKey();
@@ -35,6 +32,9 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "hover")
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden("list_tile_interactions", FilmStripLayout.column);
+        .renderOrCompareGolden(
+          goldenName: "list_tile_interactions",
+          layout: FilmStripLayout.column,
+        );
   });
 }

@@ -1,5 +1,12 @@
+export 'src/flutter/flutter_test_extensions.dart';
 export 'src/fonts/fonts.dart';
 export 'src/galleries/film_strip.dart';
 export 'src/galleries/gallery.dart';
 export 'src/goldens/golden_camera.dart';
+export 'src/goldens/golden_collections.dart';
+export 'src/goldens/golden_comparisons.dart';
+export 'src/goldens/golden_rendering.dart';
+export 'src/goldens/golden_scenes.dart';
+export 'src/qr_codes/qr_code_image_scanning.dart';
+export 'src/logging.dart';
 export 'src/test_runners.dart';

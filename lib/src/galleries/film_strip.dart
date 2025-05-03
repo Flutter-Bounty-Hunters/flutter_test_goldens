@@ -14,6 +14,7 @@ import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
+import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:image/image.dart';
 import 'package:qr_bar_code/code/code.dart';
 
@@ -116,11 +117,19 @@ class FilmStrip {
     return this;
   }
 
-  Future<void> renderOrCompareGolden(String goldenName, FilmStripLayout layout) async {
+  Future<void> renderOrCompareGolden({
+    required String goldenName,
+    required FilmStripLayout layout,
+    Widget? goldenBackground,
+    m.Color qrCodeColor = m.Colors.black,
+    m.Color qrCodeBackgroundColor = m.Colors.white,
+  }) async {
     if (_setup == null) {
       throw Exception(
           "Can't render or compare golden file without a setup action. Please call setup() or setupWithPump().");
     }
+
+    FtgLog.pipeline.info("Rendering or comparing golden - $goldenName");
 
     // Always operate at a 1:1 logical-to-physical pixel ratio to help reduce
     // anti-aliasing and other artifacts from fractional pixel offsets.
@@ -130,10 +139,12 @@ class FilmStrip {
     final testContext = FilmStripTestContext();
 
     // Setup the scene.
+    FtgLog.pipeline.info("Running any given setup delegate before running steps.");
     await _setup!.setupDelegate(_tester);
 
     // Take photos and modify scene over time.
     for (final step in _steps) {
+      FtgLog.pipeline.info("Running step: $step");
       if (step is _FilmStripModifySceneAction) {
         await step.delegate(_tester, testContext);
         continue;
@@ -170,7 +181,12 @@ class FilmStrip {
     });
 
     // Layout photos in the gallery so we can lookup their final offsets and sizes.
-    var goldenMetadata = await _layoutPhotos(photos, renderablePhotos, layout);
+    var goldenMetadata = await _layoutPhotos(
+      photos,
+      renderablePhotos,
+      layout,
+      qrCodeBackgroundColor: qrCodeBackgroundColor,
+    );
 
     // Layout photos one last time, this time adding the metadata QR code, which encodes
     // each photo's offset and size.
@@ -178,13 +194,16 @@ class FilmStrip {
       photos,
       renderablePhotos,
       layout,
+      goldenBackground: goldenBackground,
       qrCode: Code(
         data: const JsonEncoder().convert(goldenMetadata.toJson()),
         codeType: CodeType.qrCode(),
+        color: qrCodeColor,
       ),
+      qrCodeBackgroundColor: qrCodeBackgroundColor,
     );
 
-    print("Running momentary delay for render flakiness");
+    FtgLog.pipeline.finer("Running momentary delay for render flakiness");
     await _tester.runAsync(() async {
       // Without this delay, the screenshot loading is spotty. However, with
       // this delay, we seem to always get screenshots displayed in the widget tree.
@@ -192,59 +211,46 @@ class FilmStrip {
       await Future.delayed(const Duration(milliseconds: 1));
     });
 
-    print("Pumping and settling");
     await _tester.pumpAndSettle();
 
     final goldenFileName = "$goldenName.png";
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
-      print("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
+      FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
       await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
     } else {
       // Compare to existing goldens.
+      FtgLog.pipeline.finer("Comparing existing goldens...");
       await _compareGoldens(_tester, goldenFileName, find.byType(GoldenSceneBounds));
-      print("Done comparing goldens for film strip");
+      FtgLog.pipeline.finer("Done comparing goldens for film strip");
     }
 
-    print("Done with golden generation/comparison");
+    FtgLog.pipeline.finer("Done with golden generation/comparison");
   }
 
   Future<GoldenSceneMetadata> _layoutPhotos(
     List<GoldenPhoto> photos,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
     FilmStripLayout layout, {
+    Widget? goldenBackground,
     Widget? qrCode,
+    required m.Color qrCodeBackgroundColor,
   }) async {
     // Layout the final strip within an OverflowBox to let it be whatever
     // size it wants. Then check the content render object for final dimensions.
     // Set the window size to match.
 
-    late final Size filmStripSize;
     late final Axis filmStripDirection;
     switch (layout) {
       case FilmStripLayout.row:
-        filmStripSize = Size(
-          photos.fold(0.0, (width, photo) => width + photo.pixels.width.toDouble()) + (48 * 4),
-          photos.fold(0.0, (maxHeight, photo) => max(maxHeight, photo.pixels.height.toDouble())) + (48 * 2),
-        );
         filmStripDirection = Axis.horizontal;
-
       case FilmStripLayout.column:
-        filmStripSize = Size(
-          photos.fold(0, (maxWidth, photo) => max(maxWidth, photo.pixels.width.toDouble())),
-          photos.fold(0, (height, photo) => height + photo.pixels.height.toDouble()),
-        );
         filmStripDirection = Axis.vertical;
     }
 
     // FIXME: When we're comparing existing goldens, we shouldn't need to actually
     //        run full golden layout, we should be able to directly compare the renderable
     //        images to the regions of the existing golden.
-
-    _tester.view //
-      // ..physicalSize = filmStripSize
-      ..devicePixelRatio = 1.0;
-    print("Original window size: ${_tester.view.physicalSize}");
 
     final contentKey = GlobalKey();
     final galleryKey = GlobalKey();
@@ -255,37 +261,13 @@ class FilmStrip {
       contentKey,
       renderablePhotos,
       galleryKey: galleryKey,
+      goldenBackground: goldenBackground,
       qrCodeKey: qrCodeKey,
       qrCode: qrCode,
+      qrCodeBackgroundColor: qrCodeBackgroundColor,
     );
 
     await _tester.pumpWidgetAndAdjustWindow(filmStrip);
-    //
-    // print("Pumping unbounded widget tree");
-    // await _tester.pumpWidget(
-    //   filmStrip,
-    // );
-    //
-    // await _tester.runAsync(() async {
-    //   for (final entry in renderablePhotos.entries) {
-    //     await precacheImage(
-    //       MemoryImage(entry.value.$1),
-    //       _tester.element(find.byKey(entry.value.$2)),
-    //     );
-    //   }
-    // });
-    //
-    // final contentSize = contentKey.currentContext!.size!;
-    // print("Content size: $contentSize");
-    // print("Gallery size: ${(galleryKey.currentContext?.findRenderObject() as RenderBox?)?.size}");
-    // print("QR code size: ${(qrCodeKey.currentContext?.findRenderObject() as RenderBox?)?.size}");
-    //
-    // // Change test window to exactly fit the gallery UI.
-    // _tester.view.physicalSize = contentSize;
-    // print("Window size: ${_tester.view.physicalSize}");
-    //
-    // // Pump again so that the widget tree settles within the final window bounds.
-    // await _tester.pumpWidget(filmStrip);
 
     await _tester.runAsync(() async {
       for (final entry in renderablePhotos.entries) {
@@ -296,7 +278,6 @@ class FilmStrip {
       }
     });
 
-    print("Returning GoldenMetadata based on golden image layout.");
     // Lookup and return metadata for the position and size of each golden image
     // within the gallery.
     return GoldenSceneMetadata(
@@ -317,8 +298,10 @@ class FilmStrip {
     GlobalKey contentKey,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
     Key? galleryKey,
+    Widget? goldenBackground,
     Key? qrCodeKey,
     Widget? qrCode,
+    required m.Color qrCodeBackgroundColor,
   }) {
     return GoldenSceneBounds(
       child: IntrinsicWidth(
@@ -332,11 +315,12 @@ class FilmStrip {
                 key: galleryKey,
                 direction: filmStripDirection,
                 renderablePhotos: renderablePhotos,
+                background: goldenBackground,
               ),
               if (qrCode != null) //
                 Container(
                   padding: const EdgeInsets.all(48),
-                  color: Colors.white,
+                  color: qrCodeBackgroundColor,
                   child: Center(
                     child: SizedBox(
                       height: 200,
@@ -352,78 +336,32 @@ class FilmStrip {
         ),
       ),
     );
-
-    // print("Running _buildFilmStrip - QR code: $qrCode - window height: ${_tester.view.physicalSize.height}");
-    // return Directionality(
-    //   textDirection: TextDirection.ltr,
-    //   child: OverflowBox(
-    //     maxWidth: double.infinity,
-    //     minWidth: 0,
-    //     maxHeight: double.infinity,
-    //     minHeight: 0,
-    //     alignment: Alignment.topLeft,
-    //     child: GoldenSceneBounds(
-    //       child: IntrinsicWidth(
-    //         child: IntrinsicHeight(
-    //           child: Column(
-    //             key: contentKey,
-    //             mainAxisSize: MainAxisSize.min,
-    //             crossAxisAlignment: CrossAxisAlignment.stretch,
-    //             children: [
-    //               GoldenGallery(
-    //                 key: galleryKey,
-    //                 direction: filmStripDirection,
-    //                 renderablePhotos: renderablePhotos,
-    //               ),
-    //               if (qrCode != null) //
-    //                 Container(
-    //                   padding: const EdgeInsets.all(48),
-    //                   color: Colors.white,
-    //                   child: Center(
-    //                     child: SizedBox(
-    //                       height: 200,
-    //                       child: KeyedSubtree(
-    //                         key: qrCodeKey,
-    //                         child: qrCode,
-    //                       ),
-    //                     ),
-    //                   ),
-    //                 ),
-    //             ],
-    //           ),
-    //         ),
-    //       ),
-    //     ),
-    //   ),
-    // );
   }
 
   Future<void> _compareGoldens(WidgetTester tester, String existingGoldenFileName, Finder goldenBounds) async {
-    print("Comparing to existing goldens...");
     final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
     final goldenFile = File("$testFileDirectory$existingGoldenFileName");
-    print("Golden file path: ${goldenFile.path}");
 
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
 
-    print("Creating existing golden collection");
+    FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
 
-    print("Creating new golden collection");
+    FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
     late final GoldenCollection screenshotCollection;
     await tester.runAsync(() async {
       screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(tester);
     });
 
-    print("Comparing goldens and screenshots");
+    FtgLog.pipeline.fine("Comparing goldens and screenshots");
     final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
     if (mismatches.mismatches.isNotEmpty) {
-      print("Mismatches ($existingGoldenFileName):");
+      FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
       for (final mismatch in mismatches.mismatches.values) {
-        print(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
+        FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
       }
 
       for (final mismatch in mismatches.mismatches.values) {
@@ -431,7 +369,7 @@ class FilmStrip {
           continue;
         }
 
-        print("Painting a golden failure: $mismatch");
+        FtgLog.pipeline.fine("Painting a golden failure: $mismatch");
         final failureDirectory = Directory("${testFileDirectory}failures");
         failureDirectory.createSync();
 
@@ -515,10 +453,8 @@ class FilmStrip {
 
       throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
     } else {
-      print("No golden mismatches found");
+      FtgLog.pipeline.info("No golden mismatches found");
     }
-
-    print("Done comparing goldens");
   }
 
   double _calculateColorMismatchPercent(Color c1, Color c2) {

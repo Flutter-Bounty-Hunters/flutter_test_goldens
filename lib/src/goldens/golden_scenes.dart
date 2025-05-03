@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/qr_codes/qr_code_image_scanning.dart';
@@ -17,7 +18,7 @@ import 'package:image/image.dart';
 /// This function loads the scene image from the [file], extracts each individual golden
 /// image from the scene, and then returns all of those golden images as a [GoldenCollection].
 GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
-  print("Extracting golden collection from golden image.");
+  FtgLog.pipeline.fine("Extracting golden collection from golden image.");
 
   // Load the scene image into memory.
   final sceneImage = decodePng(file.readAsBytesSync());
@@ -51,7 +52,7 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
 ///   });
 /// ```
 Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(WidgetTester tester, [Finder? sceneBounds]) async {
-  print("Extracting golden collection from widget tree.");
+  FtgLog.pipeline.fine("Extracting golden collection from widget tree.");
   final renderRepaintBoundary = _findNearestRepaintBoundary(sceneBounds ?? find.byType(GoldenSceneBounds));
   if (renderRepaintBoundary == null) {
     // TODO: use structured error
@@ -94,7 +95,6 @@ GoldenCollection _extractCollectionFromScene(Image sceneImage) {
 }
 
 RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
-  print("Widget tree bounds: ${bounds.evaluate().firstOrNull}");
   var renderObject = bounds.evaluate().single.renderObject!;
   while (renderObject is! RenderRepaintBoundary && renderObject.parent != null) {
     renderObject = renderObject.parent!;

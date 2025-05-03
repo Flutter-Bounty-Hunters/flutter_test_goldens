@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 
 extension FlutterTestGoldens on WidgetTester {
   /// Pumps a [widgetTree] and then adjusts the test window size to exactly match the
@@ -14,7 +15,7 @@ extension FlutterTestGoldens on WidgetTester {
   /// of the test window is changed to match [widgetTree]. Finally, [widgetTree] is pumped
   /// again with the final window size.
   Future<void> pumpWidgetAndAdjustWindow(Widget widgetTree) async {
-    print("Pumping a widget tree and adjusting window size.");
+    FtgLog.pipeline.fine("Pumping a widget tree and adjusting window size.");
     final contentKey = GlobalKey();
 
     await pumpWidget(
@@ -36,7 +37,7 @@ extension FlutterTestGoldens on WidgetTester {
 
     // Look up the natural content dimensions.
     final contentSize = contentKey.currentContext!.size!;
-    print("Content size: $contentSize");
+    FtgLog.pipeline.fine("Final content and window size: $contentSize");
 
     // Change test window to exactly fit widget tree.
     view.physicalSize = contentSize;
