@@ -1,0 +1,4 @@
+enum SceneLayout {
+  row,
+  column;
+}

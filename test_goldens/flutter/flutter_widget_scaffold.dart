@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
 class FlutterWidgetScaffold extends StatelessWidget {
   const FlutterWidgetScaffold({
     super.key,
-    required this.goldenKey,
+    this.goldenKey,
     required this.child,
   });
 
-  final GlobalKey goldenKey;
+  final GlobalKey? goldenKey;
   final Widget child;
 
   @override
@@ -19,12 +20,15 @@ class FlutterWidgetScaffold extends StatelessWidget {
       ),
       home: Scaffold(
         backgroundColor: const Color(0xFF222222),
-        body: Padding(
+        body: GoldenSceneBounds(
           key: goldenKey,
-          padding: const EdgeInsets.all(48),
-          child: child,
+          child: Padding(
+            padding: const EdgeInsets.all(48),
+            child: child,
+          ),
         ),
       ),
+      debugShowCheckedModeBanner: false,
     );
   }
 }

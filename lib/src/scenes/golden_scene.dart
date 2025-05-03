@@ -3,8 +3,8 @@ import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 
-class GoldenGallery extends StatelessWidget {
-  const GoldenGallery({
+class GoldenScene extends StatelessWidget {
+  const GoldenScene({
     super.key,
     required this.direction,
     required this.renderablePhotos,

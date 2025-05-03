@@ -8,168 +8,68 @@ import 'package:flutter/material.dart' hide Image;
 import 'package:flutter/material.dart' as m;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
-import 'package:flutter_test_goldens/src/galleries/gallery.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
+import 'package:flutter_test_goldens/src/goldens/pixel_comparisons.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
+import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
+import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
 import 'package:qr_bar_code/code/code.dart';
 
-/// A golden builder that takes screenshots over a period of time and
-/// stitches them together into a single golden file with a given
-/// [FilmStripLayout].
-class FilmStrip {
-  FilmStrip(this._tester);
+/// A golden builder that builds independent widget tree UIs and then either
+/// renders those into a single scene file, or compares them against an existing
+/// scene file.
+class Gallery {
+  Gallery(
+    this._tester, {
+    GalleryItemDecorator? itemDecorator,
+    required List<GalleryItem> items,
+  })  : _itemDecorator = itemDecorator,
+        _items = items;
 
   final WidgetTester _tester;
 
-  _FilmStripSetup? _setup;
-  final _steps = <Object>[];
-
-  /// Setup the scene before taking any photos.
-  ///
-  /// If you only need to provide a widget tree, without taking other [WidgetTester]
-  /// actions, consider using [setupWithPump] for convenience.
-  FilmStrip setup(FilmStripSetupDelegate delegate) {
-    if (_setup != null) {
-      throw Exception("FilmStrip was already set up, but tried to call setup() again.");
-    }
-
-    _setup = _FilmStripSetup(delegate);
-
-    return this;
-  }
-
-  /// Setup the scene before taking any photos, by pumping a widget tree.
-  ///
-  /// If you need to take additional actions, beyond a single pump, use [setup] instead.
-  FilmStrip setupWithPump(FilmStripSetupWithPumpFactory sceneBuilder) {
-    if (_setup != null) {
-      throw Exception("FilmStrip was already set up, but tried to call setupWithPump() again.");
-    }
-
-    _setup = _FilmStripSetup((tester) async {
-      final widgetTree = sceneBuilder();
-      await _tester.pumpWidget(widgetTree);
-    });
-
-    return this;
-  }
-
-  /// Take a golden photo screenshot of the current Flutter UI.
-  FilmStrip takePhoto(Finder photoBoundsFinder, String description) {
-    if (_setup == null) {
-      throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
-    }
-
-    _steps.add(_FilmStripPhotoRequest(photoBoundsFinder, description));
-
-    return this;
-  }
-
-  FilmStrip hoverOver(Finder finder, {bool pumpAndSettle = true}) {
-    return modifyScene((tester, testContext) async {
-      // Hover over the desired widget and store the gesture details for future
-      // scene modifications.
-      final (gesture, hoverPosition) = await tester.hoverOver(finder);
-      testContext.activeGesture = gesture;
-      testContext.activeGestureOffset = hoverPosition;
-
-      if (pumpAndSettle) {
-        await tester.pumpAndSettle();
-      }
-    });
-  }
-
-  FilmStrip pressHover({bool pumpAndSettle = true}) {
-    return modifyScene((tester, testContext) async {
-      // Press down where the active gesture currently resides.
-      await testContext.activeGesture!.down(testContext.activeGestureOffset!);
-
-      if (pumpAndSettle) {
-        await tester.pumpAndSettle();
-      }
-    });
-  }
-
-  FilmStrip releaseHover({bool pumpAndSettle = true}) {
-    return modifyScene((tester, testContext) async {
-      // Release the active gesture.
-      await testContext.activeGesture!.up();
-
-      if (pumpAndSettle) {
-        await tester.pumpAndSettle();
-      }
-    });
-  }
-
-  /// Change the scene in this [FilmStrip] to prepare to take another photo.
-  FilmStrip modifyScene(FilmStripModifySceneDelegate delegate) {
-    if (_setup == null) {
-      throw Exception("Can't modify the scene before setup. Please call setup() or setupWithPump()");
-    }
-
-    _steps.add(_FilmStripModifySceneAction(delegate));
-
-    return this;
-  }
+  final GalleryItemDecorator? _itemDecorator;
+  final List<GalleryItem> _items;
 
   Future<void> renderOrCompareGolden({
     required String goldenName,
-    required FilmStripLayout layout,
+    required SceneLayout layout,
     Widget? goldenBackground,
     m.Color qrCodeColor = m.Colors.black,
     m.Color qrCodeBackgroundColor = m.Colors.white,
   }) async {
-    if (_setup == null) {
-      throw Exception(
-          "Can't render or compare golden file without a setup action. Please call setup() or setupWithPump().");
-    }
-
     FtgLog.pipeline.info("Rendering or comparing golden - $goldenName");
 
-    // Always operate at a 1:1 logical-to-physical pixel ratio to help reduce
-    // anti-aliasing and other artifacts from fractional pixel offsets.
-    _tester.view.devicePixelRatio = 1.0;
-
+    // Build each gallery item and screenshot it.
     final camera = GoldenCamera(_tester);
-    final testContext = FilmStripTestContext();
+    for (final item in _items) {
+      FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
+      await _tester.pumpWidget(
+        _itemDecorator != null
+            ? _itemDecorator.call(
+                _tester,
+                Builder(builder: item.build),
+              )
+            : Builder(builder: item.build),
+      );
 
-    // Setup the scene.
-    FtgLog.pipeline.info("Running any given setup delegate before running steps.");
-    await _setup!.setupDelegate(_tester);
+      expect(item.boundsFinder, findsOne);
+      final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
+      expect(
+        renderObject,
+        isNotNull,
+        reason: "Failed to find a render object for gallery item '${item.description}'",
+      );
 
-    // Take photos and modify scene over time.
-    for (final step in _steps) {
-      FtgLog.pipeline.info("Running step: $step");
-      if (step is _FilmStripModifySceneAction) {
-        await step.delegate(_tester, testContext);
-        continue;
-      }
-
-      if (step is _FilmStripPhotoRequest) {
-        expect(step.photoBoundsFinder, findsOne);
-
-        final renderObject = step.photoBoundsFinder.evaluate().first.findRenderObject();
-        expect(
-          renderObject,
-          isNotNull,
-          reason:
-              "Failed to find a render object for photo '${step.description}', using finder '${step.photoBoundsFinder}'",
-        );
-
-        await camera.takePhoto(step.photoBoundsFinder, step.description);
-
-        continue;
-      }
-
-      throw Exception("Tried to run a step when rendering a FilmStrip, but we don't recognize this step type: $step");
+      await camera.takePhoto(item.boundsFinder, item.description);
     }
 
-    // Lay out photos in a row.
+    // Lay out gallery items in the desired layout.
     final photos = camera.photos;
     // TODO: cleanup the modeling of these photos vs renderable photos once things are working
     final renderablePhotos = <GoldenPhoto, (Uint8List, GlobalKey)>{};
@@ -222,16 +122,17 @@ class FilmStrip {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
       await _compareGoldens(_tester, goldenFileName, find.byType(GoldenSceneBounds));
-      FtgLog.pipeline.finer("Done comparing goldens for film strip");
+      FtgLog.pipeline.finer("Done comparing goldens for gallery");
     }
 
     FtgLog.pipeline.finer("Done with golden generation/comparison");
   }
 
+  // TODO: de-dup this with FilmStrip
   Future<GoldenSceneMetadata> _layoutPhotos(
     List<GoldenPhoto> photos,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
-    FilmStripLayout layout, {
+    SceneLayout layout, {
     Widget? goldenBackground,
     Widget? qrCode,
     required m.Color qrCodeBackgroundColor,
@@ -240,12 +141,12 @@ class FilmStrip {
     // size it wants. Then check the content render object for final dimensions.
     // Set the window size to match.
 
-    late final Axis filmStripDirection;
+    late final Axis galleryDirection;
     switch (layout) {
-      case FilmStripLayout.row:
-        filmStripDirection = Axis.horizontal;
-      case FilmStripLayout.column:
-        filmStripDirection = Axis.vertical;
+      case SceneLayout.row:
+        galleryDirection = Axis.horizontal;
+      case SceneLayout.column:
+        galleryDirection = Axis.vertical;
     }
 
     // FIXME: When we're comparing existing goldens, we shouldn't need to actually
@@ -256,8 +157,8 @@ class FilmStrip {
     final galleryKey = GlobalKey();
     final qrCodeKey = GlobalKey();
 
-    final filmStrip = _buildFilmStrip(
-      filmStripDirection,
+    final gallery = _buildGallery(
+      galleryDirection,
       contentKey,
       renderablePhotos,
       galleryKey: galleryKey,
@@ -267,7 +168,7 @@ class FilmStrip {
       qrCodeBackgroundColor: qrCodeBackgroundColor,
     );
 
-    await _tester.pumpWidgetAndAdjustWindow(filmStrip);
+    await _tester.pumpWidgetAndAdjustWindow(gallery);
 
     await _tester.runAsync(() async {
       for (final entry in renderablePhotos.entries) {
@@ -293,8 +194,8 @@ class FilmStrip {
     );
   }
 
-  Widget _buildFilmStrip(
-    Axis filmStripDirection,
+  Widget _buildGallery(
+    Axis galleryDirection,
     GlobalKey contentKey,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
     Key? galleryKey,
@@ -311,9 +212,9 @@ class FilmStrip {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GoldenGallery(
+              GoldenScene(
                 key: galleryKey,
-                direction: filmStripDirection,
+                direction: galleryDirection,
                 renderablePhotos: renderablePhotos,
                 background: goldenBackground,
               ),
@@ -434,7 +335,7 @@ class FilmStrip {
               failureImage.setPixel(x, maxHeight + y, absoluteDiffColor);
 
               // Paint this pixel in the relative severity diff image.
-              final mismatchPercent = _calculateColorMismatchPercent(goldenPixel, screenshotPixel);
+              final mismatchPercent = calculateColorMismatchPercent(goldenPixel, screenshotPixel);
               final yellowAmount = ui.lerpDouble(0.2, 1.0, mismatchPercent)!;
               failureImage.setPixel(
                 goldenWidth + x,
@@ -456,84 +357,38 @@ class FilmStrip {
       FtgLog.pipeline.info("No golden mismatches found");
     }
   }
+}
 
-  double _calculateColorMismatchPercent(Color c1, Color c2) {
-    final doLog = false; //c1.r == 255; //c1.r != c1.g;
-    final color1 = m.Color.fromARGB(255, c1.r.toInt(), c1.g.toInt(), c1.b.toInt());
-    final hsv1 = m.HSVColor.fromColor(color1);
+typedef GalleryItemDecorator = Widget Function(WidgetTester tester, Widget content);
 
-    final color2 = m.Color.fromARGB(255, c2.r.toInt(), c2.g.toInt(), c2.b.toInt());
-    final hsv2 = m.HSVColor.fromColor(color2);
-
-    // Calculate per-component difference.
-    var deltaHue = (hsv2.hue - hsv1.hue).abs();
-    final deltaSaturation = (hsv2.saturation - hsv2.saturation).abs();
-    final deltaValue = (hsv2.value - hsv1.value).abs();
-
-    // Handle hue circularity (i.e., fact that 360 degrees go back to 0 degrees)
-    deltaHue = deltaHue > 180 ? 360 - deltaHue : deltaHue;
-
-    // Normalize each component difference.
-    deltaHue = deltaHue / 180;
-    // Other components are already in range [0, 1].
-
-    // Combine components instead single distance value.
-    //
-    // The difference formula is arbitrary, but the goal is to draw attention to differences that are likely
-    // to be important, which means reducing differences between things that aren't. In this equation we treat
-    // the value difference as the most important, such that black vs white goes directly to the max. Assuming
-    // the difference in value doesn't eat up all the difference, the hue is then given 3 times the
-    // weight of the saturation difference.
-    //
-    // This formula can easily exceed the max value of `1.0` so it's clamped. This means that many different
-    // color variations will all be at the highest intensity, but that's OK, be there is more than one color
-    // difference that's worthy of attention.
-    final difference = (deltaValue + ((deltaHue * 3) + deltaSaturation) / 4).clamp(0.0, 1.0);
-    if (doLog) {
-      print(
-          "Color 1 - red: ${c1.r}, green: ${c1.g}, blue: ${c1.b} - h: ${hsv1.hue}, s: ${hsv1.saturation}, v: ${hsv1.value}");
-      print(
-          "Color 2 - red: ${c2.r}, green: ${c2.g}, blue: ${c2.b} - h: ${hsv2.hue}, s: ${hsv2.saturation}, v: ${hsv2.value}");
-      print("Difference: $difference");
-    }
-
-    return difference;
+/// A single UI example within a gallery of gallery items.
+class GalleryItem {
+  GalleryItem.withWidget({
+    required this.id,
+    required this.description,
+    Finder? boundsFinder,
+    required this.child,
+  }) : builder = null {
+    this.boundsFinder = boundsFinder ?? find.byType(GoldenSceneBounds);
   }
-}
 
-class _FilmStripSetup {
-  const _FilmStripSetup(this.setupDelegate);
+  GalleryItem.withBuilder({
+    required this.id,
+    required this.description,
+    Finder? boundsFinder,
+    required this.builder,
+  }) : child = null {
+    this.boundsFinder = boundsFinder ?? find.byType(GoldenSceneBounds);
+  }
 
-  final FilmStripSetupDelegate setupDelegate;
-}
-
-typedef FilmStripSetupDelegate = Future<void> Function(WidgetTester tester);
-
-typedef FilmStripSetupWithPumpFactory = Widget Function();
-
-class _FilmStripPhotoRequest {
-  const _FilmStripPhotoRequest(this.photoBoundsFinder, this.description);
-
-  final Finder photoBoundsFinder;
+  final String id;
   final String description;
-}
+  late final Finder boundsFinder;
 
-class _FilmStripModifySceneAction {
-  const _FilmStripModifySceneAction(this.delegate);
+  final Widget? child;
+  final WidgetBuilder? builder;
 
-  final FilmStripModifySceneDelegate delegate;
-}
-
-typedef FilmStripModifySceneDelegate = Future<void> Function(WidgetTester tester, FilmStripTestContext testContext);
-
-class FilmStripTestContext {
-  TestGesture? activeGesture;
-  Offset? activeGestureOffset;
-
-  final scratchPad = <String, dynamic>{};
-}
-
-enum FilmStripLayout {
-  row,
-  column;
+  /// Returns the [child] widget, or if it's `null`, returns the output from
+  /// the given [builder].
+  Widget build(BuildContext context) => child ?? builder!.call(context);
 }

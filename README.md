@@ -3,6 +3,53 @@ A toolkit for writing golden tests.
 
 ## Getting Started
 The following shows an example of how to define a golden test that captures
+a variety of independent UIs as a gallery.
+
+```dart
+testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
+    await Gallery(
+      tester,
+      itemDecorator: (context, child) {
+        return FlutterWidgetScaffold(
+          child: child,
+        );
+      },
+      items: [
+        GalleryItem.withWidget(
+          id: "1",
+          description: "Icon + Text",
+          child: FloatingActionButton.extended(
+            icon: Icon(Icons.edit),
+            label: Text("Hello"),
+            onPressed: () {},
+          ),
+        ),
+        GalleryItem.withWidget(
+          id: "2",
+          description: "Icon",
+          child: FloatingActionButton.extended(
+            icon: Icon(Icons.edit),
+            label: Text(""),
+            onPressed: () {},
+          ),
+        ),
+        GalleryItem.withWidget(
+          id: "3",
+          description: "Text",
+          child: FloatingActionButton.extended(
+            label: Text("Hello"),
+            onPressed: () {},
+          ),
+        ),
+      ],
+    ).renderOrCompareGolden(
+      goldenName: "button_extended_fab_gallery",
+      layout: SceneLayout.row,
+    );
+});
+```
+
+The following shows an example of how to define a golden test that captures
 screenshots over time, placing all of them in a single scene file.
 
 ```dart
@@ -34,7 +81,7 @@ testGoldenSceneOnMac("elevated button interactions", (tester) async {
         // an existing scene file.
         .renderOrCompareGolden(
           goldenName: "button_elevated_interactions",
-          layout: FilmStripLayout.row,
+          layout: SceneLayout.row,
         );
 });
 ```

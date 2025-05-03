@@ -1,16 +1,18 @@
 import 'package:logging/logging.dart';
 
+export 'package:logging/logging.dart' show Level;
+
 /// Loggers for Flutter Test Goldens (FTG).
 abstract class FtgLog {
   static final pipeline = Logger('ftg.pipeline');
 
   static final _activeLoggers = <Logger>{};
 
-  static void initAllLogs(Level level) {
-    initLoggers(level, {Logger.root});
+  static void initAllLogs([Level? level = Level.ALL]) {
+    initLoggers({Logger.root}, level);
   }
 
-  static void initLoggers(Level level, Set<Logger> loggers) {
+  static void initLoggers(Set<Logger> loggers, [Level? level = Level.ALL]) {
     hierarchicalLoggingEnabled = true;
 
     for (final logger in loggers) {

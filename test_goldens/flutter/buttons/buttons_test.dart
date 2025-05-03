@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
+import 'package:flutter_test_goldens/src/scenes/gallery.dart';
+import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
 import '../flutter_widget_scaffold.dart';
@@ -29,7 +31,7 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_elevated_interactions",
-          layout: FilmStripLayout.row,
+          layout: SceneLayout.row,
         );
   });
 
@@ -53,7 +55,7 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_text_interactions",
-          layout: FilmStripLayout.row,
+          layout: SceneLayout.row,
         );
   });
 
@@ -86,7 +88,7 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_icon_interactions",
-          layout: FilmStripLayout.row,
+          layout: SceneLayout.row,
         );
   });
 
@@ -110,7 +112,7 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_fab_interactions",
-          layout: FilmStripLayout.row,
+          layout: SceneLayout.row,
         );
   });
 
@@ -146,7 +148,7 @@ void main() {
         // .takePhoto(find.byType(FlutterWidgetScaffold), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_extended_fab_interactions",
-          layout: FilmStripLayout.row,
+          layout: SceneLayout.row,
           goldenBackground: Image.memory(
             backgroundImageBytes,
             fit: BoxFit.cover,
@@ -154,5 +156,59 @@ void main() {
           qrCodeColor: Colors.white,
           qrCodeBackgroundColor: const Color(0xFF035db8),
         );
+  });
+
+  testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
+    final backgroundImageBytes = File("test_goldens/assets/flutter_background.png").readAsBytesSync();
+    final imageProvider = MemoryImage(backgroundImageBytes);
+    await tester.runAsync(() async {
+      await precacheImage(imageProvider, tester.binding.rootElement!);
+    });
+
+    await Gallery(
+      tester,
+      itemDecorator: (context, child) {
+        return FlutterWidgetScaffold(
+          child: child,
+        );
+      },
+      items: [
+        GalleryItem.withWidget(
+          id: "1",
+          description: "Icon + Text",
+          child: FloatingActionButton.extended(
+            icon: Icon(Icons.edit),
+            label: Text("Hello"),
+            onPressed: () {},
+          ),
+        ),
+        GalleryItem.withWidget(
+          id: "2",
+          description: "Icon",
+          child: FloatingActionButton.extended(
+            icon: Icon(Icons.edit),
+            label: Text(""),
+            onPressed: () {},
+          ),
+        ),
+        GalleryItem.withWidget(
+          id: "3",
+          description: "Text",
+          child: FloatingActionButton.extended(
+            label: Text("Hello"),
+            onPressed: () {},
+          ),
+        ),
+      ],
+    ).renderOrCompareGolden(
+      goldenName: "button_extended_fab_gallery",
+      layout: SceneLayout.row,
+      goldenBackground: Image.memory(
+        backgroundImageBytes,
+        fit: BoxFit.cover,
+      ),
+      qrCodeColor: Colors.white,
+      qrCodeBackgroundColor: const Color(0xFF035db8),
+    );
   });
 }
