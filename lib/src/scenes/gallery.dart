@@ -27,23 +27,79 @@ class Gallery {
   Gallery(
     this._tester, {
     GalleryItemDecorator? itemDecorator,
-    required List<GalleryItem> items,
-  })  : _itemDecorator = itemDecorator,
-        _items = items;
-
-  final WidgetTester _tester;
-
-  final GalleryItemDecorator? _itemDecorator;
-  final List<GalleryItem> _items;
-
-  Future<void> renderOrCompareGolden({
-    required String goldenName,
+    required String sceneName,
     required SceneLayout layout,
     Widget? goldenBackground,
     m.Color qrCodeColor = m.Colors.black,
     m.Color qrCodeBackgroundColor = m.Colors.white,
-  }) async {
-    FtgLog.pipeline.info("Rendering or comparing golden - $goldenName");
+  })  : _itemDecorator = itemDecorator,
+        _sceneName = sceneName,
+        _layout = layout,
+        _goldenBackground = goldenBackground,
+        _qrCodeColor = qrCodeColor,
+        _qrCodeBackgroundColor = qrCodeBackgroundColor;
+
+  final WidgetTester _tester;
+
+  /// A decoration applied to each item in this scene.
+  final GalleryItemDecorator? _itemDecorator;
+
+  /// All screenshots within this scene.
+  final _items = <GalleryItem>[];
+
+  /// The name of the overall golden scene, which may includes many individual
+  /// goldens.
+  final String _sceneName;
+
+  /// The layout to use to position all the items in this scene.
+  final SceneLayout _layout;
+
+  /// The background behind the items in this scene.
+  final Widget? _goldenBackground;
+
+  final m.Color _qrCodeColor;
+  final m.Color _qrCodeBackgroundColor;
+
+  /// Adds a screenshot item to the scene, based on a given [widget].
+  Gallery itemFromWidget({
+    required String id,
+    required String description,
+    Finder? boundsFinder,
+    required Widget widget,
+  }) {
+    _items.add(
+      GalleryItem.withWidget(
+        id: id,
+        description: description,
+        child: widget,
+      ),
+    );
+
+    return this;
+  }
+
+  /// Adds a screenshot item to the scene, based on a widget created with a given [builder].
+  Gallery itemFromBuilder({
+    required String id,
+    required String description,
+    Finder? boundsFinder,
+    required WidgetBuilder builder,
+  }) {
+    _items.add(
+      GalleryItem.withBuilder(
+        id: id,
+        description: description,
+        builder: builder,
+      ),
+    );
+
+    return this;
+  }
+
+  /// Either renders a new golden to a scene file, or compares new screenshots against an existing
+  /// golden scene file.
+  Future<void> renderOrCompareGolden() async {
+    FtgLog.pipeline.info("Rendering or comparing golden - $_sceneName");
 
     // Build each gallery item and screenshot it.
     final camera = GoldenCamera(_tester);
@@ -84,8 +140,8 @@ class Gallery {
     var goldenMetadata = await _layoutPhotos(
       photos,
       renderablePhotos,
-      layout,
-      qrCodeBackgroundColor: qrCodeBackgroundColor,
+      _layout,
+      qrCodeBackgroundColor: _qrCodeBackgroundColor,
     );
 
     // Layout photos one last time, this time adding the metadata QR code, which encodes
@@ -93,14 +149,14 @@ class Gallery {
     goldenMetadata = await _layoutPhotos(
       photos,
       renderablePhotos,
-      layout,
-      goldenBackground: goldenBackground,
+      _layout,
+      goldenBackground: _goldenBackground,
       qrCode: Code(
         data: const JsonEncoder().convert(goldenMetadata.toJson()),
         codeType: CodeType.qrCode(),
-        color: qrCodeColor,
+        color: _qrCodeColor,
       ),
-      qrCodeBackgroundColor: qrCodeBackgroundColor,
+      qrCodeBackgroundColor: _qrCodeBackgroundColor,
     );
 
     FtgLog.pipeline.finer("Running momentary delay for render flakiness");
@@ -113,7 +169,7 @@ class Gallery {
 
     await _tester.pumpAndSettle();
 
-    final goldenFileName = "$goldenName.png";
+    final goldenFileName = "$_sceneName.png";
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
       FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
@@ -359,9 +415,10 @@ class Gallery {
   }
 }
 
+/// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
 typedef GalleryItemDecorator = Widget Function(WidgetTester tester, Widget content);
 
-/// A single UI example within a gallery of gallery items.
+/// A single UI screenshot within a gallery of gallery items.
 class GalleryItem {
   GalleryItem.withWidget({
     required this.id,

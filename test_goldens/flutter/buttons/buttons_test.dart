@@ -167,48 +167,46 @@ void main() {
 
     await Gallery(
       tester,
+      sceneName: "button_extended_fab_gallery",
+      layout: SceneLayout.row,
       itemDecorator: (context, child) {
         return FlutterWidgetScaffold(
           child: child,
         );
       },
-      items: [
-        GalleryItem.withWidget(
-          id: "1",
-          description: "Icon + Text",
-          child: FloatingActionButton.extended(
-            icon: Icon(Icons.edit),
-            label: Text("Hello"),
-            onPressed: () {},
-          ),
-        ),
-        GalleryItem.withWidget(
-          id: "2",
-          description: "Icon",
-          child: FloatingActionButton.extended(
-            icon: Icon(Icons.edit),
-            label: Text(""),
-            onPressed: () {},
-          ),
-        ),
-        GalleryItem.withWidget(
-          id: "3",
-          description: "Text",
-          child: FloatingActionButton.extended(
-            label: Text("Hello"),
-            onPressed: () {},
-          ),
-        ),
-      ],
-    ).renderOrCompareGolden(
-      goldenName: "button_extended_fab_gallery",
-      layout: SceneLayout.row,
       goldenBackground: Image.memory(
         backgroundImageBytes,
         fit: BoxFit.cover,
       ),
       qrCodeColor: Colors.white,
       qrCodeBackgroundColor: const Color(0xFF035db8),
-    );
+    )
+        .itemFromWidget(
+          id: "1",
+          description: "Icon + Text",
+          widget: FloatingActionButton.extended(
+            icon: Icon(Icons.edit),
+            label: Text("Hello"),
+            onPressed: () {},
+          ),
+        )
+        .itemFromWidget(
+          id: "2",
+          description: "Icon",
+          widget: FloatingActionButton.extended(
+            icon: Icon(Icons.edit),
+            label: Text(""),
+            onPressed: () {},
+          ),
+        )
+        .itemFromWidget(
+          id: "3",
+          description: "Text",
+          widget: FloatingActionButton.extended(
+            label: Text("Hello"),
+            onPressed: () {},
+          ),
+        )
+        .renderOrCompareGolden();
   });
 }
