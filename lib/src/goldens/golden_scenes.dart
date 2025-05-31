@@ -73,6 +73,9 @@ Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(WidgetTester
 GoldenCollection _extractCollectionFromScene(Image sceneImage) {
   // Extract the scene metadata from the screenshot.
   final qrCode = sceneImage.readQrCode();
+  if (qrCode == null) {
+    throw Exception("Couldn't find a QR code in the golden scene image.");
+  }
   final json = JsonDecoder().convert(qrCode.text);
   final scene = GoldenSceneMetadata.fromJson(json);
 
