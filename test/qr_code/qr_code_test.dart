@@ -8,12 +8,22 @@ import 'package:image/image.dart' as img;
 void main() {
   group('QR Code scanning >', () {
     test('reads single QR code from an image', () async {
+      final image = img.decodePng(File('test/qr_code/single_qrcode.png').readAsBytesSync())!;
+
+      final qrCode = image.readQrCode();
+
+      expect(qrCode, isNotNull);
+      expect(qrCode!.text, 'A QR Code');
+    });
+
+    test('reads single QR code from an image with multiple QR codes', () async {
       final image = img.decodePng(File('test/qr_code/multiple_qrcodes.png').readAsBytesSync())!;
 
       final qrCode = image.readQrCode();
 
       // In top to bottom order, the third QR code is the first one.
-      expect(qrCode.text, 'Third QR Code');
+      expect(qrCode, isNotNull);
+      expect(qrCode!.text, 'Third QR Code');
     });
 
     test('reads multiple QR codes from a single image', () async {
