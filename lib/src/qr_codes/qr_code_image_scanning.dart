@@ -3,12 +3,10 @@ import 'package:zxing2/qrcode.dart';
 
 /// QR code extensions on [Image].
 extension ImageQrScanning on Image {
-  /// Attempts to find and decode a QR code within this [Image].
+  /// Returns the first QR code found within this [Image], or `null` if no QR code is found.
   ///
   /// If there are multiple QR codes in the image, it returns the first one it finds
   /// from top to bottom.
-  ///
-  /// If no QR code is found, it returns `null`.
   QrCode? readQrCode() {
     return _readQrCode(this);
   }
@@ -17,7 +15,7 @@ extension ImageQrScanning on Image {
   List<QrCode> readAllQrCodes() {
     final qrCodes = <QrCode>[];
 
-    Image image = this;
+    final image = clone();
 
     // Keep looking for QR codes until we can't find anymore.
     bool keepSearching = true;
@@ -41,7 +39,7 @@ extension ImageQrScanning on Image {
       final bottom = bottomLeftRectangle.y.truncate();
 
       // Fill the QRCode region with black color to try to read other QR Codes.
-      image = fillRect(
+      fillRect(
         image,
         x1: left,
         y1: top,
