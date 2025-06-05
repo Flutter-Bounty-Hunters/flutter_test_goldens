@@ -26,20 +26,27 @@ import 'package:qr_bar_code/code/code.dart';
 class Gallery {
   Gallery(
     this._tester, {
-    GalleryItemDecorator? itemDecorator,
     required String sceneName,
     required SceneLayout layout,
+    GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
+    GalleryItemDecorator? itemDecorator,
     Widget? goldenBackground,
     m.Color qrCodeColor = m.Colors.black,
     m.Color qrCodeBackgroundColor = m.Colors.white,
-  })  : _itemDecorator = itemDecorator,
-        _sceneName = sceneName,
+  })  : _sceneName = sceneName,
         _layout = layout,
+        _itemScaffold = itemScaffold,
+        _itemDecorator = itemDecorator,
         _goldenBackground = goldenBackground,
         _qrCodeColor = qrCodeColor,
         _qrCodeBackgroundColor = qrCodeBackgroundColor;
 
   final WidgetTester _tester;
+
+  /// A scaffold built around each item in this scene.
+  ///
+  /// Defaults to [defaultGalleryItemScaffold].
+  final GalleryItemScaffold _itemScaffold;
 
   /// A decoration applied to each item in this scene.
   final GalleryItemDecorator? _itemDecorator;
@@ -96,6 +103,40 @@ class Gallery {
     return this;
   }
 
+  /// Adds a screenshot item to the scene, based on a widget tree that's pumped with [pumper].
+  ///
+  /// {@template gallery_item_pumper_purpose}
+  /// Typically, gallery items are provided as `Widget`s or `WidgetBuilder`s. However, in some tests,
+  /// full control over a `WidgetTester.pump` is required. A pumper provides that level of control.
+  /// {@endtemplate}
+  ///
+  /// {@template gallery_item_pumper_requirements}
+  /// The [pumper] implementation **must** do three things:
+  ///
+  ///  1. Place the `scaffold` at the top of the widget tree.
+  ///  1. Place a [GoldenImageBounds] widget under the `scaffold` and above the `decorator` and/or `child`.
+  ///  2. Place the given `decorator` around the `child`, if a `decorator` is provided.
+  ///
+  /// If the above steps are not taken, the golden widget tree may fail to build, or fail
+  /// to render, or the expected decoration won't be applied.
+  /// {@endtemplate}
+  Gallery itemFromPumper({
+    required String id,
+    required String description,
+    Finder? boundsFinder,
+    required GalleryItemPumper pumper,
+  }) {
+    _items.add(
+      GalleryItem.withPumper(
+        id: id,
+        description: description,
+        pumper: pumper,
+      ),
+    );
+
+    return this;
+  }
+
   /// Either renders a new golden to a scene file, or compares new screenshots against an existing
   /// golden scene file.
   Future<void> renderOrCompareGolden() async {
@@ -105,14 +146,41 @@ class Gallery {
     final camera = GoldenCamera(_tester);
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
-      await _tester.pumpWidget(
-        _itemDecorator != null
-            ? _itemDecorator.call(
-                _tester,
-                Builder(builder: item.build),
-              )
-            : Builder(builder: item.build),
-      );
+
+      if (item.pumper != null) {
+        // Defer to the `pumper` to pump the entire widget tree for this gallery item.
+        await item.pumper!.call(_tester, _itemScaffold, _itemDecorator);
+      } else if (item.builder != null) {
+        // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
+        await _tester.pumpWidget(
+          _itemScaffold(
+            _tester,
+            GoldenImageBounds(
+              child: _itemDecorator != null
+                  ? _itemDecorator.call(
+                      _tester,
+                      Builder(builder: item.builder!),
+                    )
+                  : Builder(builder: item.builder!),
+            ),
+          ),
+        );
+      } else {
+        // Pump this gallery item, deferring to a `Widget` for the content.
+        await _tester.pumpWidget(
+          _itemScaffold(
+            _tester,
+            GoldenImageBounds(
+              child: _itemDecorator != null
+                  ? _itemDecorator.call(
+                      _tester,
+                      item.child!,
+                    )
+                  : item.child!,
+            ),
+          ),
+        );
+      }
 
       expect(item.boundsFinder, findsOne);
       final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
@@ -415,7 +483,34 @@ class Gallery {
   }
 }
 
+/// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
+///
+/// {@macro gallery_item_pumper_purpose}
+///
+/// {@macro gallery_item_structure}
+///
+/// {@macro gallery_item_pumper_requirements}
+typedef GalleryItemPumper = Future<void> Function(
+  WidgetTester tester,
+  GalleryItemScaffold scaffold,
+  GalleryItemDecorator? decorator,
+);
+
+/// Scaffolds a gallery item, such as building a `MaterialApp` with a `Scaffold`.
+///
+/// {@template gallery_item_structure}
+/// The structure of a gallery item is as follows:
+///
+///     Gallery item scaffold
+///       GalleryImageBounds (the default repaint boundary)
+///         Gallery item decorator
+///           Gallery item (the content)
+/// {@endtemplate}
+typedef GalleryItemScaffold = Widget Function(WidgetTester tester, Widget content);
+
 /// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
+///
+/// {@macro gallery_item_structure}
 typedef GalleryItemDecorator = Widget Function(WidgetTester tester, Widget content);
 
 /// A single UI screenshot within a gallery of gallery items.
@@ -425,8 +520,9 @@ class GalleryItem {
     required this.description,
     Finder? boundsFinder,
     required this.child,
-  }) : builder = null {
-    this.boundsFinder = boundsFinder ?? find.byType(GoldenSceneBounds);
+  })  : pumper = null,
+        builder = null {
+    this.boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds);
   }
 
   GalleryItem.withBuilder({
@@ -434,18 +530,49 @@ class GalleryItem {
     required this.description,
     Finder? boundsFinder,
     required this.builder,
-  }) : child = null {
-    this.boundsFinder = boundsFinder ?? find.byType(GoldenSceneBounds);
+  })  : pumper = null,
+        child = null {
+    this.boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds);
   }
 
+  GalleryItem.withPumper({
+    required this.id,
+    required this.description,
+    Finder? boundsFinder,
+    required this.pumper,
+  })  : builder = null,
+        child = null {
+    this.boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds);
+  }
+
+  /// The ID of this gallery item.
   final String id;
+
+  /// A human readable description of this gallery item.
   final String description;
+
+  /// [Finder] to locate the part of the subtree that should be screenshotted
+  /// for this gallery item.
   late final Finder boundsFinder;
 
-  final Widget? child;
+  /// The [GalleryItemPumper] that creates this gallery item, or `null` if this gallery
+  /// item is created with a [builder] or a [child].
+  final GalleryItemPumper? pumper;
+
+  /// The [WidgetBuilder] that creates this gallery item, or `null` if this gallery
+  /// item is created with a [pumper] or a [child].
   final WidgetBuilder? builder;
 
-  /// Returns the [child] widget, or if it's `null`, returns the output from
-  /// the given [builder].
-  Widget build(BuildContext context) => child ?? builder!.call(context);
+  /// The [Widget] that creates this gallery item, or `null` if this gallery
+  /// item is created with a [pumper] or a [builder].
+  final Widget? child;
+}
+
+Widget defaultGalleryItemScaffold(WidgetTester tester, Widget content) {
+  return MaterialApp(
+    home: Scaffold(
+      body: content,
+    ),
+    debugShowCheckedModeBanner: false,
+  );
 }

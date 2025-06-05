@@ -7,6 +7,8 @@ export 'src/goldens/golden_rendering.dart';
 export 'src/goldens/golden_scenes.dart';
 export 'src/qr_codes/qr_code_image_scanning.dart';
 export 'src/scenes/film_strip.dart';
+export 'src/scenes/gallery.dart';
 export 'src/scenes/golden_scene.dart';
+export 'src/scenes/scene_layout.dart';
 export 'src/logging.dart';
 export 'src/test_runners.dart';

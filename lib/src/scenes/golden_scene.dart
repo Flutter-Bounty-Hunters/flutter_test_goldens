@@ -60,7 +60,7 @@ class GoldenScene extends StatelessWidget {
                             entry.key.description,
                             style: TextStyle(
                               color: Colors.black,
-                              fontFamily: "OpenSans",
+                              fontFamily: "packages/flutter_test_goldens/OpenSans",
                             ),
                           ),
                         ),
