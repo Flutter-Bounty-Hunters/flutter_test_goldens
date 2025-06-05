@@ -143,7 +143,7 @@ class Gallery {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneName");
 
     // Build each gallery item and screenshot it.
-    final camera = GoldenCamera(_tester);
+    final camera = GoldenCamera();
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
 
@@ -190,7 +190,7 @@ class Gallery {
         reason: "Failed to find a render object for gallery item '${item.description}'",
       );
 
-      await camera.takePhoto(item.boundsFinder, item.description);
+      await camera.takePhoto(item.description, item.boundsFinder);
     }
 
     // Lay out gallery items in the desired layout.

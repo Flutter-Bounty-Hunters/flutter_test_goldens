@@ -21,11 +21,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(ElevatedButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden(
           goldenName: "button_elevated_interactions",
           layout: SceneLayout.row,
@@ -45,11 +45,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(TextButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden(
           goldenName: "button_text_interactions",
           layout: SceneLayout.row,
@@ -78,11 +78,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(IconButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden(
           goldenName: "button_icon_interactions",
           layout: SceneLayout.row,
@@ -102,11 +102,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden(
           goldenName: "button_fab_interactions",
           layout: SceneLayout.row,
@@ -133,15 +133,15 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
 
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
 
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         // .takePhoto(find.byType(FlutterWidgetScaffold), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_extended_fab_interactions",
