@@ -164,9 +164,11 @@ void main() {
 
     await Gallery(
       tester,
-      sceneName: "button_extended_fab_gallery",
+      directory: Directory("."),
+      fileName: "button_extended_fab_gallery",
+      sceneDescription: "FAB Gallery",
       layout: SceneLayout.row,
-      itemDecorator: (context, child) {
+      itemScaffold: (context, child) {
         return FlutterWidgetScaffold(
           child: child,
         );

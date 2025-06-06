@@ -20,11 +20,13 @@ class FlutterWidgetScaffold extends StatelessWidget {
       ),
       home: Scaffold(
         backgroundColor: const Color(0xFF222222),
-        body: GoldenSceneBounds(
-          key: goldenKey,
-          child: Padding(
-            padding: const EdgeInsets.all(48),
-            child: child,
+        body: Center(
+          child: GoldenImageBounds(
+            key: goldenKey,
+            child: Padding(
+              padding: const EdgeInsets.all(48),
+              child: child,
+            ),
           ),
         ),
       ),
