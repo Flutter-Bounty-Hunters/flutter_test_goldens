@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
@@ -14,7 +16,9 @@ void main() {
 
         await Gallery(
           tester,
-          sceneName: 'gallery_item_from_widget',
+          directory: Directory("."),
+          fileName: "gallery_item_from_widget",
+          sceneDescription: "Elevated Button",
           layout: SceneLayout.column,
           itemDecorator: (tester, child) {
             return Padding(

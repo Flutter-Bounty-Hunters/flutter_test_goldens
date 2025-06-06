@@ -134,15 +134,10 @@ void main() {
           );
         })
         .takePhoto(find.byKey(goldenKey), "idle")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
-
         .hoverOver(find.byType(FloatingActionButton))
         .takePhoto(find.byKey(goldenKey), "hover")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
-
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_extended_fab_interactions",
           layout: SceneLayout.row,
@@ -164,9 +159,11 @@ void main() {
 
     await Gallery(
       tester,
-      sceneName: "button_extended_fab_gallery",
+      directory: Directory("."),
+      fileName: "button_extended_fab_gallery",
+      sceneDescription: "FAB Gallery",
       layout: SceneLayout.row,
-      itemDecorator: (context, child) {
+      itemScaffold: (context, child) {
         return FlutterWidgetScaffold(
           child: child,
         );
