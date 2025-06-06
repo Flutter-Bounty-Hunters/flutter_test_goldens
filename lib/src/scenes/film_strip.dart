@@ -62,6 +62,12 @@ class FilmStrip {
   }
 
   /// Take a golden photo screenshot of the current Flutter UI.
+  ///
+  /// {@template golden_image_bounds_default_finder}
+  /// If no [finder] is provided, then it's assumed that somewhere in the widget tree is
+  /// a [GoldenImageBounds] widget. That widget is used as the boundary for this photo.
+  /// If no such widget exists, an error is thrown.
+  /// {@endtemplate}
   FilmStrip takePhoto(String description, [Finder? photoBoundsFinder]) {
     if (_setup == null) {
       throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");

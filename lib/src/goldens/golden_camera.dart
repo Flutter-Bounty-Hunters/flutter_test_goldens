@@ -14,6 +14,8 @@ class GoldenCamera {
 
   /// Takes a screenshot of the given [finder] and stores it in [photos]
   /// along with its [description].
+  ///
+  /// {@macro golden_image_bounds_default_finder}
   Future<void> takePhoto(String description, [Finder? finder]) async {
     finder = finder ?? find.byType(GoldenImageBounds);
 
