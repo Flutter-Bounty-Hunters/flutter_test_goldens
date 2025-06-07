@@ -5,9 +5,6 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
-import 'package:flutter_test_goldens/src/qr_codes/qr_code_image_scanning.dart';
 import 'package:image/image.dart';
 
 /// Extracts a [GoldenCollection] from a golden scene within the given image [file].

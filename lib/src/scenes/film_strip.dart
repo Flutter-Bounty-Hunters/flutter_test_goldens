@@ -15,6 +15,7 @@ import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/goldens/pixel_comparisons.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
+import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
@@ -348,6 +349,12 @@ class FilmStrip {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
+
+    print("_extractCollectionFromScene()");
+    final pngData = goldenFile.readAsBytesSync();
+    final pngText = pngData.readTextMetadata();
+    final metadata = pngText["flutter_test_goldens"] as String;
+    print("Metadata:\n$metadata\n\n${JsonEncoder.withIndent("  ").convert(JsonDecoder().convert(metadata))}\n\n");
 
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);

@@ -15,6 +15,7 @@ import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/goldens/pixel_comparisons.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
+import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
@@ -242,6 +243,19 @@ class Gallery {
       // Generate new goldens.
       FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
       await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
+
+      print("Generated file path: $goldenFileName");
+      final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
+      final goldenFile = File("$testFileDirectory$goldenFileName");
+      var pngData = goldenFile.readAsBytesSync();
+      print("Done reading golden file bytes - ${pngData.lengthInBytes} bytes");
+      pngData = pngData.copyWithTextMetadata(
+        "flutter_test_goldens",
+        const JsonEncoder().convert(goldenMetadata.toJson()),
+      );
+      print("Writing updated bytes");
+      goldenFile.writeAsBytesSync(pngData);
+      print("Done writing bytes - ${pngData.lengthInBytes} bytes");
     } else {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
@@ -371,6 +385,12 @@ class Gallery {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
+
+    print("_extractCollectionFromScene()");
+    final pngData = goldenFile.readAsBytesSync();
+    final pngText = pngData.readTextMetadata();
+    final metadata = pngText["flutter_test_goldens"] as String;
+    print("Metadata:\n$metadata\n\n${JsonEncoder.withIndent("  ").convert(JsonDecoder().convert(metadata))}\n\n");
 
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
