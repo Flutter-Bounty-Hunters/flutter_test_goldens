@@ -9,7 +9,11 @@ void main() {
   testGoldenSceneOnMac("text field interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "textfield_interactions",
+      layout: SceneLayout.column,
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -31,9 +35,6 @@ void main() {
           await tester.pumpAndSettle();
         })
         .takePhoto(find.byKey(goldenKey), "typed text")
-        .renderOrCompareGolden(
-          goldenName: "textfield_interactions",
-          layout: SceneLayout.column,
-        );
+        .renderOrCompareGolden();
   });
 }

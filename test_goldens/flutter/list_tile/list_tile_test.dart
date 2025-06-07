@@ -11,7 +11,11 @@ void main() {
 
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "list_tile_interactions",
+      layout: SceneLayout.column,
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -33,9 +37,6 @@ void main() {
         .takePhoto(find.byKey(goldenKey), "hover")
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden(
-          goldenName: "list_tile_interactions",
-          layout: SceneLayout.column,
-        );
+        .renderOrCompareGolden();
   });
 }

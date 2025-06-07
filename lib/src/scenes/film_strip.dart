@@ -24,9 +24,18 @@ import 'package:qr_bar_code/code/code.dart';
 /// stitches them together into a single golden file with a given
 /// [FilmStripLayout].
 class FilmStrip {
-  FilmStrip(this._tester);
+  FilmStrip(
+    this._tester, {
+    required this.goldenName,
+    required this.layout,
+    this.goldenBackground,
+  });
 
   final WidgetTester _tester;
+
+  final String goldenName;
+  final SceneLayout layout;
+  final Widget? goldenBackground;
 
   _FilmStripSetup? _setup;
   final _steps = <Object>[];
@@ -120,9 +129,6 @@ class FilmStrip {
   }
 
   Future<void> renderOrCompareGolden({
-    required String goldenName,
-    required SceneLayout layout,
-    Widget? goldenBackground,
     m.Color qrCodeColor = m.Colors.black,
     m.Color qrCodeBackgroundColor = m.Colors.white,
   }) async {
