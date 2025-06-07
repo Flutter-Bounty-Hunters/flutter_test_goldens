@@ -8,6 +8,7 @@ import 'package:flutter/material.dart' hide Image;
 import 'package:flutter/material.dart' as m;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
+import 'package:flutter_test_goldens/src/flutter/pixel_boundary_box.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
@@ -55,7 +56,11 @@ class FilmStrip {
 
     _setup = _FilmStripSetup((tester) async {
       final widgetTree = sceneBuilder();
-      await _tester.pumpWidget(widgetTree);
+      await _tester.pumpWidget(
+        PixelBoundaryBox(
+          child: widgetTree,
+        ),
+      );
     });
 
     return this;
