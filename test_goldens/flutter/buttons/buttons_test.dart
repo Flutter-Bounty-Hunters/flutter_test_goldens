@@ -166,8 +166,14 @@ void main() {
       tester,
       sceneName: "button_extended_fab_gallery",
       layout: SceneLayout.row,
-      itemDecorator: (context, child) {
+      itemScaffold: (context, child) {
         return FlutterWidgetScaffold(
+          child: child,
+        );
+      },
+      itemDecorator: (context, child) {
+        return Padding(
+          padding: const EdgeInsets.all(24),
           child: child,
         );
       },

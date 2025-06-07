@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test_goldens/src/flutter/pixel_boundary_box.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 
 class GoldenScene extends StatelessWidget {
