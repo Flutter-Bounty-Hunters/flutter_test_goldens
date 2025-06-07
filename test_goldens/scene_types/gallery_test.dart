@@ -3,8 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 
 void main() {
-  FtgLog.initAllLogs();
-
   group("Scene types > gallery >", () {
     testGoldenScene(
       "item from a widget, builder, and pumper",

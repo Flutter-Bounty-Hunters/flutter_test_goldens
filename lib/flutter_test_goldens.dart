@@ -5,7 +5,6 @@ export 'src/goldens/golden_collections.dart';
 export 'src/goldens/golden_comparisons.dart';
 export 'src/goldens/golden_rendering.dart';
 export 'src/goldens/golden_scenes.dart';
-export 'src/qr_codes/qr_code_image_scanning.dart';
 export 'src/scenes/film_strip.dart';
 export 'src/scenes/gallery.dart';
 export 'src/scenes/golden_scene.dart';

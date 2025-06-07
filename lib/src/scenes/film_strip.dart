@@ -19,7 +19,6 @@ import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
-import 'package:qr_bar_code/code/code.dart';
 
 /// A golden builder that takes screenshots over a period of time and
 /// stitches them together into a single golden file with a given
@@ -124,8 +123,6 @@ class FilmStrip {
     required String goldenName,
     required SceneLayout layout,
     Widget? goldenBackground,
-    m.Color qrCodeColor = m.Colors.black,
-    m.Color qrCodeBackgroundColor = m.Colors.white,
   }) async {
     if (_setup == null) {
       throw Exception(
@@ -183,27 +180,12 @@ class FilmStrip {
       }
     });
 
-    // Layout photos in the gallery so we can lookup their final offsets and sizes.
-    var goldenMetadata = await _layoutPhotos(
-      photos,
-      renderablePhotos,
-      layout,
-      qrCodeBackgroundColor: qrCodeBackgroundColor,
-    );
-
-    // Layout photos one last time, this time adding the metadata QR code, which encodes
-    // each photo's offset and size.
-    goldenMetadata = await _layoutPhotos(
+    // Layout photos in the filmstrip.
+    final sceneMetadata = await _layoutPhotos(
       photos,
       renderablePhotos,
       layout,
       goldenBackground: goldenBackground,
-      qrCode: Code(
-        data: const JsonEncoder().convert(goldenMetadata.toJson()),
-        codeType: CodeType.qrCode(),
-        color: qrCodeColor,
-      ),
-      qrCodeBackgroundColor: qrCodeBackgroundColor,
     );
 
     FtgLog.pipeline.finer("Running momentary delay for render flakiness");
@@ -219,13 +201,19 @@ class FilmStrip {
     final goldenFileName = "$goldenName.png";
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
-      FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
-      await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
+      await _updateGoldenScene(
+        _tester,
+        goldenFileName,
+        sceneMetadata,
+      );
     } else {
       // Compare to existing goldens.
-      FtgLog.pipeline.finer("Comparing existing goldens...");
-      await _compareGoldens(_tester, goldenFileName, find.byType(GoldenSceneBounds));
-      FtgLog.pipeline.finer("Done comparing goldens for film strip");
+      await _compareGoldens(
+        _tester,
+        sceneMetadata,
+        goldenFileName,
+        find.byType(GoldenSceneBounds),
+      );
     }
 
     FtgLog.pipeline.finer("Done with golden generation/comparison");
@@ -236,8 +224,6 @@ class FilmStrip {
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
     SceneLayout layout, {
     Widget? goldenBackground,
-    Widget? qrCode,
-    required m.Color qrCodeBackgroundColor,
   }) async {
     // Layout the final strip within an OverflowBox to let it be whatever
     // size it wants. Then check the content render object for final dimensions.
@@ -257,7 +243,6 @@ class FilmStrip {
 
     final contentKey = GlobalKey();
     final galleryKey = GlobalKey();
-    final qrCodeKey = GlobalKey();
 
     final filmStrip = _buildFilmStrip(
       filmStripDirection,
@@ -265,9 +250,6 @@ class FilmStrip {
       renderablePhotos,
       galleryKey: galleryKey,
       goldenBackground: goldenBackground,
-      qrCodeKey: qrCodeKey,
-      qrCode: qrCode,
-      qrCodeBackgroundColor: qrCodeBackgroundColor,
     );
 
     await _tester.pumpWidgetAndAdjustWindow(filmStrip);
@@ -296,73 +278,62 @@ class FilmStrip {
     );
   }
 
+  Future<void> _updateGoldenScene(WidgetTester tester, String goldenFileName, GoldenSceneMetadata sceneMetadata) async {
+    FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
+
+    final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
+    final goldenFile = File("$testFileDirectory$goldenFileName");
+    var pngData = goldenFile.readAsBytesSync();
+    pngData = pngData.copyWithTextMetadata(
+      "flutter_test_goldens",
+      JsonEncoder().convert(sceneMetadata.toJson()),
+    );
+    goldenFile.writeAsBytesSync(pngData);
+  }
+
   Widget _buildFilmStrip(
     Axis filmStripDirection,
     GlobalKey contentKey,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
     Key? galleryKey,
     Widget? goldenBackground,
-    Key? qrCodeKey,
-    Widget? qrCode,
-    required m.Color qrCodeBackgroundColor,
   }) {
     return GoldenSceneBounds(
       child: IntrinsicWidth(
         child: IntrinsicHeight(
-          child: Column(
-            key: contentKey,
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              GoldenScene(
-                key: galleryKey,
-                direction: filmStripDirection,
-                renderablePhotos: renderablePhotos,
-                background: goldenBackground,
-              ),
-              if (qrCode != null) //
-                Container(
-                  padding: const EdgeInsets.all(48),
-                  color: qrCodeBackgroundColor,
-                  child: Center(
-                    child: SizedBox(
-                      height: 200,
-                      child: KeyedSubtree(
-                        key: qrCodeKey,
-                        child: qrCode,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          child: GoldenScene(
+            key: galleryKey,
+            direction: filmStripDirection,
+            renderablePhotos: renderablePhotos,
+            background: goldenBackground,
           ),
         ),
       ),
     );
   }
 
-  Future<void> _compareGoldens(WidgetTester tester, String existingGoldenFileName, Finder goldenBounds) async {
+  Future<void> _compareGoldens(
+    WidgetTester tester,
+    GoldenSceneMetadata sceneMetadata,
+    String existingGoldenFileName,
+    Finder goldenBounds,
+  ) async {
+    FtgLog.pipeline.finer("Comparing existing goldens...");
+
+    FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
     final goldenFile = File("$testFileDirectory$existingGoldenFileName");
-
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
-
-    print("_extractCollectionFromScene()");
-    final pngData = goldenFile.readAsBytesSync();
-    final pngText = pngData.readTextMetadata();
-    final metadata = pngText["flutter_test_goldens"] as String;
-    print("Metadata:\n$metadata\n\n${JsonEncoder.withIndent("  ").convert(JsonDecoder().convert(metadata))}\n\n");
-
-    FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
 
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
     late final GoldenCollection screenshotCollection;
     await tester.runAsync(() async {
-      screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(tester);
+      screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(tester, sceneMetadata);
     });
 
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
@@ -464,6 +435,8 @@ class FilmStrip {
     } else {
       FtgLog.pipeline.info("No golden mismatches found");
     }
+
+    FtgLog.pipeline.finer("Done comparing goldens for film strip");
   }
 }
 

@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
+import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:image/image.dart';
 
 /// Extracts a [GoldenCollection] from a golden scene within the given image [file].
@@ -17,15 +18,27 @@ import 'package:image/image.dart';
 GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
   FtgLog.pipeline.fine("Extracting golden collection from golden image.");
 
-  // Load the scene image into memory.
-  final sceneImage = decodePng(file.readAsBytesSync());
+  // Read the scene PNG data into memory.
+  final scenePngBytes = file.readAsBytesSync();
+
+  // Extract scene metadata from PNG.
+  final pngText = scenePngBytes.readTextMetadata();
+  final sceneJsonText = pngText["flutter_test_goldens"];
+  if (sceneJsonText == null) {
+    throw Exception("Golden image is missing scene metadata: ${file.path}");
+  }
+  final sceneJson = JsonDecoder().convert(sceneJsonText);
+  final sceneMetadata = GoldenSceneMetadata.fromJson(sceneJson);
+
+  // Decode PNG data to an image.
+  final sceneImage = decodePng(scenePngBytes);
   if (sceneImage == null) {
     // TODO: report error in structured way.
-    throw Exception("Failed to load existing golden image.");
+    throw Exception("Failed to decode golden scene as a PNG.");
   }
 
   // Extract the golden images from the scene image.
-  return _extractCollectionFromScene(sceneImage);
+  return _extractCollectionFromScene(sceneMetadata, sceneImage);
 }
 
 /// Extracts a [GoldenCollection] from a golden scene within the current widget tree.
@@ -48,7 +61,11 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
 ///     collection = await extractGoldenCollectionFromSceneWidgetTree(tester);
 ///   });
 /// ```
-Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(WidgetTester tester, [Finder? sceneBounds]) async {
+Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(
+  WidgetTester tester,
+  GoldenSceneMetadata sceneMetadata, [
+  Finder? sceneBounds,
+]) async {
   FtgLog.pipeline.fine("Extracting golden collection from widget tree.");
   final renderRepaintBoundary = _findNearestRepaintBoundary(sceneBounds ?? find.byType(GoldenSceneBounds));
   if (renderRepaintBoundary == null) {
@@ -64,21 +81,13 @@ Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(WidgetTester
   final treeImage = decodePng(treeRawImageData)!;
 
   // Extract the golden images from the scene image.
-  return _extractCollectionFromScene(treeImage);
+  return _extractCollectionFromScene(sceneMetadata, treeImage);
 }
 
-GoldenCollection _extractCollectionFromScene(Image sceneImage) {
-  // Extract the scene metadata from the screenshot.
-  final qrCode = sceneImage.readQrCode();
-  if (qrCode == null) {
-    throw Exception("Couldn't find a QR code in the golden scene image.");
-  }
-  final json = JsonDecoder().convert(qrCode.text);
-  final scene = GoldenSceneMetadata.fromJson(json);
-
+GoldenCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, Image sceneImage) {
   // Cut each golden image out of the scene.
   final goldenImages = <String, GoldenImage>{};
-  for (final imageRegion in scene.images) {
+  for (final imageRegion in sceneMetadata.images) {
     goldenImages[imageRegion.id] = GoldenImage(
       imageRegion.id,
       copyCrop(
