@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 
 import '../flutter_widget_scaffold.dart';
 

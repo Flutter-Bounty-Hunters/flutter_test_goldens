@@ -134,15 +134,10 @@ void main() {
           );
         })
         .takePhoto(find.byKey(goldenKey), "idle")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
-
         .hoverOver(find.byType(FloatingActionButton))
         .takePhoto(find.byKey(goldenKey), "hover")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
-
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "pressed")
         .renderOrCompareGolden(
           goldenName: "button_extended_fab_interactions",
           layout: SceneLayout.row,
@@ -150,8 +145,6 @@ void main() {
             backgroundImageBytes,
             fit: BoxFit.cover,
           ),
-          qrCodeColor: Colors.white,
-          qrCodeBackgroundColor: const Color(0xFF035db8),
         );
   });
 
@@ -166,7 +159,7 @@ void main() {
       tester,
       sceneName: "button_extended_fab_gallery",
       layout: SceneLayout.row,
-      itemDecorator: (context, child) {
+      itemScaffold: (context, child) {
         return FlutterWidgetScaffold(
           child: child,
         );
@@ -175,8 +168,6 @@ void main() {
         backgroundImageBytes,
         fit: BoxFit.cover,
       ),
-      qrCodeColor: Colors.white,
-      qrCodeBackgroundColor: const Color(0xFF035db8),
     )
         .itemFromWidget(
           id: "1",
