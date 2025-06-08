@@ -8,6 +8,7 @@ import 'package:flutter/material.dart' hide Image;
 import 'package:flutter/material.dart' as m;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
+import 'package:flutter_test_goldens/src/flutter/pixel_boundary_box.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
@@ -153,30 +154,34 @@ class Gallery {
       } else if (item.builder != null) {
         // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
         await _tester.pumpWidget(
-          _itemScaffold(
-            _tester,
-            GoldenImageBounds(
-              child: _itemDecorator != null
-                  ? _itemDecorator.call(
-                      _tester,
-                      Builder(builder: item.builder!),
-                    )
-                  : Builder(builder: item.builder!),
+          PixelBoundaryBox(
+            child: _itemScaffold(
+              _tester,
+              GoldenImageBounds(
+                child: _itemDecorator != null
+                    ? _itemDecorator.call(
+                        _tester,
+                        Builder(builder: item.builder!),
+                      )
+                    : Builder(builder: item.builder!),
+              ),
             ),
           ),
         );
       } else {
         // Pump this gallery item, deferring to a `Widget` for the content.
         await _tester.pumpWidget(
-          _itemScaffold(
-            _tester,
-            GoldenImageBounds(
-              child: _itemDecorator != null
-                  ? _itemDecorator.call(
-                      _tester,
-                      item.child!,
-                    )
-                  : item.child!,
+          PixelBoundaryBox(
+            child: _itemScaffold(
+              _tester,
+              GoldenImageBounds(
+                child: _itemDecorator != null
+                    ? _itemDecorator.call(
+                        _tester,
+                        item.child!,
+                      )
+                    : item.child!,
+              ),
             ),
           ),
         );
