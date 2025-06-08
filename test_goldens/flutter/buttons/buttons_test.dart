@@ -25,11 +25,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(ElevatedButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden();
   });
 
@@ -50,11 +50,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(TextButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden();
   });
 
@@ -84,11 +84,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(IconButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden();
   });
 
@@ -109,11 +109,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden();
   });
 
@@ -145,11 +145,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden(
           qrCodeColor: Colors.white,
           qrCodeBackgroundColor: const Color(0xFF035db8),
@@ -165,9 +165,11 @@ void main() {
 
     await Gallery(
       tester,
-      sceneName: "button_extended_fab_gallery",
+      directory: Directory("."),
+      fileName: "button_extended_fab_gallery",
+      sceneDescription: "FAB Gallery",
       layout: SceneLayout.row,
-      itemDecorator: (context, child) {
+      itemScaffold: (context, child) {
         return FlutterWidgetScaffold(
           child: child,
         );

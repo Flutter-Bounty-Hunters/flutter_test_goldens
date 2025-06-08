@@ -4,9 +4,10 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
-import 'package:flutter/material.dart' hide Image;
 import 'package:flutter/material.dart' as m;
+import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/golden_bricks.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -15,9 +16,11 @@ import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/goldens/pixel_comparisons.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
+import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
+import 'package:path/path.dart';
 import 'package:qr_bar_code/code/code.dart';
 
 /// A golden builder that builds independent widget tree UIs and then either
@@ -26,20 +29,25 @@ import 'package:qr_bar_code/code/code.dart';
 class Gallery {
   Gallery(
     this._tester, {
-    required String sceneName,
+    Directory? directory,
+    required String fileName,
+    required String sceneDescription,
     required SceneLayout layout,
     GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
     GalleryItemDecorator? itemDecorator,
     Widget? goldenBackground,
     m.Color qrCodeColor = m.Colors.black,
     m.Color qrCodeBackgroundColor = m.Colors.white,
-  })  : _sceneName = sceneName,
+  })  : _fileName = fileName,
+        _sceneDescription = sceneDescription,
         _layout = layout,
         _itemScaffold = itemScaffold,
         _itemDecorator = itemDecorator,
         _goldenBackground = goldenBackground,
         _qrCodeColor = qrCodeColor,
-        _qrCodeBackgroundColor = qrCodeBackgroundColor;
+        _qrCodeBackgroundColor = qrCodeBackgroundColor {
+    _directory = directory ?? defaultGoldenDirectory;
+  }
 
   final WidgetTester _tester;
 
@@ -54,9 +62,14 @@ class Gallery {
   /// All screenshots within this scene.
   final _items = <GalleryItem>[];
 
-  /// The name of the overall golden scene, which may includes many individual
-  /// goldens.
-  final String _sceneName;
+  /// The directory where the golden scene file will be saved.
+  late final Directory _directory;
+
+  /// The file name for the golden scene file, which will be saved in [_directory].
+  final String _fileName;
+
+  /// A human readable description of what's in this scene.
+  final String _sceneDescription;
 
   /// The layout to use to position all the items in this scene.
   final SceneLayout _layout;
@@ -78,6 +91,7 @@ class Gallery {
       GalleryItem.withWidget(
         id: id,
         description: description,
+        boundsFinder: boundsFinder,
         child: widget,
       ),
     );
@@ -96,6 +110,7 @@ class Gallery {
       GalleryItem.withBuilder(
         id: id,
         description: description,
+        boundsFinder: boundsFinder,
         builder: builder,
       ),
     );
@@ -130,6 +145,7 @@ class Gallery {
       GalleryItem.withPumper(
         id: id,
         description: description,
+        boundsFinder: boundsFinder,
         pumper: pumper,
       ),
     );
@@ -140,10 +156,10 @@ class Gallery {
   /// Either renders a new golden to a scene file, or compares new screenshots against an existing
   /// golden scene file.
   Future<void> renderOrCompareGolden() async {
-    FtgLog.pipeline.info("Rendering or comparing golden - $_sceneName");
+    FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
 
     // Build each gallery item and screenshot it.
-    final camera = GoldenCamera(_tester);
+    final camera = GoldenCamera();
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
 
@@ -155,14 +171,12 @@ class Gallery {
         await _tester.pumpWidget(
           _itemScaffold(
             _tester,
-            GoldenImageBounds(
-              child: _itemDecorator != null
-                  ? _itemDecorator.call(
-                      _tester,
-                      Builder(builder: item.builder!),
-                    )
-                  : Builder(builder: item.builder!),
-            ),
+            _itemDecorator != null
+                ? _itemDecorator.call(
+                    _tester,
+                    Builder(builder: item.builder!),
+                  )
+                : Builder(builder: item.builder!),
           ),
         );
       } else {
@@ -170,14 +184,12 @@ class Gallery {
         await _tester.pumpWidget(
           _itemScaffold(
             _tester,
-            GoldenImageBounds(
-              child: _itemDecorator != null
-                  ? _itemDecorator.call(
-                      _tester,
-                      item.child!,
-                    )
-                  : item.child!,
-            ),
+            _itemDecorator != null
+                ? _itemDecorator.call(
+                    _tester,
+                    item.child!,
+                  )
+                : item.child!,
           ),
         );
       }
@@ -190,7 +202,7 @@ class Gallery {
         reason: "Failed to find a render object for gallery item '${item.description}'",
       );
 
-      await camera.takePhoto(item.boundsFinder, item.description);
+      await camera.takePhoto(item.description, item.boundsFinder);
     }
 
     // Lay out gallery items in the desired layout.
@@ -237,15 +249,15 @@ class Gallery {
 
     await _tester.pumpAndSettle();
 
-    final goldenFileName = "$_sceneName.png";
+    final goldenFilePath = File("${_directory.path}$separator$_fileName.png");
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
       FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
-      await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
+      await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFilePath.path));
     } else {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
-      await _compareGoldens(_tester, goldenFileName, find.byType(GoldenSceneBounds));
+      await _compareGoldens(_tester, goldenFilePath, find.byType(GoldenSceneBounds));
       FtgLog.pipeline.finer("Done comparing goldens for gallery");
     }
 
@@ -363,9 +375,9 @@ class Gallery {
     );
   }
 
-  Future<void> _compareGoldens(WidgetTester tester, String existingGoldenFileName, Finder goldenBounds) async {
+  Future<void> _compareGoldens(WidgetTester tester, File existingGoldenFileName, Finder goldenBounds) async {
     final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
-    final goldenFile = File("$testFileDirectory$existingGoldenFileName");
+    final goldenFile = File("$testFileDirectory${existingGoldenFileName.path}");
 
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
@@ -568,10 +580,21 @@ class GalleryItem {
   final Widget? child;
 }
 
+/// The ancestor widget tree for every item in a gallery, unless overridden by
+/// the gallery configuration.
 Widget defaultGalleryItemScaffold(WidgetTester tester, Widget content) {
   return MaterialApp(
     home: Scaffold(
-      body: content,
+      body: m.Builder(builder: (context) {
+        return DefaultTextStyle(
+          style: DefaultTextStyle.of(context).style.copyWith(
+                fontFamily: goldenBricks,
+              ),
+          child: Center(
+            child: GoldenImageBounds(child: content),
+          ),
+        );
+      }),
     ),
     debugShowCheckedModeBanner: false,
   );

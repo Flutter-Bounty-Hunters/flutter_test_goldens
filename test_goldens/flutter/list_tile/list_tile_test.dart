@@ -32,11 +32,11 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(ListTile))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .renderOrCompareGolden();
   });
 }

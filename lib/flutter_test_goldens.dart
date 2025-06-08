@@ -10,5 +10,6 @@ export 'src/scenes/film_strip.dart';
 export 'src/scenes/gallery.dart';
 export 'src/scenes/golden_scene.dart';
 export 'src/scenes/scene_layout.dart';
+export 'src/scenes/single_shot.dart';
 export 'src/logging.dart';
 export 'src/test_runners.dart';
