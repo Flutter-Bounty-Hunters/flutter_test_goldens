@@ -46,11 +46,9 @@ void main() {
                 await tester.pumpWidget(
                   scaffold(
                     tester,
-                    GoldenImageBounds(
-                      child: decorator != null //
-                          ? decorator.call(tester, itemWidget)
-                          : itemWidget,
-                    ),
+                    decorator != null //
+                        ? decorator.call(tester, itemWidget)
+                        : itemWidget,
                   ),
                 );
               },
