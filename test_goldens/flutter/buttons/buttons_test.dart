@@ -11,7 +11,11 @@ void main() {
   testGoldenSceneOnMac("elevated button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "button_elevated_interactions",
+      layout: SceneLayout.row,
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -21,21 +25,22 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(ElevatedButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden(
-          goldenName: "button_elevated_interactions",
-          layout: SceneLayout.row,
-        );
+        .takePhoto("pressed", find.byKey(goldenKey))
+        .renderOrCompareGolden();
   });
 
   testGoldenSceneOnMac("text button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "button_text_interactions",
+      layout: SceneLayout.row,
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -45,21 +50,22 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(TextButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden(
-          goldenName: "button_text_interactions",
-          layout: SceneLayout.row,
-        );
+        .takePhoto("pressed", find.byKey(goldenKey))
+        .renderOrCompareGolden();
   });
 
   testGoldenSceneOnMac("icon button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "button_icon_interactions",
+      layout: SceneLayout.row,
+    )
         .setupWithPump(() {
           return MaterialApp(
             theme: ThemeData(
@@ -78,21 +84,22 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(IconButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden(
-          goldenName: "button_icon_interactions",
-          layout: SceneLayout.row,
-        );
+        .takePhoto("pressed", find.byKey(goldenKey))
+        .renderOrCompareGolden();
   });
 
   testGoldenSceneOnMac("floating action button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "button_fab_interactions",
+      layout: SceneLayout.row,
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -102,15 +109,12 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden(
-          goldenName: "button_fab_interactions",
-          layout: SceneLayout.row,
-        );
+        .takePhoto("pressed", find.byKey(goldenKey))
+        .renderOrCompareGolden();
   });
 
   testGoldenSceneOnMac("extended floating action button interactions", (tester) async {
@@ -122,7 +126,15 @@ void main() {
       await precacheImage(imageProvider, tester.binding.rootElement!);
     });
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "button_extended_fab_interactions",
+      layout: SceneLayout.row,
+      goldenBackground: Image.memory(
+        backgroundImageBytes,
+        fit: BoxFit.cover,
+      ),
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -133,19 +145,12 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
-        .renderOrCompareGolden(
-          goldenName: "button_extended_fab_interactions",
-          layout: SceneLayout.row,
-          goldenBackground: Image.memory(
-            backgroundImageBytes,
-            fit: BoxFit.cover,
-          ),
-        );
+        .takePhoto("pressed", find.byKey(goldenKey))
+        .renderOrCompareGolden();
   });
 
   testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
@@ -157,7 +162,9 @@ void main() {
 
     await Gallery(
       tester,
-      sceneName: "button_extended_fab_gallery",
+      directory: Directory("."),
+      fileName: "button_extended_fab_gallery",
+      sceneDescription: "FAB Gallery",
       layout: SceneLayout.row,
       itemScaffold: (context, child) {
         return FlutterWidgetScaffold(

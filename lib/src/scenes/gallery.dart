@@ -6,6 +6,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/golden_bricks.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -15,9 +16,11 @@ import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/goldens/pixel_comparisons.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
+import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
+import 'package:path/path.dart';
 
 /// A golden builder that builds independent widget tree UIs and then either
 /// renders those into a single scene file, or compares them against an existing
@@ -25,16 +28,21 @@ import 'package:image/image.dart';
 class Gallery {
   Gallery(
     this._tester, {
-    required String sceneName,
+    Directory? directory,
+    required String fileName,
+    required String sceneDescription,
     required SceneLayout layout,
     GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
     GalleryItemDecorator? itemDecorator = defaultGalleryItemDecorator,
     Widget? goldenBackground,
-  })  : _sceneName = sceneName,
+  })  : _fileName = fileName,
+        _sceneDescription = sceneDescription,
         _layout = layout,
         _itemScaffold = itemScaffold,
         _itemDecorator = itemDecorator,
-        _goldenBackground = goldenBackground;
+        _goldenBackground = goldenBackground {
+    _directory = directory ?? defaultGoldenDirectory;
+  }
 
   final WidgetTester _tester;
 
@@ -49,9 +57,14 @@ class Gallery {
   /// All screenshots within this scene.
   final _items = <GalleryItem>[];
 
-  /// The name of the overall golden scene, which may includes many individual
-  /// goldens.
-  final String _sceneName;
+  /// The directory where the golden scene file will be saved.
+  late final Directory _directory;
+
+  /// The file name for the golden scene file, which will be saved in [_directory].
+  final String _fileName;
+
+  /// A human readable description of what's in this scene.
+  final String _sceneDescription;
 
   /// The layout to use to position all the items in this scene.
   final SceneLayout _layout;
@@ -70,6 +83,7 @@ class Gallery {
       GalleryItem.withWidget(
         id: id,
         description: description,
+        boundsFinder: boundsFinder,
         child: widget,
       ),
     );
@@ -88,6 +102,7 @@ class Gallery {
       GalleryItem.withBuilder(
         id: id,
         description: description,
+        boundsFinder: boundsFinder,
         builder: builder,
       ),
     );
@@ -122,6 +137,7 @@ class Gallery {
       GalleryItem.withPumper(
         id: id,
         description: description,
+        boundsFinder: boundsFinder,
         pumper: pumper,
       ),
     );
@@ -132,10 +148,10 @@ class Gallery {
   /// Either renders a new golden to a scene file, or compares new screenshots against an existing
   /// golden scene file.
   Future<void> renderOrCompareGolden() async {
-    FtgLog.pipeline.info("Rendering or comparing golden - $_sceneName");
+    FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
 
     // Build each gallery item and screenshot it.
-    final camera = GoldenCamera(_tester);
+    final camera = GoldenCamera();
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
 
@@ -147,14 +163,12 @@ class Gallery {
         await _tester.pumpWidget(
           _itemScaffold(
             _tester,
-            GoldenImageBounds(
-              child: _itemDecorator != null
-                  ? _itemDecorator.call(
-                      _tester,
-                      Builder(builder: item.builder!),
-                    )
-                  : Builder(builder: item.builder!),
-            ),
+            _itemDecorator != null
+                ? _itemDecorator.call(
+                    _tester,
+                    Builder(builder: item.builder!),
+                  )
+                : Builder(builder: item.builder!),
           ),
         );
       } else {
@@ -162,14 +176,12 @@ class Gallery {
         await _tester.pumpWidget(
           _itemScaffold(
             _tester,
-            GoldenImageBounds(
-              child: _itemDecorator != null
-                  ? _itemDecorator.call(
-                      _tester,
-                      item.child!,
-                    )
-                  : item.child!,
-            ),
+            _itemDecorator != null
+                ? _itemDecorator.call(
+                    _tester,
+                    item.child!,
+                  )
+                : item.child!,
           ),
         );
       }
@@ -182,7 +194,7 @@ class Gallery {
         reason: "Failed to find a render object for gallery item '${item.description}'",
       );
 
-      await camera.takePhoto(item.boundsFinder, item.description);
+      await camera.takePhoto(item.description, item.boundsFinder);
     }
 
     // Lay out gallery items in the desired layout.
@@ -214,12 +226,11 @@ class Gallery {
 
     await _tester.pumpAndSettle();
 
-    final goldenFileName = "$_sceneName.png";
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
       await _updateGoldenScene(
         _tester,
-        goldenFileName,
+        _fileName,
         sceneMetadata,
       );
     } else {
@@ -228,7 +239,7 @@ class Gallery {
       await _compareGoldens(
         _tester,
         sceneMetadata,
-        goldenFileName,
+        _fileName,
         find.byType(GoldenSceneBounds),
       );
       FtgLog.pipeline.finer("Done comparing goldens for gallery");
@@ -324,10 +335,10 @@ class Gallery {
     GoldenSceneMetadata sceneMetadata,
   ) async {
     FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
-    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile("$goldenFileName.png"));
 
-    final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
-    final goldenFile = File("$testFileDirectory$goldenFileName");
+    final goldenFile = File(_goldenFilePath());
+    print("Golden file path: ${goldenFile.path}");
     var pngData = goldenFile.readAsBytesSync();
     pngData = pngData.copyWithTextMetadata(
       "flutter_test_goldens",
@@ -344,8 +355,7 @@ class Gallery {
   ) async {
     // Extract scene metadata and golden images from image file.
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
-    final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
-    final goldenFile = File("$testFileDirectory$existingGoldenFileName");
+    final goldenFile = File(_goldenFilePath());
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
@@ -374,8 +384,7 @@ class Gallery {
         }
 
         FtgLog.pipeline.fine("Painting a golden failure: $mismatch");
-        final failureDirectory = Directory("${testFileDirectory}failures");
-        failureDirectory.createSync();
+        Directory(_goldenFailureDirectoryPath).createSync();
 
         await tester.runAsync(() async {
           final goldenWidth = mismatch.golden!.image.width;
@@ -449,7 +458,7 @@ class Gallery {
           }
 
           await encodePngFile(
-            "${failureDirectory.path}/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
+            "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
             failureImage,
           );
         });
@@ -460,6 +469,16 @@ class Gallery {
       FtgLog.pipeline.info("No golden mismatches found");
     }
   }
+
+  String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
+
+  /// Calculates and returns a complete file path to the golden file specified by
+  /// this gallery, which consists of the current test file directory + an optional
+  /// golden subdirectory + the golden file name.
+  String _goldenFilePath([bool includeExtension = true]) =>
+      "$_testFileDirectory${_directory.path}$separator$_fileName${includeExtension ? ".png" : ""}";
+
+  String get _goldenFailureDirectoryPath => "${_testFileDirectory}failures";
 }
 
 /// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
@@ -547,10 +566,21 @@ class GalleryItem {
   final Widget? child;
 }
 
+/// The ancestor widget tree for every item in a gallery, unless overridden by
+/// the gallery configuration.
 Widget defaultGalleryItemScaffold(WidgetTester tester, Widget content) {
   return MaterialApp(
     home: Scaffold(
-      body: content,
+      body: Builder(builder: (context) {
+        return DefaultTextStyle(
+          style: DefaultTextStyle.of(context).style.copyWith(
+                fontFamily: goldenBricks,
+              ),
+          child: Center(
+            child: GoldenImageBounds(child: content),
+          ),
+        );
+      }),
     ),
     debugShowCheckedModeBanner: false,
   );

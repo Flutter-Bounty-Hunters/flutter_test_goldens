@@ -8,7 +8,11 @@ void main() {
   testGoldenSceneOnMac("text field interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(tester)
+    await FilmStrip(
+      tester,
+      goldenName: "textfield_interactions",
+      layout: SceneLayout.column,
+    )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
@@ -18,21 +22,18 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(TextField))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .releaseHover()
-        .takePhoto(find.byKey(goldenKey), "placed caret")
+        .takePhoto("placed caret", find.byKey(goldenKey))
         .modifyScene((tester, testContext) async {
           await tester.enterText(find.byType(TextField), "Hello, world!");
           await tester.pumpAndSettle();
         })
-        .takePhoto(find.byKey(goldenKey), "typed text")
-        .renderOrCompareGolden(
-          goldenName: "textfield_interactions",
-          layout: SceneLayout.column,
-        );
+        .takePhoto("typed text", find.byKey(goldenKey))
+        .renderOrCompareGolden();
   });
 }
