@@ -29,7 +29,7 @@ extension PngMetadata on PngData {
 
       // Parse iTXt chunk format
       final reader = _ChunkReader(chunkData);
-      final keyword = reader.readNullTerminatedString();
+      final keyword = reader.readNullTerminatedString(ascii);
       final compressionFlag = reader.readByte();
       // ignore: unused_local_variable
       final compressionMethod = reader.readByte();
@@ -79,7 +79,7 @@ extension PngMetadata on PngData {
   }
 
   List<int> _makeITXtChunk(String keyword, String text) {
-    final keywordBytes = utf8.encode(keyword);
+    final keywordBytes = ascii.encode(keyword);
     final nullSeparator = [0];
     final compressionFlag = [0]; // 0 = uncompressed
     final compressionMethod = [0];
@@ -135,12 +135,12 @@ class _ChunkReader {
 
   int readByte() => data[offset++];
 
-  String readNullTerminatedString() {
+  String readNullTerminatedString([Codec codec = utf8]) {
     final start = offset;
     while (offset < data.length && data[offset] != 0) {
       offset++;
     }
-    final str = utf8.decode(data.sublist(start, offset));
+    final str = codec.decode(data.sublist(start, offset));
     offset++; // skip null
     return str;
   }
