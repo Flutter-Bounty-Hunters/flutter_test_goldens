@@ -19,18 +19,18 @@ void main() {
             ),
           );
         })
-        .takePhoto(find.byKey(goldenKey), "idle")
+        .takePhoto("idle", find.byKey(goldenKey))
         .hoverOver(find.byType(TextField))
-        .takePhoto(find.byKey(goldenKey), "hover")
+        .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
-        .takePhoto(find.byKey(goldenKey), "pressed")
+        .takePhoto("pressed", find.byKey(goldenKey))
         .releaseHover()
-        .takePhoto(find.byKey(goldenKey), "placed caret")
+        .takePhoto("placed caret", find.byKey(goldenKey))
         .modifyScene((tester, testContext) async {
           await tester.enterText(find.byType(TextField), "Hello, world!");
           await tester.pumpAndSettle();
         })
-        .takePhoto(find.byKey(goldenKey), "typed text")
+        .takePhoto("typed text", find.byKey(goldenKey))
         .renderOrCompareGolden(
           goldenName: "textfield_interactions",
           layout: SceneLayout.column,

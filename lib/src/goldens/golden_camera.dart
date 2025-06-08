@@ -3,18 +3,22 @@ import 'dart:ui';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
+
 /// A camera for taking golden screenshots and storing them for later reference.
 class GoldenCamera {
-  GoldenCamera(this._tester);
-
-  final WidgetTester _tester;
+  GoldenCamera();
 
   List<GoldenPhoto> get photos => List.from(_photos);
   final _photos = <GoldenPhoto>[];
 
   /// Takes a screenshot of the given [finder] and stores it in [photos]
   /// along with its [description].
-  Future<void> takePhoto(Finder finder, String description) async {
+  ///
+  /// {@macro golden_image_bounds_default_finder}
+  Future<void> takePhoto(String description, [Finder? finder]) async {
+    finder = finder ?? find.byType(GoldenImageBounds);
+
     expect(finder, findsOne);
 
     final renderObject = finder.evaluate().first.findRenderObject();

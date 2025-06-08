@@ -62,12 +62,18 @@ class FilmStrip {
   }
 
   /// Take a golden photo screenshot of the current Flutter UI.
-  FilmStrip takePhoto(Finder photoBoundsFinder, String description) {
+  ///
+  /// {@template golden_image_bounds_default_finder}
+  /// If no [finder] is provided, then it's assumed that somewhere in the widget tree is
+  /// a [GoldenImageBounds] widget. That widget is used as the boundary for this photo.
+  /// If no such widget exists, an error is thrown.
+  /// {@endtemplate}
+  FilmStrip takePhoto(String description, [Finder? photoBoundsFinder]) {
     if (_setup == null) {
       throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
     }
 
-    _steps.add(_FilmStripPhotoRequest(photoBoundsFinder, description));
+    _steps.add(_FilmStripPhotoRequest(photoBoundsFinder ?? find.byType(GoldenImageBounds), description));
 
     return this;
   }
@@ -137,7 +143,7 @@ class FilmStrip {
     // anti-aliasing and other artifacts from fractional pixel offsets.
     _tester.view.devicePixelRatio = 1.0;
 
-    final camera = GoldenCamera(_tester);
+    final camera = GoldenCamera();
     final testContext = FilmStripTestContext();
 
     // Setup the scene.
@@ -163,7 +169,7 @@ class FilmStrip {
               "Failed to find a render object for photo '${step.description}', using finder '${step.photoBoundsFinder}'",
         );
 
-        await camera.takePhoto(step.photoBoundsFinder, step.description);
+        await camera.takePhoto(step.description, step.photoBoundsFinder);
 
         continue;
       }
