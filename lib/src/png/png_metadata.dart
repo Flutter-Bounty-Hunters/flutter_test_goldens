@@ -34,7 +34,7 @@ extension PngMetadata on PngData {
       // ignore: unused_local_variable
       final compressionMethod = reader.readByte();
       // ignore: unused_local_variable
-      final languageTag = reader.readNullTerminatedString();
+      final languageTag = reader.readNullTerminatedString(ascii);
       // ignore: unused_local_variable
       final translatedKeyword = reader.readNullTerminatedString();
       final textBytes = reader.readRemaining();
