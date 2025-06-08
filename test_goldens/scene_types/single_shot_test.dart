@@ -1,29 +1,109 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_goldens/src/scenes/single_shot.dart';
 
 void main() {
   group("Scene types > single-shot >", () {
+    testGoldenScene("all defaults", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
+          .run(tester);
+    });
+
+    testGoldenScene("only decorated", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
+          .withDecoration(defaultGalleryItemDecorator)
+          .run(tester);
+    });
+
+    testGoldenScene("only scaffolded", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
+          .inScaffold(defaultGalleryItemScaffold)
+          .run(tester);
+    });
+
+    testGoldenScene("only bounds finder", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
+          .findBounds(find.byType(GoldenImageBounds))
+          .run(tester);
+    });
+
+    testGoldenScene("only setup", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
+          .withSetup((tester) async {
+        // no-op
+      }).run(tester);
+    });
+
+    testGoldenScene("fully specified", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
+          .withDecoration(defaultGalleryItemDecorator)
+          .inScaffold(defaultGalleryItemScaffold)
+          .withSetup((tester) async {
+            // no-op
+          })
+          .findBounds(find.byType(GoldenImageBounds))
+          .run(tester);
+    });
+
     testGoldenScene(
-      "item from a widget",
+      "with a red border",
       (tester) async {
-        await SingleShot.fromWidget(
-          tester,
-          directory: Directory("."),
-          fileName: "single_shot_scene",
-          description: "A single-shot scene",
-          itemDecorator: (context, child) => Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              border: Border.all(width: 5, color: Colors.red),
-            ),
-            child: child,
-          ),
-          widget: Text("Hello, world!"),
-        ).renderOrCompareGolden();
+        SingleShot(
+          "With a red border",
+          fileName: "single_shot_scene_with_red_border",
+        )
+            .fromWidget(
+              Text("Hello, world!"),
+            )
+            .withDecoration(
+              (context, child) => Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  border: Border.all(width: 5, color: Colors.red),
+                ),
+                child: child,
+              ),
+            )
+            .run(tester);
+
+        // await SingleShot.fromWidget(
+        //   tester,
+        //   directory: Directory("."),
+        //   fileName: "single_shot_scene",
+        //   description: "A single-shot scene",
+        //   itemDecorator: (context, child) => Container(
+        //     padding: const EdgeInsets.all(24),
+        //     decoration: BoxDecoration(
+        //       border: Border.all(width: 5, color: Colors.red),
+        //     ),
+        //     child: child,
+        //   ),
+        //   widget: Text("Hello, world!"),
+        // ).renderOrCompareGolden();
       },
     );
   });
