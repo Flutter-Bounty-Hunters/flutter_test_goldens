@@ -19,53 +19,95 @@ extension PngMetadata on PngData {
       final dataEnd = dataStart + dataLength;
 
       // Move data offset forward.
-      offset = dataEnd + 4; // +4 to skip CRC
+      offset += 12 + dataLength; // length + type + data + CRC
 
       if (chunkType != 'iTXt') {
         continue;
       }
 
-      final data = sublist(dataStart, dataEnd);
-      final separator = data.indexOf(0);
-      if (separator <= 0) {
-        continue;
-      }
+      final chunkData = sublist(dataStart, dataEnd);
 
-      result[utf8.decode(data.sublist(0, separator))] = utf8.decode(data.sublist(separator + 1));
+      // Parse iTXt chunk format
+      final reader = _ChunkReader(chunkData);
+      final keyword = reader.readNullTerminatedString();
+      final compressionFlag = reader.readByte();
+      // ignore: unused_local_variable
+      final compressionMethod = reader.readByte();
+      // ignore: unused_local_variable
+      final languageTag = reader.readNullTerminatedString();
+      // ignore: unused_local_variable
+      final translatedKeyword = reader.readNullTerminatedString();
+      final textBytes = reader.readRemaining();
+
+      if (compressionFlag != 0) {
+        throw Exception(
+          "Tried to read PNG but one if its iTXt fields is compressed. flutter_test_goldens does not currently support reading/writing compressed text.",
+        );
+      }
+      final text = utf8.decode(textBytes);
+
+      result[keyword] = text;
     }
 
     return result;
   }
 
   Uint8List copyWithTextMetadata(String key, String value) {
-    final keyUtf8 = utf8.encode(key);
+    final png = Uint8List.fromList(this);
+    final output = BytesBuilder();
 
-    final valueUtf8 = utf8.encode(value);
-    final valueOffset = keyUtf8.length + 1;
+    // Write PNG header (8 bytes)
+    output.add(png.sublist(0, 8));
 
-    final totalLength = valueOffset + valueUtf8.length;
+    // Iterate through chunks
+    int offset = 8;
+    while (offset < png.length) {
+      final length = _readUint32(offset);
+      final type = utf8.decode(png.sublist(offset + 4, offset + 8));
 
-    final chunkData = Uint8List(totalLength)
-      ..setRange(0, keyUtf8.length, keyUtf8)
-      ..[keyUtf8.length] = 0 // `0` is the key/value divider.
-      ..setRange(valueOffset, valueOffset + valueUtf8.length, valueUtf8);
+      if (type == 'IEND') {
+        // Insert iTXt chunk BEFORE IEND
+        output.add(_makeITXtChunk(key, value));
+      }
+
+      // Copy the original chunk (length + type + data + CRC)
+      output.add(png.sublist(offset, offset + length + 12));
+      offset += length + 12;
+    }
+
+    return output.toBytes();
+  }
+
+  List<int> _makeITXtChunk(String keyword, String text) {
+    final keywordBytes = utf8.encode(keyword);
+    final nullSeparator = [0];
+    final compressionFlag = [0]; // 0 = uncompressed
+    final compressionMethod = [0];
+    final textBytes = utf8.encode(text);
+
+    final chunkData = BytesBuilder();
+    chunkData.add(keywordBytes);
+    chunkData.add(nullSeparator);
+    chunkData.add(compressionFlag);
+    chunkData.add(compressionMethod);
+    chunkData.add(nullSeparator); // languageTag
+    chunkData.add(nullSeparator); // translatedKeyword
+    chunkData.add(textBytes);
 
     final chunkType = utf8.encode('iTXt');
-    final chunkLengthBytes = ByteData(4)..setUint32(0, chunkData.length);
-    final crc = _crc32(Uint8List.fromList(chunkType + chunkData));
-    final crcBytes = ByteData(4)..setUint32(0, crc);
+    final dataBytes = chunkData.toBytes();
 
-    // Find position before IEND chunk.
-    final iendOffset = _findIendChunkOffset();
+    final crcInput = BytesBuilder();
+    crcInput.add(chunkType);
+    crcInput.add(dataBytes);
+    final crc = _crc32(crcInput.toBytes());
 
-    return Uint8List.fromList([
-      ...sublist(0, iendOffset),
-      ...chunkLengthBytes.buffer.asUint8List(),
-      ...chunkType,
-      ...chunkData,
-      ...crcBytes.buffer.asUint8List(),
-      ...sublist(iendOffset),
-    ]);
+    final result = BytesBuilder();
+    result.add(_writeUint32(dataBytes.length));
+    result.add(chunkType);
+    result.add(dataBytes);
+    result.add(_writeUint32(crc));
+    return result.toBytes();
   }
 
   int _crc32(Uint8List data) {
@@ -76,22 +118,34 @@ extension PngMetadata on PngData {
     return crc ^ 0xFFFFFFFF;
   }
 
-  int _findIendChunkOffset() {
-    int offset = 8;
-    while (offset < length) {
-      final dataLength = _readUint32(offset);
-      final type = utf8.decode(sublist(offset + 4, offset + 8));
-      if (type == 'IEND') {
-        return offset;
-      }
+  int _readUint32(int offset) => ByteData.sublistView(this, offset, offset + 4).getUint32(0);
 
-      offset += 12 + dataLength;
+  List<int> _writeUint32(int value) {
+    final bytes = ByteData(4);
+    bytes.setUint32(0, value);
+    return bytes.buffer.asUint8List();
+  }
+}
+
+class _ChunkReader {
+  _ChunkReader(this.data);
+
+  final Uint8List data;
+  int offset = 0;
+
+  int readByte() => data[offset++];
+
+  String readNullTerminatedString() {
+    final start = offset;
+    while (offset < data.length && data[offset] != 0) {
+      offset++;
     }
-
-    throw FormatException("No IEND chunk found");
+    final str = utf8.decode(data.sublist(start, offset));
+    offset++; // skip null
+    return str;
   }
 
-  int _readUint32(int offset) => ByteData.sublistView(this, offset, offset + 4).getUint32(0);
+  List<int> readRemaining() => data.sublist(offset);
 }
 
 // Don't delete this. It generates the `_crc32Table`. We hard-code the table to

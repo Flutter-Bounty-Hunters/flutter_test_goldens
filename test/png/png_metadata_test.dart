@@ -8,11 +8,15 @@ void main() {
     // To inspect a PNG's metadata, you can use `exiftool`, which is a CLI app.
     // > exiftool my_image.png
 
-    // To **add** a tEXt key/value pair to a PNG, use pngcrush
-    // > pngcrush -text b "my key" "my value" original_image.png new_image.png
+    // To **add** an iTXt key/value pair to a PNG, use pngcrush
+    //
+    // pngcrush -ow \
+    //   -itxt b flutter_test_goldens 0 0 "This is plain text stored as PNG metadata" \
+    //   -itxt b second_chunk 0 0 "This is the 2nd iTXt chunk in this PNG" \
+    //   example_with_iTXt.png
 
-    test("can read tEXt", () {
-      final pngData = File("test/png/reference_pngs/example_with_tEXt.png").readAsBytesSync();
+    test("can read iTXt", () {
+      final pngData = File("test/png/reference_pngs/example_with_iTXt.png").readAsBytesSync();
       final metadata = pngData.readTextMetadata();
 
       expect(
@@ -20,19 +24,19 @@ void main() {
         {
           // Note: It seems that encoding converts keys to lowercase and replaces spaces with "_".
           "flutter_test_goldens": "This is plain text stored as PNG metadata",
-          "second_chunk": "This is the 2nd tEXt chunk in this PNG",
+          "second_chunk": "This is the 2nd iTXt chunk in this PNG",
         },
       );
     });
 
-    test("can write tEXt", () {
-      final pngData = File("test/png/reference_pngs/example_without_tEXt.png").readAsBytesSync();
+    test("can write iTXt", () {
+      final pngData = File("test/png/reference_pngs/example_without_metadata.png").readAsBytesSync();
       var metadata = pngData.readTextMetadata();
 
       // Ensure original PNG data has no tEXt, before we try to add some.
       expect(metadata, isEmpty);
 
-      // Add a couple tEXt chunks.
+      // Add a couple iTXt chunks.
       var newData = pngData.copyWithTextMetadata("key1", "This is the first value");
       newData = newData.copyWithTextMetadata("key2", "This is the second value");
 

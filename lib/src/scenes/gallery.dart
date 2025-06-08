@@ -338,7 +338,6 @@ class Gallery {
     await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile("$goldenFileName.png"));
 
     final goldenFile = File(_goldenFilePath());
-    print("Golden file path: ${goldenFile.path}");
     var pngData = goldenFile.readAsBytesSync();
     pngData = pngData.copyWithTextMetadata(
       "flutter_test_goldens",
