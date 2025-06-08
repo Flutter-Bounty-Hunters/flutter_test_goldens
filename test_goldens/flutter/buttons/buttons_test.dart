@@ -146,15 +146,10 @@ void main() {
           );
         })
         .takePhoto(find.byKey(goldenKey), "idle")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
-
         .hoverOver(find.byType(FloatingActionButton))
         .takePhoto(find.byKey(goldenKey), "hover")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "idle")
-
         .pressHover()
         .takePhoto(find.byKey(goldenKey), "pressed")
-        // .takePhoto(find.byType(FlutterWidgetScaffold), "pressed")
         .renderOrCompareGolden(
           qrCodeColor: Colors.white,
           qrCodeBackgroundColor: const Color(0xFF035db8),
