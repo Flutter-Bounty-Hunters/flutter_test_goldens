@@ -150,10 +150,7 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden(
-          qrCodeColor: Colors.white,
-          qrCodeBackgroundColor: const Color(0xFF035db8),
-        );
+        .renderOrCompareGolden();
   });
 
   testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
@@ -178,8 +175,6 @@ void main() {
         backgroundImageBytes,
         fit: BoxFit.cover,
       ),
-      qrCodeColor: Colors.white,
-      qrCodeBackgroundColor: const Color(0xFF035db8),
     )
         .itemFromWidget(
           id: "1",
