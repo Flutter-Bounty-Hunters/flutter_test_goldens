@@ -41,6 +41,10 @@ navigation:
       tag: scenes
       sortBy: navOrder
 
-    - title: Golden Metadata
-      tag: metadata
+    - title: How it Works
+      tag: how-it-works
+      sortBy: navOrder
+
+    - title: Flutter's Implementation
+      tag: flutter-implementation
       sortBy: navOrder

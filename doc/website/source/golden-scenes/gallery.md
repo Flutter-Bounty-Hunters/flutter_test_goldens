@@ -1,8 +1,8 @@
 ---
 title: Gallery
-navOrder: 1
+navOrder: 20
 ---
-A gallery is a golden scene, which includes a variety of different widgets
+A gallery is a Golden Scene, which includes a variety of different widgets
 and/or widget configurations.
 
 ```dart
