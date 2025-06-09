@@ -32,8 +32,8 @@ class Gallery {
     required String fileName,
     required String sceneDescription,
     required SceneLayout layout,
-    GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
-    GalleryItemDecorator? itemDecorator = defaultGalleryItemDecorator,
+    GoldenScaffold itemScaffold = defaultGalleryItemScaffold,
+    GoldenDecorator? itemDecorator = defaultGalleryItemDecorator,
     Widget? goldenBackground,
   })  : _fileName = fileName,
         _sceneDescription = sceneDescription,
@@ -49,10 +49,10 @@ class Gallery {
   /// A scaffold built around each item in this scene.
   ///
   /// Defaults to [defaultGalleryItemScaffold].
-  final GalleryItemScaffold _itemScaffold;
+  final GoldenScaffold _itemScaffold;
 
   /// A decoration applied to each item in this scene.
-  final GalleryItemDecorator? _itemDecorator;
+  final GoldenDecorator? _itemDecorator;
 
   /// All screenshots within this scene.
   final _items = <GalleryItem>[];
@@ -77,6 +77,7 @@ class Gallery {
     required String id,
     required String description,
     Finder? boundsFinder,
+    GoldenSetup? setup,
     required Widget widget,
   }) {
     _items.add(
@@ -84,6 +85,7 @@ class Gallery {
         id: id,
         description: description,
         boundsFinder: boundsFinder,
+        setup: setup,
         child: widget,
       ),
     );
@@ -96,6 +98,7 @@ class Gallery {
     required String id,
     required String description,
     Finder? boundsFinder,
+    GoldenSetup? setup,
     required WidgetBuilder builder,
   }) {
     _items.add(
@@ -103,6 +106,7 @@ class Gallery {
         id: id,
         description: description,
         boundsFinder: boundsFinder,
+        setup: setup,
         builder: builder,
       ),
     );
@@ -131,6 +135,7 @@ class Gallery {
     required String id,
     required String description,
     Finder? boundsFinder,
+    GoldenSetup? setup,
     required GalleryItemPumper pumper,
   }) {
     _items.add(
@@ -138,6 +143,7 @@ class Gallery {
         id: id,
         description: description,
         boundsFinder: boundsFinder,
+        setup: setup,
         pumper: pumper,
       ),
     );
@@ -185,6 +191,9 @@ class Gallery {
           ),
         );
       }
+
+      // Run the item's setup function, if there is one.
+      await item.setup?.call(_tester);
 
       expect(item.boundsFinder, findsOne);
       final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
@@ -489,26 +498,9 @@ class Gallery {
 /// {@macro gallery_item_pumper_requirements}
 typedef GalleryItemPumper = Future<void> Function(
   WidgetTester tester,
-  GalleryItemScaffold scaffold,
-  GalleryItemDecorator? decorator,
+  GoldenScaffold scaffold,
+  GoldenDecorator? decorator,
 );
-
-/// Scaffolds a gallery item, such as building a `MaterialApp` with a `Scaffold`.
-///
-/// {@template gallery_item_structure}
-/// The structure of a gallery item is as follows:
-///
-///     Gallery item scaffold
-///       GalleryImageBounds (the default repaint boundary)
-///         Gallery item decorator
-///           Gallery item (the content)
-/// {@endtemplate}
-typedef GalleryItemScaffold = Widget Function(WidgetTester tester, Widget content);
-
-/// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
-///
-/// {@macro gallery_item_structure}
-typedef GalleryItemDecorator = Widget Function(WidgetTester tester, Widget content);
 
 /// A single UI screenshot within a gallery of gallery items.
 class GalleryItem {
@@ -516,6 +508,7 @@ class GalleryItem {
     required this.id,
     required this.description,
     Finder? boundsFinder,
+    this.setup,
     required this.child,
   })  : pumper = null,
         builder = null {
@@ -526,6 +519,7 @@ class GalleryItem {
     required this.id,
     required this.description,
     Finder? boundsFinder,
+    this.setup,
     required this.builder,
   })  : pumper = null,
         child = null {
@@ -536,6 +530,7 @@ class GalleryItem {
     required this.id,
     required this.description,
     Finder? boundsFinder,
+    this.setup,
     required this.pumper,
   })  : builder = null,
         child = null {
@@ -551,6 +546,10 @@ class GalleryItem {
   /// [Finder] to locate the part of the subtree that should be screenshotted
   /// for this gallery item.
   late final Finder boundsFinder;
+
+  /// Optional function that runs after the [pumper], [builder], or [child] is pumped
+  /// into the widget tree, but before the screenshot is taken.
+  final GoldenSetup? setup;
 
   /// The [GalleryItemPumper] that creates this gallery item, or `null` if this gallery
   /// item is created with a [builder] or a [child].
