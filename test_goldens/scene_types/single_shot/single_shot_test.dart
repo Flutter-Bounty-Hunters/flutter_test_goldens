@@ -84,7 +84,7 @@ void main() {
     testGoldenScene(
       "with a red border",
       (tester) async {
-        SingleShot(
+        await SingleShot(
           "With a red border",
           fileName: "single_shot_scene_with_red_border",
         )
