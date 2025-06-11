@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
@@ -66,6 +68,16 @@ void main() {
             // no-op
           })
           .findBounds(find.byType(GoldenImageBounds))
+          .run(tester);
+    });
+
+    testGoldenScene("in ./goldens sub-directory", (tester) async {
+      await SingleShot(
+        "A single-shot scene",
+        directory: Directory("goldens"),
+        fileName: "single_shot_scene",
+      ) //
+          .fromWidget(Text("Hello, world!"))
           .run(tester);
     });
 

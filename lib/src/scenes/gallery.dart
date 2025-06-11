@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/golden_bricks.dart';
@@ -76,6 +77,7 @@ class Gallery {
   Gallery itemFromWidget({
     required String id,
     required String description,
+    TargetPlatform? platform,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required Widget widget,
@@ -84,6 +86,7 @@ class Gallery {
       GalleryItem.withWidget(
         id: id,
         description: description,
+        platform: platform,
         boundsFinder: boundsFinder,
         setup: setup,
         child: widget,
@@ -97,6 +100,7 @@ class Gallery {
   Gallery itemFromBuilder({
     required String id,
     required String description,
+    TargetPlatform? platform,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required WidgetBuilder builder,
@@ -105,6 +109,7 @@ class Gallery {
       GalleryItem.withBuilder(
         id: id,
         description: description,
+        platform: platform,
         boundsFinder: boundsFinder,
         setup: setup,
         builder: builder,
@@ -134,6 +139,7 @@ class Gallery {
   Gallery itemFromPumper({
     required String id,
     required String description,
+    TargetPlatform? platform,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required GalleryItemPumper pumper,
@@ -142,6 +148,7 @@ class Gallery {
       GalleryItem.withPumper(
         id: id,
         description: description,
+        platform: platform,
         boundsFinder: boundsFinder,
         setup: setup,
         pumper: pumper,
@@ -161,40 +168,32 @@ class Gallery {
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
 
+      // Simulate the desired platform for this item.
+      final previousPlatform = debugDefaultTargetPlatformOverride;
+      debugDefaultTargetPlatformOverride = item.platform ?? previousPlatform;
+
       if (item.pumper != null) {
         // Defer to the `pumper` to pump the entire widget tree for this gallery item.
         await item.pumper!.call(_tester, _itemScaffold, _itemDecorator);
       } else if (item.builder != null) {
         // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
         await _tester.pumpWidget(
-          _itemScaffold(
-            _tester,
-            _itemDecorator != null
-                ? _itemDecorator.call(
-                    _tester,
-                    Builder(builder: item.builder!),
-                  )
-                : Builder(builder: item.builder!),
-          ),
+          _buildItem(Builder(builder: item.builder!)),
         );
       } else {
         // Pump this gallery item, deferring to a `Widget` for the content.
         await _tester.pumpWidget(
-          _itemScaffold(
-            _tester,
-            _itemDecorator != null
-                ? _itemDecorator.call(
-                    _tester,
-                    item.child!,
-                  )
-                : item.child!,
-          ),
+          _buildItem(item.child!),
         );
       }
 
       // Run the item's setup function, if there is one.
       await item.setup?.call(_tester);
 
+      // Return the simulated platform to whatever it was before this item.
+      debugDefaultTargetPlatformOverride = previousPlatform;
+
+      // Take a screenshot.
       expect(item.boundsFinder, findsOne);
       final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
       expect(
@@ -255,6 +254,18 @@ class Gallery {
     }
 
     FtgLog.pipeline.finer("Done with golden generation/comparison");
+  }
+
+  Widget _buildItem(Widget content) {
+    return _itemScaffold(
+      _tester,
+      _itemDecorator != null
+          ? _itemDecorator.call(
+              _tester,
+              content,
+            )
+          : content,
+    );
   }
 
   // TODO: de-dup this with FilmStrip
@@ -344,7 +355,7 @@ class Gallery {
     GoldenSceneMetadata sceneMetadata,
   ) async {
     FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
-    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile("$goldenFileName.png"));
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
 
     final goldenFile = File(_goldenFilePath());
     var pngData = goldenFile.readAsBytesSync();
@@ -480,13 +491,15 @@ class Gallery {
 
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
+  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
+
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
   /// golden subdirectory + the golden file name.
   String _goldenFilePath([bool includeExtension = true]) =>
-      "$_testFileDirectory${_directory.path}$separator$_fileName${includeExtension ? ".png" : ""}";
+      "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
 
-  String get _goldenFailureDirectoryPath => "${_testFileDirectory}failures";
+  String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 }
 
 /// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
@@ -507,6 +520,7 @@ class GalleryItem {
   GalleryItem.withWidget({
     required this.id,
     required this.description,
+    this.platform,
     Finder? boundsFinder,
     this.setup,
     required this.child,
@@ -518,6 +532,7 @@ class GalleryItem {
   GalleryItem.withBuilder({
     required this.id,
     required this.description,
+    this.platform,
     Finder? boundsFinder,
     this.setup,
     required this.builder,
@@ -529,6 +544,7 @@ class GalleryItem {
   GalleryItem.withPumper({
     required this.id,
     required this.description,
+    this.platform,
     Finder? boundsFinder,
     this.setup,
     required this.pumper,
@@ -542,6 +558,15 @@ class GalleryItem {
 
   /// A human readable description of this gallery item.
   final String description;
+
+  /// The platform to simulate when building this item.
+  ///
+  /// The platform is simulated by setting [debugDefaultTargetPlatformOverride] to
+  /// the given platform.
+  ///
+  /// If [platform] is `null`, the [debugDefaultTargetPlatformOverride] isn't changed
+  /// at all - it uses whatever is configured by the test suite.
+  final TargetPlatform? platform;
 
   /// [Finder] to locate the part of the subtree that should be screenshotted
   /// for this gallery item.
