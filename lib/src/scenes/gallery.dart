@@ -78,6 +78,7 @@ class Gallery {
     required String id,
     required String description,
     TargetPlatform? platform,
+    BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required Widget widget,
@@ -87,6 +88,7 @@ class Gallery {
         id: id,
         description: description,
         platform: platform,
+        constraints: constraints,
         boundsFinder: boundsFinder,
         setup: setup,
         child: widget,
@@ -101,6 +103,7 @@ class Gallery {
     required String id,
     required String description,
     TargetPlatform? platform,
+    BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required WidgetBuilder builder,
@@ -110,6 +113,7 @@ class Gallery {
         id: id,
         description: description,
         platform: platform,
+        constraints: constraints,
         boundsFinder: boundsFinder,
         setup: setup,
         builder: builder,
@@ -140,6 +144,7 @@ class Gallery {
     required String id,
     required String description,
     TargetPlatform? platform,
+    BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required GalleryItemPumper pumper,
@@ -149,6 +154,7 @@ class Gallery {
         id: id,
         description: description,
         platform: platform,
+        constraints: constraints,
         boundsFinder: boundsFinder,
         setup: setup,
         pumper: pumper,
@@ -178,12 +184,12 @@ class Gallery {
       } else if (item.builder != null) {
         // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
         await _tester.pumpWidget(
-          _buildItem(Builder(builder: item.builder!)),
+          _buildItem(item.constraints, Builder(builder: item.builder!)),
         );
       } else {
         // Pump this gallery item, deferring to a `Widget` for the content.
         await _tester.pumpWidget(
-          _buildItem(item.child!),
+          _buildItem(item.constraints, item.child!),
         );
       }
 
@@ -256,15 +262,18 @@ class Gallery {
     FtgLog.pipeline.finer("Done with golden generation/comparison");
   }
 
-  Widget _buildItem(Widget content) {
+  Widget _buildItem(BoxConstraints? constraints, Widget content) {
     return _itemScaffold(
       _tester,
-      _itemDecorator != null
-          ? _itemDecorator.call(
-              _tester,
-              content,
-            )
-          : content,
+      ConstrainedBox(
+        constraints: constraints ?? BoxConstraints(),
+        child: _itemDecorator != null
+            ? _itemDecorator.call(
+                _tester,
+                content,
+              )
+            : content,
+      ),
     );
   }
 
@@ -521,6 +530,7 @@ class GalleryItem {
     required this.id,
     required this.description,
     this.platform,
+    this.constraints,
     Finder? boundsFinder,
     this.setup,
     required this.child,
@@ -533,6 +543,7 @@ class GalleryItem {
     required this.id,
     required this.description,
     this.platform,
+    this.constraints,
     Finder? boundsFinder,
     this.setup,
     required this.builder,
@@ -545,6 +556,7 @@ class GalleryItem {
     required this.id,
     required this.description,
     this.platform,
+    this.constraints,
     Finder? boundsFinder,
     this.setup,
     required this.pumper,
@@ -567,6 +579,9 @@ class GalleryItem {
   /// If [platform] is `null`, the [debugDefaultTargetPlatformOverride] isn't changed
   /// at all - it uses whatever is configured by the test suite.
   final TargetPlatform? platform;
+
+  /// Optional constraints for the golden, or unbounded if `null`.
+  final BoxConstraints? constraints;
 
   /// [Finder] to locate the part of the subtree that should be screenshotted
   /// for this gallery item.

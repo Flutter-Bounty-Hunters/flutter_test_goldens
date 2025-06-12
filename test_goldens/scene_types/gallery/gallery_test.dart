@@ -63,6 +63,49 @@ void main() {
     );
 
     testGoldenScene(
+      "can specify per-item size",
+      (tester) async {
+        final itemWidget = ElevatedButton(
+          onPressed: () {},
+          child: Text("A Gallery Item"),
+        );
+
+        await Gallery(
+          tester,
+          directory: Directory("."),
+          fileName: "gallery_item_sizes",
+          sceneDescription: "Item Sizes",
+          layout: SceneLayout.column,
+          itemDecorator: (tester, child) {
+            return Padding(
+              padding: EdgeInsets.all(24),
+              child: child,
+            );
+          },
+        )
+            .itemFromWidget(
+              id: "1",
+              description: "150x100",
+              constraints: BoxConstraints.tightFor(width: 150, height: 100),
+              widget: itemWidget,
+            )
+            .itemFromWidget(
+              id: "2",
+              description: "200x150",
+              constraints: BoxConstraints.tightFor(width: 200, height: 150),
+              widget: itemWidget,
+            )
+            .itemFromWidget(
+              id: "3",
+              description: "250x200",
+              constraints: BoxConstraints.tightFor(width: 250, height: 200),
+              widget: itemWidget,
+            )
+            .renderOrCompareGolden();
+      },
+    );
+
+    testGoldenScene(
       "on multiple platforms",
       (tester) async {
         await _loadIconFont();

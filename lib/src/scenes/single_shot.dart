@@ -107,6 +107,7 @@ class SingleShotConfigurator {
         id: "1",
         description: _config.description!,
         widget: _config.widget!,
+        constraints: _config.constraints,
         boundsFinder: _config.boundsFinder,
         setup: _config.setup,
       );
@@ -114,6 +115,7 @@ class SingleShotConfigurator {
       gallery.itemFromBuilder(
         id: "1",
         description: _config.description!,
+        constraints: _config.constraints,
         builder: _config.builder!,
         boundsFinder: _config.boundsFinder,
         setup: _config.setup,
@@ -122,6 +124,7 @@ class SingleShotConfigurator {
       gallery.itemFromPumper(
         id: "1",
         description: _config.description!,
+        constraints: _config.constraints,
         pumper: _config.pumper!,
         boundsFinder: _config.boundsFinder,
         setup: _config.setup,
@@ -137,6 +140,7 @@ class SingleShotConfiguration {
     this.directory,
     this.fileName,
     this.description,
+    this.constraints,
     this.itemScaffold,
     this.itemDecorator,
     this.widget,
@@ -155,6 +159,9 @@ class SingleShotConfiguration {
   /// The file name for the golden scene file, which will be saved in [_directory].
   final String? fileName;
 
+  /// Optional constraints for the golden, or unbounded if `null`.
+  final BoxConstraints? constraints;
+
   final GoldenScaffold? itemScaffold;
   final GoldenDecorator? itemDecorator;
 
@@ -170,6 +177,7 @@ class SingleShotConfiguration {
     String? description,
     Directory? directory,
     String? fileName,
+    BoxConstraints? constraints,
     GoldenScaffold? itemScaffold,
     GoldenDecorator? itemDecorator,
     Widget? widget,
@@ -182,6 +190,7 @@ class SingleShotConfiguration {
       description: description ?? this.description,
       directory: directory ?? this.directory,
       fileName: fileName ?? this.fileName,
+      constraints: constraints ?? this.constraints,
       itemScaffold: itemScaffold ?? this.itemScaffold,
       itemDecorator: itemDecorator ?? this.itemDecorator,
       widget: widget ?? this.widget,
