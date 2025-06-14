@@ -143,6 +143,33 @@ void main() {
       },
     );
 
+    testGoldenScene("on all platforms", (tester) async {
+      await _loadIconFont();
+
+      await Gallery(
+        tester,
+        directory: Directory("."),
+        fileName: "all_platforms",
+        sceneDescription: "All Platforms",
+        layout: SceneLayout.row,
+        itemDecorator: (tester, child) {
+          return Padding(
+            padding: EdgeInsets.all(24),
+            child: child,
+          );
+        },
+      )
+          .itemFromBuilder(
+            id: "1",
+            description: "AppBar",
+            forEachPlatform: true,
+            // Use a builder so that the Icons.adaptive are resolved when the
+            // desired platform is applied.
+            builder: _buildAppBar,
+          )
+          .renderOrCompareGolden();
+    });
+
     testGoldenScene(
       "in ./goldens sub-directory",
       (tester) async {

@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -78,11 +77,35 @@ class Gallery {
     required String id,
     required String description,
     TargetPlatform? platform,
+    bool forEachPlatform = false,
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required Widget widget,
   }) {
+    assert(
+      forEachPlatform && platform == null || !forEachPlatform,
+      "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
+    );
+
+    if (forEachPlatform) {
+      for (final platform in TargetPlatform.values) {
+        _items.add(
+          GalleryItem.withWidget(
+            id: id,
+            description: "description (${platform.name})",
+            platform: platform,
+            constraints: constraints,
+            boundsFinder: boundsFinder,
+            setup: setup,
+            child: widget,
+          ),
+        );
+      }
+
+      return this;
+    }
+
     _items.add(
       GalleryItem.withWidget(
         id: id,
@@ -103,11 +126,35 @@ class Gallery {
     required String id,
     required String description,
     TargetPlatform? platform,
+    bool forEachPlatform = false,
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required WidgetBuilder builder,
   }) {
+    assert(
+      forEachPlatform && platform == null || !forEachPlatform,
+      "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
+    );
+
+    if (forEachPlatform) {
+      for (final platform in TargetPlatform.values) {
+        _items.add(
+          GalleryItem.withBuilder(
+            id: id,
+            description: "description (${platform.name})",
+            platform: platform,
+            constraints: constraints,
+            boundsFinder: boundsFinder,
+            setup: setup,
+            builder: builder,
+          ),
+        );
+      }
+
+      return this;
+    }
+
     _items.add(
       GalleryItem.withBuilder(
         id: id,
@@ -144,11 +191,35 @@ class Gallery {
     required String id,
     required String description,
     TargetPlatform? platform,
+    bool forEachPlatform = false,
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
     required GalleryItemPumper pumper,
   }) {
+    assert(
+      forEachPlatform && platform == null || !forEachPlatform,
+      "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
+    );
+
+    if (forEachPlatform) {
+      for (final platform in TargetPlatform.values) {
+        _items.add(
+          GalleryItem.withPumper(
+            id: id,
+            description: "description (${platform.name})",
+            platform: platform,
+            constraints: constraints,
+            boundsFinder: boundsFinder,
+            setup: setup,
+            pumper: pumper,
+          ),
+        );
+      }
+
+      return this;
+    }
+
     _items.add(
       GalleryItem.withPumper(
         id: id,
