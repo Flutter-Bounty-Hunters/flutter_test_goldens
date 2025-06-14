@@ -1,129 +1,203 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/scenes/gallery.dart';
-import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
+import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 
-/// A golden scene with a single golden image.
 class SingleShot {
-  /// Creates a [SingleShot] whose content is rendered by a given [widget].
-  SingleShot.fromWidget(
-    this._tester, {
+  SingleShot(
+    String description, {
     Directory? directory,
     required String fileName,
-    required String description,
-    GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
-    GalleryItemDecorator? itemDecorator,
-    Finder? boundsFinder,
-    required Widget widget,
-  })  : _fileName = fileName,
-        _description = description,
-        _itemScaffold = itemScaffold,
-        _itemDecorator = itemDecorator,
-        _boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds),
-        _widget = widget,
-        _builder = null,
-        _pumper = null {
-    _directory = directory ?? defaultGoldenDirectory;
+  }) {
+    _config = SingleShotConfiguration(
+      description: description,
+      directory: directory ?? Directory("."),
+      fileName: fileName,
+    );
   }
 
-  /// Creates a [SingleShot] whose content is rendered by a given [builder].
-  SingleShot.fromBuilder(
-    this._tester, {
-    Directory? directory,
-    required String fileName,
-    required String description,
-    GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
-    GalleryItemDecorator? itemDecorator,
-    Finder? boundsFinder,
-    required WidgetBuilder builder,
-  })  : _fileName = fileName,
-        _description = description,
-        _itemScaffold = itemScaffold,
-        _itemDecorator = itemDecorator,
-        _boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds),
-        _builder = builder,
-        _widget = null,
-        _pumper = null {
-    _directory = directory ?? defaultGoldenDirectory;
+  late final SingleShotConfiguration _config;
+
+  SingleShotConfigurator fromWidget(Widget widget) => SingleShotConfigurator(
+        _config.copyWith(widget: widget),
+      );
+
+  SingleShotConfigurator fromBuilder(WidgetBuilder builder) => SingleShotConfigurator(
+        _config.copyWith(builder: builder),
+      );
+
+  SingleShotConfigurator fromPumper(GoldenPumper pumper) => SingleShotConfigurator(
+        _config.copyWith(pumper: pumper),
+      );
+}
+
+class SingleShotConfigurator {
+  const SingleShotConfigurator(this._config, [this._stepsCompleted = const <String>{}]);
+
+  final SingleShotConfiguration _config;
+
+  final Set<String> _stepsCompleted;
+
+  SingleShotConfigurator withDecoration(GoldenDecorator decorator) {
+    _ensureStepNotComplete("decoration");
+
+    return SingleShotConfigurator(
+      _config.copyWith(itemDecorator: decorator),
+      {..._stepsCompleted, "decoration"},
+    );
   }
 
-  /// Creates a [SingleShot] whose content is rendered by a given [pumper].
-  ///
-  /// This constructor is useful when a golden scene needs full control over the [WidgetTester],
-  /// and the call to [WidgetTester.pumpWidget].
-  SingleShot.fromPumper(
-    this._tester, {
-    Directory? directory,
-    required String fileName,
-    required String description,
-    GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
-    GalleryItemDecorator? itemDecorator,
-    Finder? boundsFinder,
-    required GalleryItemPumper pumper,
-  })  : _fileName = fileName,
-        _description = description,
-        _itemScaffold = itemScaffold,
-        _itemDecorator = itemDecorator,
-        _boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds),
-        _pumper = pumper,
-        _widget = null,
-        _builder = null {
-    _directory = directory ?? defaultGoldenDirectory;
+  SingleShotConfigurator inScaffold(GoldenScaffold scaffold) {
+    _ensureStepNotComplete("scaffold");
+
+    return SingleShotConfigurator(
+      _config.copyWith(itemScaffold: scaffold),
+      {..._stepsCompleted, "scaffold"},
+    );
   }
 
-  final WidgetTester _tester;
+  SingleShotConfigurator withSetup(GoldenSetup setup) {
+    _ensureStepNotComplete("setup");
 
-  /// The directory where the golden scene file will be saved.
-  late final Directory _directory;
+    return SingleShotConfigurator(
+      _config.copyWith(setup: setup),
+      {..._stepsCompleted, "setup"},
+    );
+  }
 
-  /// The file name for the golden scene file, which will be saved in [_directory].
-  final String _fileName;
+  SingleShotConfigurator findBounds(Finder finder) {
+    _ensureStepNotComplete("find");
 
-  /// The name of the overall golden scene.
-  final String _description;
+    return SingleShotConfigurator(
+      _config.copyWith(boundsFinder: finder),
+      {..._stepsCompleted, "find"},
+    );
+  }
 
-  /// A scaffold built around each item in this scene.
-  ///
-  /// Defaults to [defaultGalleryItemScaffold].
-  final GalleryItemScaffold _itemScaffold;
+  void _ensureStepNotComplete(String name) {
+    if (!_stepsCompleted.contains(name)) {
+      return;
+    }
 
-  /// A decoration applied to each item in this scene.
-  final GalleryItemDecorator? _itemDecorator;
+    throw Exception(
+      "SingleShot golden builders are expected to run each step at most one time. You tried to run '$name' twice.",
+    );
+  }
 
-  /// [Finder] that locates the content that will be screenshotted in this golden scene.
-  final Finder _boundsFinder;
+  Future<void> run(WidgetTester tester) async {
+    final scaffold = _config.itemScaffold ?? defaultGalleryItemScaffold;
+    final decorator = _config.itemDecorator ?? defaultGalleryItemDecorator;
 
-  final GalleryItemPumper? _pumper;
-
-  final WidgetBuilder? _builder;
-
-  final Widget? _widget;
-
-  /// Either renders a new golden to a scene file, or compares new screenshots against an existing
-  /// golden scene file.
-  Future<void> renderOrCompareGolden() async {
     final gallery = Gallery(
-      _tester,
-      directory: _directory,
-      fileName: _fileName,
-      sceneDescription: _description,
+      tester,
+      directory: _config.directory!,
+      fileName: _config.fileName!,
+      sceneDescription: _config.description!,
       layout: SceneLayout.column,
-      itemScaffold: _itemScaffold,
-      itemDecorator: _itemDecorator,
+      itemScaffold: scaffold,
+      itemDecorator: decorator,
     );
 
-    if (_widget != null) {
-      gallery.itemFromWidget(id: "1", description: _description, widget: _widget, boundsFinder: _boundsFinder);
-    } else if (_builder != null) {
-      gallery.itemFromBuilder(id: "1", description: _description, builder: _builder, boundsFinder: _boundsFinder);
+    if (_config.widget != null) {
+      gallery.itemFromWidget(
+        id: "1",
+        description: _config.description!,
+        widget: _config.widget!,
+        constraints: _config.constraints,
+        boundsFinder: _config.boundsFinder,
+        setup: _config.setup,
+      );
+    } else if (_config.builder != null) {
+      gallery.itemFromBuilder(
+        id: "1",
+        description: _config.description!,
+        constraints: _config.constraints,
+        builder: _config.builder!,
+        boundsFinder: _config.boundsFinder,
+        setup: _config.setup,
+      );
     } else {
-      gallery.itemFromPumper(id: "1", description: _description, pumper: _pumper!, boundsFinder: _boundsFinder);
+      gallery.itemFromPumper(
+        id: "1",
+        description: _config.description!,
+        constraints: _config.constraints,
+        pumper: _config.pumper!,
+        boundsFinder: _config.boundsFinder,
+        setup: _config.setup,
+      );
     }
 
     await gallery.renderOrCompareGolden();
+  }
+}
+
+class SingleShotConfiguration {
+  SingleShotConfiguration({
+    this.directory,
+    this.fileName,
+    this.description,
+    this.constraints,
+    this.itemScaffold,
+    this.itemDecorator,
+    this.widget,
+    this.builder,
+    this.pumper,
+    this.setup,
+    this.boundsFinder,
+  });
+
+  /// The name of the overall golden scene.
+  final String? description;
+
+  /// The directory where the golden scene file will be saved.
+  final Directory? directory;
+
+  /// The file name for the golden scene file, which will be saved in [_directory].
+  final String? fileName;
+
+  /// Optional constraints for the golden, or unbounded if `null`.
+  final BoxConstraints? constraints;
+
+  final GoldenScaffold? itemScaffold;
+  final GoldenDecorator? itemDecorator;
+
+  final Widget? widget;
+  final WidgetBuilder? builder;
+  final GoldenPumper? pumper;
+
+  final GoldenSetup? setup;
+
+  final Finder? boundsFinder;
+
+  SingleShotConfiguration copyWith({
+    String? description,
+    Directory? directory,
+    String? fileName,
+    BoxConstraints? constraints,
+    GoldenScaffold? itemScaffold,
+    GoldenDecorator? itemDecorator,
+    Widget? widget,
+    WidgetBuilder? builder,
+    GoldenPumper? pumper,
+    GoldenSetup? setup,
+    Finder? boundsFinder,
+  }) {
+    return SingleShotConfiguration(
+      description: description ?? this.description,
+      directory: directory ?? this.directory,
+      fileName: fileName ?? this.fileName,
+      constraints: constraints ?? this.constraints,
+      itemScaffold: itemScaffold ?? this.itemScaffold,
+      itemDecorator: itemDecorator ?? this.itemDecorator,
+      widget: widget ?? this.widget,
+      builder: builder ?? this.builder,
+      pumper: pumper ?? this.pumper,
+      setup: setup ?? this.setup,
+      boundsFinder: boundsFinder ?? this.boundsFinder,
+    );
   }
 }

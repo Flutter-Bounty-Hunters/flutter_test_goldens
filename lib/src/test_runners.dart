@@ -3,12 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:meta/meta.dart';
 
+/// Annotation for tests that generate a golden scene, which allows them to be easily
+/// indexed by tooling built on `flutter_test_goldens`.
+const isGoldenScene = _IsGoldenScene();
+
+class _IsGoldenScene {
+  const _IsGoldenScene();
+}
+
 /// Run a golden scene test, which pretends to run on an iOS platform.
 ///
 /// {@macro golden_scene_test}
 ///
 /// This test runner pretends to run on a Mac by setting [debugDefaultTargetPlatformOverride] to
 /// [TargetPlatform.iOS].
+@isGoldenScene
 @isTest
 void testGoldenSceneOnIOS(
   String description,
@@ -50,6 +59,7 @@ void testGoldenSceneOnIOS(
 ///
 /// This test runner pretends to run on a Mac by setting [debugDefaultTargetPlatformOverride] to
 /// [TargetPlatform.android].
+@isGoldenScene
 @isTest
 void testGoldenSceneOnAndroid(
   String description,
@@ -91,6 +101,7 @@ void testGoldenSceneOnAndroid(
 ///
 /// This test runner pretends to run on a Mac by setting [debugDefaultTargetPlatformOverride] to
 /// [TargetPlatform.macOS].
+@isGoldenScene
 @isTest
 void testGoldenSceneOnMac(
   String description,
@@ -132,6 +143,7 @@ void testGoldenSceneOnMac(
 ///
 /// This test runner pretends to run on a Mac by setting [debugDefaultTargetPlatformOverride] to
 /// [TargetPlatform.windows].
+@isGoldenScene
 @isTest
 void testGoldenSceneOnWindows(
   String description,
@@ -173,6 +185,7 @@ void testGoldenSceneOnWindows(
 ///
 /// This test runner pretends to run on a Mac by setting [debugDefaultTargetPlatformOverride] to
 /// [TargetPlatform.linux].
+@isGoldenScene
 @isTest
 void testGoldenSceneOnLinux(
   String description,
@@ -223,6 +236,7 @@ void testGoldenSceneOnLinux(
 ///
 /// All test view configurations are reset after the [test] completes.
 /// {@endtemplate}
+@isGoldenScene
 @isTest
 void testGoldenScene(
   String description,
