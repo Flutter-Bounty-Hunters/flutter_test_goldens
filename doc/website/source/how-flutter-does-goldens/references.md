@@ -1,5 +1,5 @@
 ---
-title: Flutter Golden Implementation References
+title: Implementation References
 navOrder: 40
 ---
 ## Notes
