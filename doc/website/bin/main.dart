@@ -4,7 +4,11 @@ import 'package:static_shock/static_shock.dart';
 
 Future<void> main(List<String> arguments) async {
   // Configure the static website generator.
-  final staticShock = StaticShock()
+  final staticShock = StaticShock(
+    site: !arguments.contains("local") //
+        ? SiteMetadata(basePath: "/flutter-bounty-hunters/")
+        : SiteMetadata(basePath: "/"),
+  )
     // Here, you can directly hook into the StaticShock pipeline. For example,
     // you can copy an "images" directory from the source set to build set:
     ..pick(DirectoryPicker.parse("images"))
@@ -15,12 +19,9 @@ Future<void> main(List<String> arguments) async {
     ..plugin(const PrettyUrlsPlugin())
     ..plugin(const RedirectsPlugin())
     ..plugin(const SassPlugin())
-    
     ..plugin(const PubPackagePlugin({
       "flutter_test_goldens",
     }))
-    
-    
     ..plugin(
       GitHubContributorsPlugin(
         // To load the contributors for a given GitHub package using credentials,
@@ -28,7 +29,6 @@ Future<void> main(List<String> arguments) async {
         authToken: Platform.environment["github_doc_website_token"],
       ),
     )
-    
     ..plugin(DraftingPlugin(
       showDrafts: arguments.contains("preview"),
     ));
