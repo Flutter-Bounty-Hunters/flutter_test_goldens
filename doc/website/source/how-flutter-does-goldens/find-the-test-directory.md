@@ -3,15 +3,15 @@ title: Find the golden test directory
 navOrder: 20
 ---
 A golden test either loads an existing golden image from a file, or renders a new golden image to a file.
-Golden files are saved and loaded relative the directory that holds the current running test. Therefore, it's
+Golden files are saved and loaded relative to the directory that holds the current running test. Therefore, it's
 critical that a golden test know the directory that contains the current test.
 
 You might think it's obvious how Flutter finds the desired golden file. You give Flutter a file path like
-"goldens/my_golden.png", and then Flutter applies that path relative to the test file directory. Simple, right?
+`"goldens/my_golden.png"`, and then Flutter applies that path relative to the test file directory. Simple, right?
 
 But how does Flutter's golden system know where the current test file lives in the first place?
 
-You might think that surely the test package exposes the location of the current test file, and that's
+You might think that the test package exposes the location of the current test file, and that's
 how Flutter knows where the test file is located. But it turns out that's incorrect. The test package
 doesn't explicitly, publicly report the location of the current test file at all.
 

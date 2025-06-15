@@ -3,9 +3,9 @@ title: Compare Screenshots
 navOrder: 30
 ---
 ## How does Flutter compare a screenshot against a golden file?
-The `flutter_test` package includes a global variable called `goldenFileComparator`. As shown in other
-sections, this variable is assigned a `LocalFileComparator`, which is an implementation of `GoldenFileComparator`.
-This means, in practice, all goldens are compared using a `LocalFileComparator`.
+The `flutter_test` package includes a global variable called `goldenFileComparator`. This variable is 
+assigned a `LocalFileComparator`, which is an implementation of `GoldenFileComparator`. This means, in 
+practice, all goldens are compared using a `LocalFileComparator`.
 
 See: `flutter_test:_goldens_io.dart::LocalFileComparator`.
 
