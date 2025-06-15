@@ -5,9 +5,7 @@ import 'package:static_shock/static_shock.dart';
 Future<void> main(List<String> arguments) async {
   // Configure the static website generator.
   final staticShock = StaticShock(
-    site: !arguments.contains("local") //
-        ? SiteMetadata(basePath: "/flutter-bounty-hunters/")
-        : SiteMetadata(basePath: "/"),
+    site: SiteMetadata(basePath: "/flutter-test-goldens/"),
   )
     // Here, you can directly hook into the StaticShock pipeline. For example,
     // you can copy an "images" directory from the source set to build set:
