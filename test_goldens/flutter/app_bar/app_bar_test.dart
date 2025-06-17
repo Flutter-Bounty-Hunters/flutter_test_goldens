@@ -1,13 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
+import 'package:flutter_test_goldens/src/fonts/golden_toolkit_fonts.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
 void main() {
   testGoldenSceneOnAndroid("app bar", (tester) async {
-    await SingleShot.fromWidget(
-      fileName: "app_bar",
-      description: "App Bar",
-      itemScaffold: (tester, content) {
+    await loadMaterialIconsFont();
+    await loadAppFonts();
+
+    await SingleShot("App Bar", fileName: "app_bar")
+        .fromWidget(
+      SizedBox(
+        width: 500,
+        child: IntrinsicHeight(
+          child: AppBar(
+            leading: Icon(Icons.adaptive.arrow_back),
+            title: Text(
+              "Hello",
+              style: TextStyle(fontFamily: "packages/flutter_test_goldens/OpenSans"),
+            ),
+            backgroundColor: Colors.blue,
+          ),
+        ),
+      ),
+    )
+        .withDecoration(
+      (tester, description, content) {
+        return Center(
+          child: GoldenImageBounds(
+            child: content,
+          ),
+        );
+      },
+    ).inScaffold(
+      (tester, content) {
         return MaterialApp(
           home: Scaffold(
             body: content,
@@ -15,26 +41,6 @@ void main() {
           debugShowCheckedModeBanner: false,
         );
       },
-      itemDecorator: (tester, description, content) {
-        return Center(
-          child: GoldenImageBounds(
-            child: content,
-          ),
-        );
-      },
-      widget: SizedBox(
-        width: 600,
-        child: IntrinsicHeight(
-          child: AppBar(
-            leading: Icon(Icons.adaptive.arrow_back),
-            title: Text(
-              "Hello",
-              style: TextStyle(fontFamily: goldenBricks),
-            ),
-            backgroundColor: Colors.blue,
-          ),
-        ),
-      ),
-    ).renderOrCompareGolden(tester);
+    ).run(tester);
   });
 }

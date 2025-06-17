@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -315,3 +317,36 @@ Widget defaultDarkGoldenSceneItemDecorator(WidgetTester tester, String descripti
     ),
   );
 }
+
+/// Scaffolds a gallery item, such as building a `MaterialApp` with a `Scaffold`.
+///
+/// {@template gallery_item_structure}
+/// The structure of a gallery item is as follows:
+///
+///     Gallery item scaffold
+///       GalleryImageBounds (the default repaint boundary)
+///         Gallery item decorator
+///           Gallery item (the content)
+/// {@endtemplate}
+typedef GoldenSceneItemScaffold = Widget Function(WidgetTester tester, Widget content);
+
+/// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
+///
+/// {@macro gallery_item_structure}
+typedef GoldenSceneItemDecorator = Widget Function(WidgetTester tester, String description, Widget content);
+
+/// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
+///
+/// {@macro gallery_item_pumper_purpose}
+///
+/// {@macro golden_structure}
+///
+/// {@macro gallery_item_pumper_requirements}
+typedef GoldenSceneItemPumper = Future<dynamic> Function(
+  WidgetTester tester,
+  GoldenSceneItemScaffold scaffold,
+  String description,
+  GoldenSceneItemDecorator decorator,
+);
+
+typedef GoldenSetup = FutureOr<void> Function(WidgetTester tester);

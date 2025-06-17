@@ -1,5 +1,6 @@
 export 'src/flutter/flutter_test_extensions.dart';
 export 'src/fonts/fonts.dart';
+export 'src/fonts/icons.dart';
 export 'src/goldens/golden_camera.dart';
 export 'src/goldens/golden_collections.dart';
 export 'src/goldens/golden_comparisons.dart';

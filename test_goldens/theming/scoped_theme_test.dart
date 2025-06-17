@@ -12,11 +12,11 @@ void main() {
 
     testGoldenScene("group scope", (tester) async {
       // This theme should be yellow.
-      await SingleShot.fromWidget(
-        fileName: "scoped-theme_group-scope",
-        description: "Group Scope",
-        widget: Text("Hello, World!"),
-      ).renderOrCompareGolden(tester);
+      await SingleShot("Group Scope", fileName: "scoped-theme_group-scope")
+          .fromWidget(
+            Text("Hello, World!"),
+          )
+          .run(tester);
     });
 
     testGoldenScene("test scope", (tester) async {
@@ -26,11 +26,11 @@ void main() {
       ));
 
       // This theme should be red.
-      await SingleShot.fromWidget(
-        fileName: "scoped-theme_test-scope",
-        description: "Test Scope",
-        widget: Text("Hello, World!"),
-      ).renderOrCompareGolden(tester);
+      await SingleShot("Test Scope", fileName: "scoped-theme_test-scope")
+          .fromWidget(
+            Text("Hello, World!"),
+          )
+          .run(tester);
     });
   });
 }

@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
@@ -71,14 +71,44 @@ class Gallery {
   Gallery itemFromWidget({
     required String id,
     required String description,
+    TargetPlatform? platform,
+    bool forEachPlatform = false,
+    BoxConstraints? constraints,
     Finder? boundsFinder,
+    GoldenSetup? setup,
     required Widget widget,
   }) {
+    assert(
+      forEachPlatform && platform == null || !forEachPlatform,
+      "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
+    );
+
+    if (forEachPlatform) {
+      for (final platform in TargetPlatform.values) {
+        _items.add(
+          GalleryItem.withWidget(
+            id: id,
+            description: "description (${platform.name})",
+            platform: platform,
+            constraints: constraints,
+            boundsFinder: boundsFinder,
+            setup: setup,
+            child: widget,
+          ),
+        );
+      }
+
+      return this;
+    }
+
     _items.add(
       GalleryItem.withWidget(
         id: id,
         description: description,
+        platform: platform,
+        constraints: constraints,
         boundsFinder: boundsFinder,
+        setup: setup,
         child: widget,
       ),
     );
@@ -90,14 +120,44 @@ class Gallery {
   Gallery itemFromBuilder({
     required String id,
     required String description,
+    TargetPlatform? platform,
+    bool forEachPlatform = false,
+    BoxConstraints? constraints,
     Finder? boundsFinder,
+    GoldenSetup? setup,
     required WidgetBuilder builder,
   }) {
+    assert(
+      forEachPlatform && platform == null || !forEachPlatform,
+      "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
+    );
+
+    if (forEachPlatform) {
+      for (final platform in TargetPlatform.values) {
+        _items.add(
+          GalleryItem.withBuilder(
+            id: id,
+            description: "description (${platform.name})",
+            platform: platform,
+            constraints: constraints,
+            boundsFinder: boundsFinder,
+            setup: setup,
+            builder: builder,
+          ),
+        );
+      }
+
+      return this;
+    }
+
     _items.add(
       GalleryItem.withBuilder(
         id: id,
         description: description,
+        platform: platform,
+        constraints: constraints,
         boundsFinder: boundsFinder,
+        setup: setup,
         builder: builder,
       ),
     );
@@ -125,14 +185,44 @@ class Gallery {
   Gallery itemFromPumper({
     required String id,
     required String description,
+    TargetPlatform? platform,
+    bool forEachPlatform = false,
+    BoxConstraints? constraints,
     Finder? boundsFinder,
-    required GalleryItemPumper pumper,
+    GoldenSetup? setup,
+    required GoldenSceneItemPumper pumper,
   }) {
+    assert(
+      forEachPlatform && platform == null || !forEachPlatform,
+      "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
+    );
+
+    if (forEachPlatform) {
+      for (final platform in TargetPlatform.values) {
+        _items.add(
+          GalleryItem.withPumper(
+            id: id,
+            description: "description (${platform.name})",
+            platform: platform,
+            constraints: constraints,
+            boundsFinder: boundsFinder,
+            setup: setup,
+            pumper: pumper,
+          ),
+        );
+      }
+
+      return this;
+    }
+
     _items.add(
       GalleryItem.withPumper(
         id: id,
         description: description,
+        platform: platform,
+        constraints: constraints,
         boundsFinder: boundsFinder,
+        setup: setup,
         pumper: pumper,
       ),
     );
@@ -154,35 +244,32 @@ class Gallery {
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
 
+      // Simulate the desired platform for this item.
+      final previousPlatform = debugDefaultTargetPlatformOverride;
+      debugDefaultTargetPlatformOverride = item.platform ?? previousPlatform;
+
       if (item.pumper != null) {
         // Defer to the `pumper` to pump the entire widget tree for this gallery item.
         await item.pumper!.call(tester, itemScaffold, item.description, itemDecorator);
       } else if (item.builder != null) {
         // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
         await tester.pumpWidget(
-          itemScaffold(
-            tester,
-            itemDecorator.call(
-              tester,
-              item.description,
-              Builder(builder: item.builder!),
-            ),
-          ),
+          _buildItem(tester, item.constraints, item.description, Builder(builder: item.builder!)),
         );
       } else {
         // Pump this gallery item, deferring to a `Widget` for the content.
         await tester.pumpWidget(
-          itemScaffold(
-            tester,
-            itemDecorator.call(
-              tester,
-              item.description,
-              item.child!,
-            ),
-          ),
+          _buildItem(tester, item.constraints, item.description, item.child!),
         );
       }
 
+      // Run the item's setup function, if there is one.
+      await item.setup?.call(tester);
+
+      // Return the simulated platform to whatever it was before this item.
+      debugDefaultTargetPlatformOverride = previousPlatform;
+
+      // Take a screenshot.
       expect(item.boundsFinder, findsOne);
       final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
       expect(
@@ -244,6 +331,20 @@ class Gallery {
     }
 
     FtgLog.pipeline.finer("Done with golden generation/comparison");
+  }
+
+  Widget _buildItem(WidgetTester tester, BoxConstraints? constraints, String description, Widget content) {
+    final itemScaffold = _itemScaffold ?? GoldenSceneTheme.current.itemScaffold;
+
+    return itemScaffold(
+      tester,
+      ConstrainedBox(
+        constraints: constraints ?? BoxConstraints(),
+        child: _itemDecorator != null //
+            ? _itemDecorator.call(tester, description, content)
+            : content,
+      ),
+    );
   }
 
   // TODO: de-dup this with FilmStrip
@@ -470,52 +571,26 @@ class Gallery {
 
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
+  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
+
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
   /// golden subdirectory + the golden file name.
   String _goldenFilePath([bool includeExtension = true]) =>
-      "$_testFileDirectory${_directory.path}$separator$_fileName${includeExtension ? ".png" : ""}";
+      "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
 
-  String get _goldenFailureDirectoryPath => "${_testFileDirectory}failures";
+  String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 }
-
-/// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
-///
-/// {@macro gallery_item_pumper_purpose}
-///
-/// {@macro gallery_item_structure}
-///
-/// {@macro gallery_item_pumper_requirements}
-typedef GalleryItemPumper = Future<void> Function(
-  WidgetTester tester,
-  GoldenSceneItemScaffold scaffold,
-  String description,
-  GoldenSceneItemDecorator? decorator,
-);
-
-/// Scaffolds a gallery item, such as building a `MaterialApp` with a `Scaffold`.
-///
-/// {@template gallery_item_structure}
-/// The structure of a gallery item is as follows:
-///
-///     Gallery item scaffold
-///       GalleryImageBounds (the default repaint boundary)
-///         Gallery item decorator
-///           Gallery item (the content)
-/// {@endtemplate}
-typedef GoldenSceneItemScaffold = Widget Function(WidgetTester tester, Widget content);
-
-/// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
-///
-/// {@macro gallery_item_structure}
-typedef GoldenSceneItemDecorator = Widget Function(WidgetTester tester, String description, Widget content);
 
 /// A single UI screenshot within a gallery of gallery items.
 class GalleryItem {
   GalleryItem.withWidget({
     required this.id,
     required this.description,
+    this.platform,
+    this.constraints,
     Finder? boundsFinder,
+    this.setup,
     required this.child,
   })  : pumper = null,
         builder = null {
@@ -525,7 +600,10 @@ class GalleryItem {
   GalleryItem.withBuilder({
     required this.id,
     required this.description,
+    this.platform,
+    this.constraints,
     Finder? boundsFinder,
+    this.setup,
     required this.builder,
   })  : pumper = null,
         child = null {
@@ -535,7 +613,10 @@ class GalleryItem {
   GalleryItem.withPumper({
     required this.id,
     required this.description,
+    this.platform,
+    this.constraints,
     Finder? boundsFinder,
+    this.setup,
     required this.pumper,
   })  : builder = null,
         child = null {
@@ -548,13 +629,29 @@ class GalleryItem {
   /// A human readable description of this gallery item.
   final String description;
 
+  /// The platform to simulate when building this item.
+  ///
+  /// The platform is simulated by setting [debugDefaultTargetPlatformOverride] to
+  /// the given platform.
+  ///
+  /// If [platform] is `null`, the [debugDefaultTargetPlatformOverride] isn't changed
+  /// at all - it uses whatever is configured by the test suite.
+  final TargetPlatform? platform;
+
+  /// Optional constraints for the golden, or unbounded if `null`.
+  final BoxConstraints? constraints;
+
   /// [Finder] to locate the part of the subtree that should be screenshotted
   /// for this gallery item.
   late final Finder boundsFinder;
 
+  /// Optional function that runs after the [pumper], [builder], or [child] is pumped
+  /// into the widget tree, but before the screenshot is taken.
+  final GoldenSetup? setup;
+
   /// The [GalleryItemPumper] that creates this gallery item, or `null` if this gallery
   /// item is created with a [builder] or a [child].
-  final GalleryItemPumper? pumper;
+  final GoldenSceneItemPumper? pumper;
 
   /// The [WidgetBuilder] that creates this gallery item, or `null` if this gallery
   /// item is created with a [pumper] or a [child].

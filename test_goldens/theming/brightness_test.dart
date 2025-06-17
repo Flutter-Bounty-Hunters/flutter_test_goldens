@@ -6,20 +6,20 @@ void main() {
   group("Theming > brightness >", () {
     testGoldenScene("light", (tester) async {
       testGoldenScene("group scope", (tester) async {
-        await SingleShot.fromWidget(
-          fileName: "scoped-theme_group-scope",
-          description: "Light Theme",
-          widget: Text("Hello, World!"),
-        ).renderOrCompareGolden(tester);
+        await SingleShot("Light Theme", fileName: "scoped-theme_group-scope")
+            .fromWidget(
+              Text("Hello, World!"),
+            )
+            .run(tester);
       });
     });
 
     testGoldenScene("dark", (tester) async {
-      await SingleShot.fromWidget(
-        fileName: "scoped-theme_group-scope",
-        description: "Dark Theme",
-        widget: Text("Hello, World!"),
-      ).renderOrCompareGolden(tester);
+      await SingleShot("Dark Theme", fileName: "scoped-theme_group-scope")
+          .fromWidget(
+            Text("Hello, World!"),
+          )
+          .run(tester);
     });
   });
 }
