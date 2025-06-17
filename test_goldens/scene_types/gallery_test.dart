@@ -15,12 +15,10 @@ void main() {
         );
 
         await Gallery(
-          tester,
-          directory: Directory("."),
           fileName: "gallery_item_from_widget",
           sceneDescription: "Elevated Button",
           layout: SceneLayout.column,
-          itemDecorator: (tester, child) {
+          itemDecorator: (tester, description, child) {
             return Padding(
               padding: EdgeInsets.all(24),
               child: child,
@@ -42,18 +40,18 @@ void main() {
             .itemFromPumper(
               id: "2",
               description: "pumper",
-              pumper: (tester, scaffold, decorator) async {
+              pumper: (tester, scaffold, description, decorator) async {
                 await tester.pumpWidget(
                   scaffold(
                     tester,
                     decorator != null //
-                        ? decorator.call(tester, itemWidget)
+                        ? decorator.call(tester, description, itemWidget)
                         : itemWidget,
                   ),
                 );
               },
             )
-            .renderOrCompareGolden();
+            .renderOrCompareGolden(tester);
       },
     );
   });

@@ -1,77 +1,317 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Colors;
+import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
+import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
+import 'package:flutter_test_goldens/src/scenes/gallery.dart';
+import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
+import 'package:golden_bricks/golden_bricks.dart';
+
+/// A theme, which is applied to various [GoldenScene]s.
+///
+/// The purpose of [GoldenSceneTheme] is to make it easy to configure similar visual styles
+/// for all [GoldenScene]s in a project, file, group, or within a test.
+///
+/// A [GoldenSceneTheme] captures various details that are visually common among
+/// [GoldenScene]s. For example, a theme includes an [itemScaffold] and [itemDecorator] that are
+/// built around every golden in a scene. It includes a [background] that renders behind the
+/// golden images. For logistics, it includes a relative [directory] path, which says where
+/// to store [GoldenScene]s in relation to each golden test file.
+class GoldenSceneTheme {
+  /// The [GoldenSceneTheme] that should be used for the currently executing test.
+  ///
+  /// By default, this value is [standard]. The theme can be customized
+  /// by [push]ing a new theme on the stack. Any theme that is [push]ed on the stack
+  /// will be reported as the [current] theme until it is [pop]ed.
+  static GoldenSceneTheme get current => _themeStack.last;
+
+  static final _themeStack = [standard];
+
+  /// Configures a [setUp] that makes the given [theme] the [current] global
+  /// [GoldenSceneTheme] within the current test group, and configures a
+  /// [tearDown] that returns the previous global theme when the group exits.
+  static void useForGroup(GoldenSceneTheme theme) {
+    setUp(() => GoldenSceneTheme.push(theme));
+    tearDown(() => GoldenSceneTheme.pop());
+  }
+
+  /// Configures a [setUp] that makes the given [theme] the [current] global
+  /// [GoldenSceneTheme] within the current test, and configures a [tearDown]
+  /// that returns the previous global theme when the group exits.
+  static void useForTest(GoldenSceneTheme theme) {
+    GoldenSceneTheme.push(theme);
+    addTearDown(() => GoldenSceneTheme.pop());
+  }
+
+  /// Pushes the given [theme] on to the global theme stack, which will make it
+  /// the global theme until there's a call to [pop].
+  ///
+  /// Pushing and popping themes is useful within group and test setups and teardowns
+  /// to configure a [GoldenSceneTheme] for that group or test.
+  static void push(GoldenSceneTheme theme) => _themeStack.add(theme);
+
+  /// Removes to the top theme on the global stack, which was added with [push].
+  ///
+  /// If there is no corresponding theme that was added by an earlier [push], then
+  /// this method does nothing.
+  static void pop() {
+    if (_themeStack.length > 1) {
+      _themeStack.removeLast();
+    }
+  }
+
+  /// The default [GoldenSceneTheme] for all tests.
+  static final standard = GoldenSceneTheme(
+    directory: defaultGoldenDirectory,
+    background: defaultGoldenSceneBackground,
+    defaultTextStyle: TextStyle(
+      color: Colors.black,
+      fontFamily: "packages/flutter_test_goldens/OpenSans",
+    ),
+    itemScaffold: defaultGoldenSceneItemScaffold,
+    itemDecorator: defaultGoldenSceneItemDecorator,
+  );
+
+  /// The default dark [GoldenSceneTheme].
+  ///
+  /// This theme isn't used anywhere by default, but it's a convenient theme if
+  /// you want a dark theme and you don't care about all the specifics.
+  static final standardDark = GoldenSceneTheme(
+    directory: defaultGoldenDirectory,
+    background: defaultDarkGoldenSceneBackground,
+    defaultTextStyle: TextStyle(
+      color: Colors.white,
+      fontFamily: "packages/flutter_test_goldens/OpenSans",
+    ),
+    // The default scaffold is fine - it doesn't have any visual impact.
+    itemScaffold: defaultDarkGoldenSceneItemScaffold,
+    itemDecorator: defaultDarkGoldenSceneItemDecorator,
+  );
+
+  const GoldenSceneTheme({
+    required this.directory,
+    required this.background,
+    required this.defaultTextStyle,
+    required this.itemScaffold,
+    required this.itemDecorator,
+  });
+
+  /// The relative path from a running test to where that test's goldens are
+  /// stored.
+  ///
+  /// The [standard] directory is `Directory("./goldens/")`. To store goldens in the same
+  /// directory as the running tests, use `Directory(".")`.
+  final Directory directory;
+
+  /// The background that's painted full-bleed across the scene, behind the goldens.
+  ///
+  /// The [standard] background is a color.
+  final GoldenSceneBackground background;
+
+  /// The default text style applied across the [GoldenScene].
+  final TextStyle defaultTextStyle;
+
+  /// A scaffold that builds around each golden in a scene.
+  ///
+  /// The primary purpose of a scaffold is not to be seen, but to provide widget structure
+  /// that's required for correct rendering. For example, the [standard] item scaffold includes
+  /// a `MaterialApp`, a `Scaffold`, and a `DefaultTextStyle`.
+  final GoldenSceneItemScaffold itemScaffold;
+
+  /// A decoration that wraps around each golden in a scene.
+  ///
+  /// The item decoration is responsible for adding things like padding around the golden image,
+  /// a description label, etc. The [standard] item decorator adds padding around each golden, and
+  /// displays each golden's description beneath the golden.
+  final GoldenSceneItemDecorator itemDecorator;
+
+  GoldenSceneTheme copyWith({
+    Directory? directory,
+    GoldenSceneBackground? background,
+    TextStyle? defaultTextStyle,
+    GoldenSceneItemScaffold? itemScaffold,
+    GoldenSceneItemDecorator? itemDecorator,
+  }) {
+    return GoldenSceneTheme(
+      directory: directory ?? this.directory,
+      background: background ?? this.background,
+      defaultTextStyle: defaultTextStyle ?? this.defaultTextStyle,
+      itemScaffold: itemScaffold ?? this.itemScaffold,
+      itemDecorator: itemDecorator ?? this.itemDecorator,
+    );
+  }
+}
+
+class GoldenSceneBackground {
+  const GoldenSceneBackground.color(this.color)
+      : builder = null,
+        widget = null;
+
+  const GoldenSceneBackground.builder(this.builder)
+      : color = null,
+        widget = null;
+
+  const GoldenSceneBackground.widget(this.widget)
+      : builder = null,
+        color = null;
+
+  final Color? color;
+  final WidgetBuilder? builder;
+  final Widget? widget;
+
+  Widget build(BuildContext context) {
+    if (builder != null) {
+      return builder!(context);
+    }
+
+    if (widget != null) {
+      return widget!;
+    }
+
+    return ColoredBox(color: color!);
+  }
+}
 
 class GoldenScene extends StatelessWidget {
   const GoldenScene({
     super.key,
     required this.direction,
+    this.edgePadding = const EdgeInsets.all(48),
+    this.spacing = 48,
     required this.renderablePhotos,
     this.background,
   });
 
   final Axis direction;
+  final EdgeInsets edgePadding;
+  final double spacing;
   final Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos;
-  final Widget? background;
+  final GoldenSceneBackground? background;
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFF666666),
-      child: Stack(
-        children: [
-          if (background != null) //
-            Positioned.fill(
-              child: ColoredBox(color: Colors.green),
-            ),
-          if (background != null) //
-            Positioned.fill(
-              child: background!,
-            ),
-          Padding(
-            padding: const EdgeInsets.all(48),
-            child: Flex(
-              direction: direction,
-              mainAxisSize: MainAxisSize.min,
-              spacing: 48,
-              children: [
-                for (final entry in renderablePhotos.entries) //
-                  SizedBox(
-                    width: entry.key.pixels.width.toDouble(),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ColoredBox(
-                          // color: Color(0xFF222222),
-                          color: Colors.white,
-                          child: Image.memory(
-                            key: entry.value.$2,
-                            entry.value.$1,
-                            width: entry.key.pixels.width.toDouble(),
-                            height: entry.key.pixels.height.toDouble(),
-                          ),
-                        ),
-                        Container(
-                          color: Colors.white,
-                          padding: const EdgeInsets.all(16),
-                          child: Text(
-                            entry.key.description,
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontFamily: "packages/flutter_test_goldens/OpenSans",
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: (background ?? GoldenSceneTheme.current.background).build(context),
+        ),
+        Padding(
+          padding: edgePadding,
+          child: Flex(
+            direction: direction,
+            mainAxisSize: MainAxisSize.min,
+            spacing: spacing,
+            children: [
+              for (final entry in renderablePhotos.entries) //
+                SizedBox(
+                  width: entry.key.pixels.width.toDouble(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Image.memory(
+                        key: entry.value.$2,
+                        entry.value.$1,
+                        width: entry.key.pixels.width.toDouble(),
+                        height: entry.key.pixels.height.toDouble(),
+                      ),
+                    ],
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+}
+
+/// The default background for all [GoldenScene]s.
+const defaultGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFFF0F0EA));
+
+/// The ancestor widget tree for every item in a golden scene, unless using a custom
+/// [GoldenSceneTheme], or is configured directly on a gallery, film strip, etc.
+Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
+  return MaterialApp(
+    home: Scaffold(
+      body: Builder(builder: (context) {
+        return DefaultTextStyle(
+          style: DefaultTextStyle.of(context).style.copyWith(
+                fontFamily: goldenBricks,
+              ),
+          child: Center(
+            child: GoldenImageBounds(child: content),
+          ),
+        );
+      }),
+    ),
+    debugShowCheckedModeBanner: false,
+  );
+}
+
+/// The widget tree that wraps around each golden image in a Golden Scene, unless using a custom
+/// [GoldenSceneTheme], or is configured directly on a gallery, film strip, etc.
+Widget defaultGoldenSceneItemDecorator(WidgetTester tester, String description, Widget content) {
+  return ColoredBox(
+    color: Colors.white,
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: content,
+        ),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(description),
+        ),
+      ],
+    ),
+  );
+}
+
+/// The [GoldenSceneBackground] for [GoldenSceneTheme.standardDark].
+const defaultDarkGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFF111111));
+
+/// The [GoldenSceneItemScaffold] for [GoldenSceneTheme.standardDark].
+Widget defaultDarkGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
+  return MaterialApp(
+    theme: ThemeData(brightness: Brightness.dark),
+    home: Scaffold(
+      body: Builder(builder: (context) {
+        return DefaultTextStyle(
+          style: DefaultTextStyle.of(context).style.copyWith(
+                fontFamily: goldenBricks,
+              ),
+          child: Center(
+            child: GoldenImageBounds(child: content),
+          ),
+        );
+      }),
+    ),
+    debugShowCheckedModeBanner: false,
+  );
+}
+
+/// The [GoldenSceneItemDecorator] for [GoldenSceneTheme.standardDark].
+Widget defaultDarkGoldenSceneItemDecorator(WidgetTester tester, String description, Widget content) {
+  return ColoredBox(
+    color: const Color(0xFF1A1A1A),
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: content,
+        ),
+        Padding(
+          padding: const EdgeInsets.all(24),
+          child: Text(description),
+        ),
+      ],
+    ),
+  );
 }

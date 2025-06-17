@@ -11,19 +11,10 @@ void main() {
       "item from a widget",
       (tester) async {
         await SingleShot.fromWidget(
-          tester,
-          directory: Directory("."),
           fileName: "single_shot_scene",
           description: "A single-shot scene",
-          itemDecorator: (context, child) => Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              border: Border.all(width: 5, color: Colors.red),
-            ),
-            child: child,
-          ),
           widget: Text("Hello, world!"),
-        ).renderOrCompareGolden();
+        ).renderOrCompareGolden(tester);
       },
     );
   });

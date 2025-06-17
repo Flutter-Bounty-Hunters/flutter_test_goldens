@@ -5,7 +5,6 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
-import 'package:flutter/material.dart' as m;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
@@ -35,7 +34,7 @@ class FilmStrip {
 
   final String goldenName;
   final SceneLayout layout;
-  final Widget? goldenBackground;
+  final GoldenSceneBackground? goldenBackground;
 
   _FilmStripSetup? _setup;
   final _steps = <Object>[];
@@ -234,7 +233,7 @@ class FilmStrip {
     List<GoldenPhoto> photos,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
     SceneLayout layout, {
-    Widget? goldenBackground,
+    GoldenSceneBackground? goldenBackground,
   }) async {
     // Layout the final strip within an OverflowBox to let it be whatever
     // size it wants. Then check the content render object for final dimensions.
@@ -308,7 +307,7 @@ class FilmStrip {
     GlobalKey contentKey,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
     Key? galleryKey,
-    Widget? goldenBackground,
+    GoldenSceneBackground? goldenBackground,
   }) {
     return GoldenSceneBounds(
       child: IntrinsicWidth(

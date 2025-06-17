@@ -6,7 +6,6 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/golden_bricks.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -16,7 +15,6 @@ import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/goldens/pixel_comparisons.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
-import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
@@ -26,33 +24,30 @@ import 'package:path/path.dart';
 /// renders those into a single scene file, or compares them against an existing
 /// scene file.
 class Gallery {
-  Gallery(
-    this._tester, {
+  Gallery({
     Directory? directory,
     required String fileName,
     required String sceneDescription,
     required SceneLayout layout,
-    GalleryItemScaffold itemScaffold = defaultGalleryItemScaffold,
-    GalleryItemDecorator? itemDecorator = defaultGalleryItemDecorator,
-    Widget? goldenBackground,
+    GoldenSceneItemScaffold? itemScaffold,
+    GoldenSceneItemDecorator? itemDecorator,
+    GoldenSceneBackground? goldenBackground,
   })  : _fileName = fileName,
         _sceneDescription = sceneDescription,
         _layout = layout,
         _itemScaffold = itemScaffold,
         _itemDecorator = itemDecorator,
         _goldenBackground = goldenBackground {
-    _directory = directory ?? defaultGoldenDirectory;
+    _directory = directory ?? GoldenSceneTheme.current.directory;
   }
-
-  final WidgetTester _tester;
 
   /// A scaffold built around each item in this scene.
   ///
-  /// Defaults to [defaultGalleryItemScaffold].
-  final GalleryItemScaffold _itemScaffold;
+  /// Defaults to [defaultGoldenSceneItemScaffold].
+  final GoldenSceneItemScaffold? _itemScaffold;
 
   /// A decoration applied to each item in this scene.
-  final GalleryItemDecorator? _itemDecorator;
+  final GoldenSceneItemDecorator? _itemDecorator;
 
   /// All screenshots within this scene.
   final _items = <GalleryItem>[];
@@ -70,7 +65,7 @@ class Gallery {
   final SceneLayout _layout;
 
   /// The background behind the items in this scene.
-  final Widget? _goldenBackground;
+  final GoldenSceneBackground? _goldenBackground;
 
   /// Adds a screenshot item to the scene, based on a given [widget].
   Gallery itemFromWidget({
@@ -147,41 +142,43 @@ class Gallery {
 
   /// Either renders a new golden to a scene file, or compares new screenshots against an existing
   /// golden scene file.
-  Future<void> renderOrCompareGolden() async {
+  Future<void> renderOrCompareGolden(WidgetTester tester) async {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
 
     // Build each gallery item and screenshot it.
+    final itemScaffold = _itemScaffold ?? GoldenSceneTheme.current.itemScaffold;
+    print("Rendering gallery: Given scaffold: $_itemScaffold, chosen scaffold: $itemScaffold");
+    final itemDecorator = _itemDecorator ?? GoldenSceneTheme.current.itemDecorator;
     final camera = GoldenCamera();
+
     for (final item in _items) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
 
       if (item.pumper != null) {
         // Defer to the `pumper` to pump the entire widget tree for this gallery item.
-        await item.pumper!.call(_tester, _itemScaffold, _itemDecorator);
+        await item.pumper!.call(tester, itemScaffold, item.description, itemDecorator);
       } else if (item.builder != null) {
         // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
-        await _tester.pumpWidget(
-          _itemScaffold(
-            _tester,
-            _itemDecorator != null
-                ? _itemDecorator.call(
-                    _tester,
-                    Builder(builder: item.builder!),
-                  )
-                : Builder(builder: item.builder!),
+        await tester.pumpWidget(
+          itemScaffold(
+            tester,
+            itemDecorator.call(
+              tester,
+              item.description,
+              Builder(builder: item.builder!),
+            ),
           ),
         );
       } else {
         // Pump this gallery item, deferring to a `Widget` for the content.
-        await _tester.pumpWidget(
-          _itemScaffold(
-            _tester,
-            _itemDecorator != null
-                ? _itemDecorator.call(
-                    _tester,
-                    item.child!,
-                  )
-                : item.child!,
+        await tester.pumpWidget(
+          itemScaffold(
+            tester,
+            itemDecorator.call(
+              tester,
+              item.description,
+              item.child!,
+            ),
           ),
         );
       }
@@ -201,7 +198,7 @@ class Gallery {
     final photos = camera.photos;
     // TODO: cleanup the modeling of these photos vs renderable photos once things are working
     final renderablePhotos = <GoldenPhoto, (Uint8List, GlobalKey)>{};
-    await _tester.runAsync(() async {
+    await tester.runAsync(() async {
       for (final photo in photos) {
         final byteData = await photo.pixels.toByteData(format: ui.ImageByteFormat.png);
         renderablePhotos[photo] = (byteData!.buffer.asUint8List(), GlobalKey());
@@ -210,6 +207,7 @@ class Gallery {
 
     // Layout photos in the gallery so we can lookup their final offsets and sizes.
     var sceneMetadata = await _layoutPhotos(
+      tester,
       photos,
       renderablePhotos,
       _layout,
@@ -217,19 +215,19 @@ class Gallery {
     );
 
     FtgLog.pipeline.finer("Running momentary delay for render flakiness");
-    await _tester.runAsync(() async {
+    await tester.runAsync(() async {
       // Without this delay, the screenshot loading is spotty. However, with
       // this delay, we seem to always get screenshots displayed in the widget tree.
       // FIXME: Root cause this render flakiness and see if we can fix it.
       await Future.delayed(const Duration(milliseconds: 1));
     });
 
-    await _tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
       await _updateGoldenScene(
-        _tester,
+        tester,
         _fileName,
         sceneMetadata,
       );
@@ -237,7 +235,7 @@ class Gallery {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
       await _compareGoldens(
-        _tester,
+        tester,
         sceneMetadata,
         _fileName,
         find.byType(GoldenSceneBounds),
@@ -250,10 +248,11 @@ class Gallery {
 
   // TODO: de-dup this with FilmStrip
   Future<GoldenSceneMetadata> _layoutPhotos(
+    WidgetTester tester,
     List<GoldenPhoto> photos,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
     SceneLayout layout, {
-    Widget? goldenBackground,
+    GoldenSceneBackground? goldenBackground,
   }) async {
     // Layout the final strip within an OverflowBox to let it be whatever
     // size it wants. Then check the content render object for final dimensions.
@@ -282,13 +281,13 @@ class Gallery {
       goldenBackground: goldenBackground,
     );
 
-    await _tester.pumpWidgetAndAdjustWindow(gallery);
+    await tester.pumpWidgetAndAdjustWindow(gallery);
 
-    await _tester.runAsync(() async {
+    await tester.runAsync(() async {
       for (final entry in renderablePhotos.entries) {
         await precacheImage(
           MemoryImage(entry.value.$1),
-          _tester.element(find.byKey(entry.value.$2)),
+          tester.element(find.byKey(entry.value.$2)),
         );
       }
     });
@@ -313,7 +312,7 @@ class Gallery {
     GlobalKey contentKey,
     Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
     Key? galleryKey,
-    Widget? goldenBackground,
+    GoldenSceneBackground? goldenBackground,
   }) {
     return GoldenSceneBounds(
       child: IntrinsicWidth(
@@ -334,8 +333,8 @@ class Gallery {
     String goldenFileName,
     GoldenSceneMetadata sceneMetadata,
   ) async {
-    FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
-    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile("$goldenFileName.png"));
+    FtgLog.pipeline.finer("Doing golden generation - window height: ${tester.view.physicalSize.height}");
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
 
     final goldenFile = File(_goldenFilePath());
     var pngData = goldenFile.readAsBytesSync();
@@ -489,8 +488,9 @@ class Gallery {
 /// {@macro gallery_item_pumper_requirements}
 typedef GalleryItemPumper = Future<void> Function(
   WidgetTester tester,
-  GalleryItemScaffold scaffold,
-  GalleryItemDecorator? decorator,
+  GoldenSceneItemScaffold scaffold,
+  String description,
+  GoldenSceneItemDecorator? decorator,
 );
 
 /// Scaffolds a gallery item, such as building a `MaterialApp` with a `Scaffold`.
@@ -503,12 +503,12 @@ typedef GalleryItemPumper = Future<void> Function(
 ///         Gallery item decorator
 ///           Gallery item (the content)
 /// {@endtemplate}
-typedef GalleryItemScaffold = Widget Function(WidgetTester tester, Widget content);
+typedef GoldenSceneItemScaffold = Widget Function(WidgetTester tester, Widget content);
 
 /// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
 ///
 /// {@macro gallery_item_structure}
-typedef GalleryItemDecorator = Widget Function(WidgetTester tester, Widget content);
+typedef GoldenSceneItemDecorator = Widget Function(WidgetTester tester, String description, Widget content);
 
 /// A single UI screenshot within a gallery of gallery items.
 class GalleryItem {
@@ -563,31 +563,4 @@ class GalleryItem {
   /// The [Widget] that creates this gallery item, or `null` if this gallery
   /// item is created with a [pumper] or a [builder].
   final Widget? child;
-}
-
-/// The ancestor widget tree for every item in a gallery, unless overridden by
-/// the gallery configuration.
-Widget defaultGalleryItemScaffold(WidgetTester tester, Widget content) {
-  return MaterialApp(
-    home: Scaffold(
-      body: Builder(builder: (context) {
-        return DefaultTextStyle(
-          style: DefaultTextStyle.of(context).style.copyWith(
-                fontFamily: goldenBricks,
-              ),
-          child: Center(
-            child: GoldenImageBounds(child: content),
-          ),
-        );
-      }),
-    ),
-    debugShowCheckedModeBanner: false,
-  );
-}
-
-Widget defaultGalleryItemDecorator(WidgetTester tester, Widget content) {
-  return Padding(
-    padding: const EdgeInsets.all(24),
-    child: content,
-  );
 }

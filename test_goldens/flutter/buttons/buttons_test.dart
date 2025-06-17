@@ -130,9 +130,11 @@ void main() {
       tester,
       goldenName: "button_extended_fab_interactions",
       layout: SceneLayout.row,
-      goldenBackground: Image.memory(
-        backgroundImageBytes,
-        fit: BoxFit.cover,
+      goldenBackground: GoldenSceneBackground.widget(
+        Image.memory(
+          backgroundImageBytes,
+          fit: BoxFit.cover,
+        ),
       ),
     )
         .setupWithPump(() {
@@ -161,8 +163,6 @@ void main() {
     });
 
     await Gallery(
-      tester,
-      directory: Directory("."),
       fileName: "button_extended_fab_gallery",
       sceneDescription: "FAB Gallery",
       layout: SceneLayout.row,
@@ -171,10 +171,10 @@ void main() {
           child: child,
         );
       },
-      goldenBackground: Image.memory(
+      goldenBackground: GoldenSceneBackground.widget(Image.memory(
         backgroundImageBytes,
         fit: BoxFit.cover,
-      ),
+      )),
     )
         .itemFromWidget(
           id: "1",
@@ -202,6 +202,6 @@ void main() {
             onPressed: () {},
           ),
         )
-        .renderOrCompareGolden();
+        .renderOrCompareGolden(tester);
   });
 }
