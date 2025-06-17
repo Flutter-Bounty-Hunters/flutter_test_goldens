@@ -20,6 +20,7 @@ dependencies:
   path: ^1.9.0
 
 dev_dependencies:
+  file: ^7.0.1
   flutter_lints: ^5.0.0
 
   flutter_test_robots: ^0.0.24
@@ -27,6 +28,7 @@ dev_dependencies:
   lucid:
     git:
       url: git@github.com:Flutter-Bounty-Hunters/lucid.git
+  platform: ^3.1.6
 
 flutter:
   fonts:

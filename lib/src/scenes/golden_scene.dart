@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 
 class GoldenScene extends StatelessWidget {
@@ -75,3 +78,35 @@ class GoldenScene extends StatelessWidget {
     );
   }
 }
+
+/// Scaffolds a golden image, such as building a `MaterialApp` with a `Scaffold`.
+///
+/// {@template golden_structure}
+/// The structure of a golden is as follows:
+///
+///     Scaffold
+///       GoldenImageBounds (the default repaint boundary)
+///         Decorator
+///           Content
+/// {@endtemplate}
+typedef GoldenScaffold = Widget Function(WidgetTester tester, Widget content);
+
+/// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
+///
+/// {@macro golden_structure}
+typedef GoldenDecorator = Widget Function(WidgetTester tester, Widget content);
+
+/// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
+///
+/// {@macro gallery_item_pumper_purpose}
+///
+/// {@macro golden_structure}
+///
+/// {@macro gallery_item_pumper_requirements}
+typedef GoldenPumper = Future<Object?> Function(
+  WidgetTester tester,
+  GoldenScaffold scaffold,
+  GoldenDecorator? decorator,
+);
+
+typedef GoldenSetup = FutureOr<void> Function(WidgetTester tester);
