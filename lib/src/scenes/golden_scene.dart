@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
+import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 
 class GoldenScene extends StatelessWidget {
   const GoldenScene({
@@ -114,24 +115,27 @@ typedef GoldenSetup = FutureOr<void> Function(WidgetTester tester);
 
 /// A report of a golden scene test.
 ///
-/// Holds information to display the results of a golden scene test.
+/// Reports the success or failure of each individual golden in the scene, as well as
+/// the missing candidates and candidates that have no corresponding golden.
 class GoldenSceneReport {
   GoldenSceneReport({
     required this.sceneDescription,
+    required this.metadata,
     required this.items,
     required this.missingCandidates,
     required this.extraCandidates,
-    required this.totalPassed,
-    required this.totalFailed,
   });
 
   /// The human readable description of the scene.
   final String sceneDescription;
 
+  /// The metadata of the scene, such as the golden images and their positions.
+  final GoldenSceneMetadata metadata;
+
   /// The items found in the scene.
   ///
   /// Each item might be a successful or a failed golden check.
-  final List<GoldenReportItem> items;
+  final List<GoldenReport> items;
 
   /// The golden candidates that were expected to be present in the scene, but were not found.
   final List<MissingCandidateMismatch> missingCandidates;
@@ -140,49 +144,47 @@ class GoldenSceneReport {
   final List<MissingGoldenMismatch> extraCandidates;
 
   /// The total number of successful [items] in the scene.
-  final int totalPassed;
+  int get totalPassed => items.where((e) => e.status == GoldenTestStatus.success).length;
 
   /// The total number of failed [items] in the scene.
-  final int totalFailed;
+  int get totalFailed => items.where((e) => e.status == GoldenTestStatus.failure).length;
 }
 
 /// An item in a golden scene report.
 ///
 /// Each item represents a single gallery item that was found in both the original golden
 /// and the candidate image.
-class GoldenReportItem {
-  GoldenReportItem({
-    required this.status,
-    required this.description,
-    required this.details,
-  });
-
-  factory GoldenReportItem.success({
-    required String description,
-  }) {
-    return GoldenReportItem(
+class GoldenReport {
+  factory GoldenReport.success(GoldenImageMetadata metadata) {
+    return GoldenReport(
       status: GoldenTestStatus.success,
-      description: description,
+      metadata: metadata,
       details: [],
     );
   }
 
-  factory GoldenReportItem.failure({
-    required String description,
+  factory GoldenReport.failure({
+    required GoldenImageMetadata metadata,
     required List<GoldenCheckDetail> details,
   }) {
-    return GoldenReportItem(
+    return GoldenReport(
       status: GoldenTestStatus.failure,
-      description: description,
+      metadata: metadata,
       details: details,
     );
   }
 
+  GoldenReport({
+    required this.status,
+    required this.metadata,
+    required this.details,
+  });
+
   /// Whether the gallery item passed or failed the golden check.
   final GoldenTestStatus status;
 
-  /// The description of the gallery item that was checked.
-  final String description;
+  /// The metadata of the candidate image of this report.
+  final GoldenImageMetadata metadata;
 
   /// The details of the golden check for this item.
   ///

@@ -8,7 +8,7 @@ import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 
 /// Given a [mismatch] between a golden and a screenshot, generates an image
 /// that shows the golden, the screenshot, and the differences between them.
-Future<Image> generateFailureScene(GoldenMismatch mismatch) async {
+Future<Image> paintGoldenMismatchImages(GoldenMismatch mismatch) async {
   final goldenWidth = mismatch.golden!.image.width;
   final goldenHeight = mismatch.golden!.image.height;
 

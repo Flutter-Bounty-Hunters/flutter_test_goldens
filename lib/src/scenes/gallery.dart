@@ -472,12 +472,9 @@ class Gallery {
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
     final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
 
-    final items = <GoldenReportItem>[];
+    final items = <GoldenReport>[];
     final missingCandidates = <MissingCandidateMismatch>[];
     final extraCandidates = <MissingGoldenMismatch>[];
-
-    int totalPassed = 0;
-    int totalFailed = 0;
 
     FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
     for (final mismatch in mismatches.mismatches.values) {
@@ -506,16 +503,16 @@ class Gallery {
       final mismatch = mismatches.mismatches[screenshotId];
       if (mismatch == null) {
         // The golden check passed.
-        totalPassed += 1;
         items.add(
-          GoldenReportItem.success(description: goldenCollection.imagesById[screenshotId]!.id),
+          GoldenReport.success(
+            goldenCollection.metadata.images.where((image) => image.id == screenshotId).first,
+          ),
         );
       } else {
         // The golden check failed.
-        totalFailed += 1;
         items.add(
-          GoldenReportItem.failure(
-            description: goldenCollection.imagesById[screenshotId]!.id,
+          GoldenReport.failure(
+            metadata: goldenCollection.metadata.images.where((image) => image.id == screenshotId).first,
             details: [
               GoldenCheckDetail(
                 status: GoldenTestStatus.failure,
@@ -541,7 +538,7 @@ class Gallery {
       Directory(_goldenFailureDirectoryPath).createSync();
 
       await tester.runAsync(() async {
-        final failureImage = await generateFailureScene(mismatch);
+        final failureImage = await paintGoldenMismatchImages(mismatch);
 
         await encodePngFile(
           "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
@@ -552,11 +549,10 @@ class Gallery {
 
     final report = GoldenSceneReport(
       sceneDescription: _sceneDescription,
+      metadata: goldenCollection.metadata,
       items: items,
       missingCandidates: missingCandidates,
       extraCandidates: extraCandidates,
-      totalPassed: totalPassed,
-      totalFailed: totalFailed,
     );
     _printReport(report);
 

@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:image/image.dart' as img;
 
 /// A collection of in-memory golden images or screenshot images.
@@ -12,9 +13,14 @@ import 'package:image/image.dart' as img;
 /// corresponding golden image.
 /// {@endtemplate}
 class GoldenCollection {
-  GoldenCollection(this.imagesById);
+  GoldenCollection(
+    this.imagesById, {
+    required this.metadata,
+  });
 
   final Map<String, GoldenImage> imagesById;
+
+  final GoldenSceneMetadata metadata;
 
   List<String> get ids => imagesById.keys.toList(growable: false);
 

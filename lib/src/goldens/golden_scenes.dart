@@ -100,7 +100,10 @@ GoldenCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, 
     );
   }
 
-  return GoldenCollection(goldenImages);
+  return GoldenCollection(
+    goldenImages,
+    metadata: sceneMetadata,
+  );
 }
 
 RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {

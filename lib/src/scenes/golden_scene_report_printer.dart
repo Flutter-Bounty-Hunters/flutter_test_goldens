@@ -35,7 +35,7 @@ class GoldenSceneReportPrinter {
       buffer.writeln("");
       for (final item in report.items) {
         if (item.status == GoldenTestStatus.success) {
-          buffer.writeln("✅ ${item.description}");
+          buffer.writeln("✅ ${item.metadata.id}");
           continue;
         }
 
@@ -48,18 +48,18 @@ class GoldenSceneReportPrinter {
         switch (mismatch) {
           case WrongSizeGoldenMismatch():
             buffer.writeln(
-                '"❌ ${item.description}" has an unexpected size (expected: ${mismatch.golden.size}, actual: ${mismatch.screenshot.size})');
+                '"❌ ${item.metadata.id}" has an unexpected size (expected: ${mismatch.golden.size}, actual: ${mismatch.screenshot.size})');
             break;
           case PixelGoldenMismatch():
             buffer.writeln(
-                '"❌ ${item.description}" has a ${(mismatch.percent * 100).toStringAsFixed(2)}% (${mismatch.mismatchPixelCount}px) mismatch');
+                '"❌ ${item.metadata.id}" has a ${(mismatch.percent * 100).toStringAsFixed(2)}% (${mismatch.mismatchPixelCount}px) mismatch');
             break;
           case MissingGoldenMismatch():
           case MissingCandidateMismatch():
             // Don't print anything, missing goldens are reported at the end.
             break;
           default:
-            buffer.writeln('"❌ ${item.description}": ${mismatch!.describe}');
+            buffer.writeln('"❌ ${item.metadata.id}": ${mismatch!.describe}');
             break;
         }
       }
