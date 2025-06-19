@@ -101,7 +101,7 @@ class PixelGoldenMismatch extends GoldenMismatch {
 
   int get totalPixelCount => golden.size.width.toInt() * golden.size.height.toInt();
 
-  double get percent => mismatchPixelCount / totalPixelCount;
+  double get percent => mismatchPixelCount / totalPixelCount * 100;
 
   @override
   String get describe =>

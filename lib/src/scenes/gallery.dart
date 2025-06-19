@@ -471,102 +471,164 @@ class Gallery {
     // Compare goldens in the scene.
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
     final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
-    if (mismatches.mismatches.isNotEmpty) {
-      FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
-      for (final mismatch in mismatches.mismatches.values) {
-        FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
+
+    final items = <GoldenReportItem>[];
+    final missingCandidates = <MissingGoldenMismatch>[];
+    final extraCandidates = <MissingGoldenMismatch>[];
+
+    int totalPassed = 0;
+    int totalFailed = 0;
+
+    FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
+    for (final mismatch in mismatches.mismatches.values) {
+      FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
+      switch (mismatch) {
+        case MissingGoldenMismatch(screenshot: null):
+          // A golden candidate is missing.
+          missingCandidates.add(mismatch);
+          break;
+        case MissingGoldenMismatch(golden: null):
+          // We have a golden candidate, but not the original golden.
+          extraCandidates.add(mismatch);
+          break;
+      }
+    }
+
+    for (final screenshotId in screenshotCollection.ids) {
+      if (!goldenCollection.hasId(screenshotId)) {
+        continue;
       }
 
-      for (final mismatch in mismatches.mismatches.values) {
-        if (mismatch.golden == null || mismatch.screenshot == null) {
-          continue;
+      final mismatch = mismatches.mismatches[screenshotId];
+
+      final status = mismatch != null //
+          ? GoldenTestStatus.failure
+          : GoldenTestStatus.success;
+
+      if (status == GoldenTestStatus.success) {
+        totalPassed += 1;
+      } else {
+        totalFailed += 1;
+      }
+
+      items.add(
+        GoldenReportItem(
+          status: status,
+          description: goldenCollection.imagesById[screenshotId]!.id,
+          details: [
+            if (mismatch != null)
+              GoldenCheckDetail(
+                status: GoldenTestStatus.failure,
+                description: mismatch.toString(),
+                mismatch: mismatch,
+              ),
+          ],
+        ),
+      );
+    }
+
+    final report = GoldenSceneReport(
+      sceneDescription: _sceneDescription,
+      items: items,
+      missingCandidates: missingCandidates,
+      extraCandidates: extraCandidates,
+      totalPassed: totalPassed,
+      totalFailed: totalFailed,
+    );
+    _printReport(report);
+
+    if (mismatches.mismatches.isEmpty) {
+      FtgLog.pipeline.info("No golden mismatches found");
+      return;
+    }
+
+    for (final mismatch in mismatches.mismatches.values) {
+      if (mismatch.golden == null || mismatch.screenshot == null) {
+        continue;
+      }
+
+      FtgLog.pipeline.fine("Painting a golden failure: $mismatch");
+      Directory(_goldenFailureDirectoryPath).createSync();
+
+      await tester.runAsync(() async {
+        final goldenWidth = mismatch.golden!.image.width;
+        final goldenHeight = mismatch.golden!.image.height;
+
+        final screenshotWidth = mismatch.screenshot!.image.width;
+        final screenshotHeight = mismatch.screenshot!.image.height;
+
+        final maxWidth = max(goldenWidth, screenshotWidth);
+        final maxHeight = max(goldenHeight, screenshotHeight);
+
+        final failureImage = Image(
+          width: maxWidth * 2,
+          height: maxHeight * 2,
+        );
+
+        // Copy golden to top left corner.
+        for (int x = 0; x < goldenWidth; x += 1) {
+          for (int y = 0; y < goldenHeight; y += 1) {
+            final goldenPixel = mismatch.golden!.image.getPixel(x, y);
+            failureImage.setPixel(x, y, goldenPixel);
+          }
         }
 
-        FtgLog.pipeline.fine("Painting a golden failure: $mismatch");
-        Directory(_goldenFailureDirectoryPath).createSync();
-
-        await tester.runAsync(() async {
-          final goldenWidth = mismatch.golden!.image.width;
-          final goldenHeight = mismatch.golden!.image.height;
-
-          final screenshotWidth = mismatch.screenshot!.image.width;
-          final screenshotHeight = mismatch.screenshot!.image.height;
-
-          final maxWidth = max(goldenWidth, screenshotWidth);
-          final maxHeight = max(goldenHeight, screenshotHeight);
-
-          final failureImage = Image(
-            width: maxWidth * 2,
-            height: maxHeight * 2,
-          );
-
-          // Copy golden to top left corner.
-          for (int x = 0; x < goldenWidth; x += 1) {
-            for (int y = 0; y < goldenHeight; y += 1) {
-              final goldenPixel = mismatch.golden!.image.getPixel(x, y);
-              failureImage.setPixel(x, y, goldenPixel);
-            }
+        // Copy screenshot to top right corner.
+        for (int x = 0; x < screenshotWidth; x += 1) {
+          for (int y = 0; y < screenshotHeight; y += 1) {
+            final screenshotPixel = mismatch.screenshot!.image.getPixel(x, y);
+            failureImage.setPixel(maxWidth + x, y, screenshotPixel);
           }
+        }
 
-          // Copy screenshot to top right corner.
-          for (int x = 0; x < screenshotWidth; x += 1) {
-            for (int y = 0; y < screenshotHeight; y += 1) {
-              final screenshotPixel = mismatch.screenshot!.image.getPixel(x, y);
-              failureImage.setPixel(maxWidth + x, y, screenshotPixel);
-            }
-          }
-
-          // Paint mismatch images.
-          final absoluteDiffColor = ColorUint32.rgb(255, 255, 0);
-          for (int x = 0; x < maxWidth; x += 1) {
-            for (int y = 0; y < maxHeight; y += 1) {
-              if (x >= goldenWidth || x >= screenshotWidth || y >= goldenHeight || y >= screenshotHeight) {
-                // This pixel doesn't exist in the golden, or it doesn't exist in the
-                // screenshot. Therefore, we have nothing to compare. Treat this pixel
-                // as a max severity difference.
-
-                // Paint this pixel in the absolute diff image.
-                failureImage.setPixel(x, maxHeight + y, absoluteDiffColor);
-
-                // Paint this pixel in the relative severity diff image.
-                failureImage.setPixel(maxWidth + x, maxHeight + y, absoluteDiffColor);
-
-                continue;
-              }
-
-              // Check if the screenshot matches the golden.
-              final goldenPixel = mismatch.golden!.image.getPixel(x, y);
-              final screenshotPixel = mismatch.screenshot!.image.getPixel(x, y);
-              final pixelsMatch = goldenPixel == screenshotPixel;
-              if (pixelsMatch) {
-                continue;
-              }
+        // Paint mismatch images.
+        final absoluteDiffColor = ColorUint32.rgb(255, 255, 0);
+        for (int x = 0; x < maxWidth; x += 1) {
+          for (int y = 0; y < maxHeight; y += 1) {
+            if (x >= goldenWidth || x >= screenshotWidth || y >= goldenHeight || y >= screenshotHeight) {
+              // This pixel doesn't exist in the golden, or it doesn't exist in the
+              // screenshot. Therefore, we have nothing to compare. Treat this pixel
+              // as a max severity difference.
 
               // Paint this pixel in the absolute diff image.
               failureImage.setPixel(x, maxHeight + y, absoluteDiffColor);
 
               // Paint this pixel in the relative severity diff image.
-              final mismatchPercent = calculateColorMismatchPercent(goldenPixel, screenshotPixel);
-              final yellowAmount = ui.lerpDouble(0.2, 1.0, mismatchPercent)!;
-              failureImage.setPixel(
-                goldenWidth + x,
-                goldenHeight + y,
-                ColorUint32.rgb((255 * yellowAmount).round(), (255 * yellowAmount).round(), 0),
-              );
+              failureImage.setPixel(maxWidth + x, maxHeight + y, absoluteDiffColor);
+
+              continue;
             }
+
+            // Check if the screenshot matches the golden.
+            final goldenPixel = mismatch.golden!.image.getPixel(x, y);
+            final screenshotPixel = mismatch.screenshot!.image.getPixel(x, y);
+            final pixelsMatch = goldenPixel == screenshotPixel;
+            if (pixelsMatch) {
+              continue;
+            }
+
+            // Paint this pixel in the absolute diff image.
+            failureImage.setPixel(x, maxHeight + y, absoluteDiffColor);
+
+            // Paint this pixel in the relative severity diff image.
+            final mismatchPercent = calculateColorMismatchPercent(goldenPixel, screenshotPixel);
+            final yellowAmount = ui.lerpDouble(0.2, 1.0, mismatchPercent)!;
+            failureImage.setPixel(
+              goldenWidth + x,
+              goldenHeight + y,
+              ColorUint32.rgb((255 * yellowAmount).round(), (255 * yellowAmount).round(), 0),
+            );
           }
+        }
 
-          await encodePngFile(
-            "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
-            failureImage,
-          );
-        });
-      }
-
-      throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
-    } else {
-      FtgLog.pipeline.info("No golden mismatches found");
+        await encodePngFile(
+          "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
+          failureImage,
+        );
+      });
     }
+
+    throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
   }
 
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
@@ -580,6 +642,90 @@ class Gallery {
       "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
 
   String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
+
+  /// Prints the report in an human readable format to the console.
+  void _printReport(GoldenSceneReport report) {
+    if (report.totalFailed == 0 && //
+        report.missingCandidates.isEmpty &&
+        report.extraCandidates.isEmpty) {
+      // All checks passed. Don't print anything.
+      return;
+    }
+
+    final buffer = StringBuffer();
+
+    // Report the summary of passed/failed tests and missing/extra candidates.
+    buffer.write("Golden scene has failures: ${report.sceneDescription} (");
+    buffer.write("✅ ${report.totalPassed}/${report.items.length}, ");
+    buffer.write("❌ ${report.totalFailed}/${report.items.length}");
+    if (report.missingCandidates.isNotEmpty || report.extraCandidates.isNotEmpty) {
+      buffer.write(", ❓");
+
+      if (report.missingCandidates.isNotEmpty) {
+        buffer.write(" -${report.missingCandidates.length}");
+      }
+
+      if (report.extraCandidates.isNotEmpty) {
+        if (report.missingCandidates.isNotEmpty) {
+          buffer.write(" /");
+        }
+        buffer.write(" +${report.extraCandidates.length}");
+      }
+    }
+    buffer.writeln(")");
+
+    if (report.totalFailed > 0) {
+      buffer.writeln("");
+      for (final item in report.items) {
+        if (item.status == GoldenTestStatus.success) {
+          buffer.writeln("✅ ${item.description}");
+          continue;
+        }
+
+        // This item has a failed check.
+        final mismatch = item.details //
+            .where((detail) => detail.mismatch != null)
+            .firstOrNull
+            ?.mismatch;
+
+        switch (mismatch) {
+          case WrongSizeGoldenMismatch():
+            buffer.writeln(
+                '"❌ ${item.description}" has an unexpected size (expected: ${mismatch.golden.size}, actual: ${mismatch.screenshot.size})');
+            break;
+          case PixelGoldenMismatch():
+            buffer.writeln(
+                '"❌ ${item.description}" has a ${mismatch.percent.toStringAsFixed(2)}% (${mismatch.mismatchPixelCount}px) mismatch');
+            break;
+          case MissingGoldenMismatch():
+            // Don't print anything, missing goldens are reported at the end.
+            break;
+          default:
+            buffer.writeln('"❌ ${item.description}": ${mismatch!.describe}');
+            break;
+        }
+      }
+    }
+
+    if (report.missingCandidates.isNotEmpty) {
+      buffer.writeln("");
+      buffer.writeln("Missing goldens:");
+      for (final mismatch in report.missingCandidates) {
+        buffer.writeln('❓ "${mismatch.golden!.id}"');
+      }
+    }
+
+    if (report.extraCandidates.isNotEmpty) {
+      buffer.writeln("");
+      buffer.writeln("Extra (unexpected) candidates:");
+      for (final mismatch in report.extraCandidates) {
+        buffer.writeln('❓ "${mismatch.screenshot!.id}"');
+      }
+    }
+
+    // ignore: avoid_print
+    print(buffer.toString());
+  }
 }
 
 /// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
@@ -700,4 +846,81 @@ Widget defaultGalleryItemDecorator(WidgetTester tester, Widget content) {
     padding: const EdgeInsets.all(24),
     child: content,
   );
+}
+
+/// A report of a golden scene test.
+///
+/// Holds information to display the results of a golden scene test.
+class GoldenSceneReport {
+  GoldenSceneReport({
+    required this.sceneDescription,
+    required this.items,
+    required this.missingCandidates,
+    required this.extraCandidates,
+    required this.totalPassed,
+    required this.totalFailed,
+  });
+
+  /// The human readable description of the scene.
+  final String sceneDescription;
+
+  /// The items found in the scene.
+  ///
+  /// Each item might be a successful or a failed golden check.
+  final List<GoldenReportItem> items;
+
+  /// The golden candidates that were expected to be present in the scene, but were not found.
+  final List<MissingGoldenMismatch> missingCandidates;
+
+  /// The golden candidates that were found in the scene, but were not expected to be present.
+  final List<MissingGoldenMismatch> extraCandidates;
+
+  /// The total number of successful [items] in the scene.
+  final int totalPassed;
+
+  /// The total number of failed [items] in the scene.
+  final int totalFailed;
+}
+
+/// An item in a golden scene report.
+///
+/// Each item represents a single gallery item that was found in both the original golden
+/// and the candidate image.
+class GoldenReportItem {
+  GoldenReportItem({
+    required this.status,
+    required this.description,
+    required this.details,
+  });
+
+  /// Whether the gallery item passed or failed the golden check.
+  final GoldenTestStatus status;
+
+  /// The description of the gallery item that was checked.
+  final String description;
+
+  /// The details of the golden check for this item.
+  ///
+  /// Might contain both successful and failed checks.
+  final List<GoldenCheckDetail> details;
+}
+
+class GoldenCheckDetail {
+  GoldenCheckDetail({
+    required this.status,
+    required this.description,
+    this.mismatch,
+  }) : assert(
+          status != GoldenTestStatus.success || mismatch == null,
+          "A successful golden test cannot have a mismatch",
+        );
+
+  final GoldenTestStatus status;
+  final String description;
+  final GoldenMismatch? mismatch;
+}
+
+enum GoldenTestStatus {
+  success,
+  failure,
 }
