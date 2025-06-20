@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -23,10 +22,13 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
   final scenePngBytes = file.readAsBytesSync();
 
   // Extract scene metadata from PNG.
-  final sceneMetadata = _extractGoldenSceneMetadataFromBytes(scenePngBytes);
-  if (sceneMetadata == null) {
+  final pngText = scenePngBytes.readTextMetadata();
+  final sceneJsonText = pngText["flutter_test_goldens"];
+  if (sceneJsonText == null) {
     throw Exception("Golden image is missing scene metadata: ${file.path}");
   }
+  final sceneJson = JsonDecoder().convert(sceneJsonText);
+  final sceneMetadata = GoldenSceneMetadata.fromJson(sceneJson);
 
   // Decode PNG data to an image.
   final sceneImage = decodePng(scenePngBytes);
@@ -80,31 +82,6 @@ Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(
 
   // Extract the golden images from the scene image.
   return _extractCollectionFromScene(sceneMetadata, treeImage);
-}
-
-/// Extracts then golden scene metadata within the given image [file].
-GoldenSceneMetadata extractGoldenSceneMetadataFromFile(File file) {
-  // Read the scene PNG data into memory.
-  final scenePngBytes = file.readAsBytesSync();
-
-  // Extract scene metadata from PNG.
-  final sceneMetadata = _extractGoldenSceneMetadataFromBytes(scenePngBytes);
-  if (sceneMetadata == null) {
-    throw Exception("Golden image is missing scene metadata: ${file.path}");
-  }
-
-  return sceneMetadata;
-}
-
-GoldenSceneMetadata? _extractGoldenSceneMetadataFromBytes(Uint8List pngBytes) {
-  // Extract scene metadata from PNG.
-  final pngText = pngBytes.readTextMetadata();
-  final sceneJsonText = pngText["flutter_test_goldens"];
-  if (sceneJsonText == null) {
-    return null;
-  }
-  final sceneJson = JsonDecoder().convert(sceneJsonText);
-  return GoldenSceneMetadata.fromJson(sceneJson);
 }
 
 GoldenCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, Image sceneImage) {

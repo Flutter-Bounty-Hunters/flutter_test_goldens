@@ -461,7 +461,16 @@ class Gallery {
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
-    final metadata = extractGoldenSceneMetadataFromFile(goldenFile);
+
+    // Extract scene metadata from the existing golden file.
+    final scenePngBytes = goldenFile.readAsBytesSync();
+    final pngText = scenePngBytes.readTextMetadata();
+    final sceneJsonText = pngText["flutter_test_goldens"];
+    if (sceneJsonText == null) {
+      throw Exception("Golden image is missing scene metadata: ${goldenFile.path}");
+    }
+    final sceneJson = JsonDecoder().convert(sceneJsonText);
+    final metadata = GoldenSceneMetadata.fromJson(sceneJson);
 
     // Extract scene metadata from the current widget tree.
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
