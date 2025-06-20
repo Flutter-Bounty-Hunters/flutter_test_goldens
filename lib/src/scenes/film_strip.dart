@@ -277,6 +277,7 @@ class FilmStrip {
     // Lookup and return metadata for the position and size of each golden image
     // within the gallery.
     return GoldenSceneMetadata(
+      description: goldenName,
       images: [
         for (final golden in renderablePhotos.keys)
           GoldenImageMetadata(
@@ -339,7 +340,7 @@ class FilmStrip {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
-    final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
+    final (goldenCollection, metadata) = extractGoldenCollectionFromSceneFile(goldenFile);
 
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
     late final GoldenCollection screenshotCollection;

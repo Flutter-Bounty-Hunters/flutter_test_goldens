@@ -119,15 +119,11 @@ typedef GoldenSetup = FutureOr<void> Function(WidgetTester tester);
 /// the missing candidates and candidates that have no corresponding golden.
 class GoldenSceneReport {
   GoldenSceneReport({
-    required this.sceneDescription,
     required this.metadata,
     required this.items,
     required this.missingCandidates,
     required this.extraCandidates,
   });
-
-  /// The human readable description of the scene.
-  final String sceneDescription;
 
   /// The metadata of the scene, such as the golden images and their positions.
   final GoldenSceneMetadata metadata;
@@ -159,26 +155,28 @@ class GoldenReport {
     return GoldenReport(
       status: GoldenTestStatus.success,
       metadata: metadata,
-      details: [],
     );
   }
 
   factory GoldenReport.failure({
     required GoldenImageMetadata metadata,
-    required List<GoldenCheckDetail> details,
+    required GoldenMismatch mismatch,
   }) {
     return GoldenReport(
       status: GoldenTestStatus.failure,
       metadata: metadata,
-      details: details,
+      mismatch: mismatch,
     );
   }
 
   GoldenReport({
     required this.status,
     required this.metadata,
-    required this.details,
-  });
+    this.mismatch,
+  }) : assert(
+          status == GoldenTestStatus.success || mismatch != null,
+          "A failure report must have a mismatch.",
+        );
 
   /// Whether the gallery item passed or failed the golden check.
   final GoldenTestStatus status;
@@ -186,24 +184,9 @@ class GoldenReport {
   /// The metadata of the candidate image of this report.
   final GoldenImageMetadata metadata;
 
-  /// The details of the golden check for this item.
+  /// The failure details of the gallery item, if it failed the golden check.
   ///
-  /// Might contain both successful and failed checks.
-  final List<GoldenCheckDetail> details;
-}
-
-class GoldenCheckDetail {
-  GoldenCheckDetail({
-    required this.status,
-    required this.description,
-    this.mismatch,
-  }) : assert(
-          status != GoldenTestStatus.success || mismatch == null,
-          "A successful golden test cannot have a mismatch",
-        );
-
-  final GoldenTestStatus status;
-  final String description;
+  /// Non-`null` if [status] is [GoldenTestStatus.failure] and `null` otherwise.
   final GoldenMismatch? mismatch;
 }
 

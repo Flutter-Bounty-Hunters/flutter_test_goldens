@@ -13,14 +13,9 @@ import 'package:image/image.dart' as img;
 /// corresponding golden image.
 /// {@endtemplate}
 class GoldenCollection {
-  GoldenCollection(
-    this.imagesById, {
-    required this.metadata,
-  });
+  GoldenCollection(this.imagesById);
 
   final Map<String, GoldenImage> imagesById;
-
-  final GoldenSceneMetadata metadata;
 
   List<String> get ids => imagesById.keys.toList(growable: false);
 

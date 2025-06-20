@@ -396,6 +396,7 @@ class Gallery {
     // Lookup and return metadata for the position and size of each golden image
     // within the gallery.
     return GoldenSceneMetadata(
+      description: _sceneDescription,
       images: [
         for (final golden in renderablePhotos.keys)
           GoldenImageMetadata(
@@ -459,7 +460,7 @@ class Gallery {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
-    final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
+    final (goldenCollection, metadata) = extractGoldenCollectionFromSceneFile(goldenFile);
 
     // Extract scene metadata from the current widget tree.
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
@@ -505,21 +506,15 @@ class Gallery {
         // The golden check passed.
         items.add(
           GoldenReport.success(
-            goldenCollection.metadata.images.where((image) => image.id == screenshotId).first,
+            metadata.images.where((image) => image.id == screenshotId).first,
           ),
         );
       } else {
         // The golden check failed.
         items.add(
           GoldenReport.failure(
-            metadata: goldenCollection.metadata.images.where((image) => image.id == screenshotId).first,
-            details: [
-              GoldenCheckDetail(
-                status: GoldenTestStatus.failure,
-                description: mismatch.toString(),
-                mismatch: mismatch,
-              ),
-            ],
+            metadata: metadata.images.where((image) => image.id == screenshotId).first,
+            mismatch: mismatch,
           ),
         );
       }
@@ -548,8 +543,8 @@ class Gallery {
     }
 
     final report = GoldenSceneReport(
-      sceneDescription: _sceneDescription,
-      metadata: goldenCollection.metadata,
+      //sceneDescription: _sceneDescription,
+      metadata: metadata,
       items: items,
       missingCandidates: missingCandidates,
       extraCandidates: extraCandidates,

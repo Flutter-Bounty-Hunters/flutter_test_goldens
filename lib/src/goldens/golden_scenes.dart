@@ -15,7 +15,7 @@ import 'package:image/image.dart';
 ///
 /// This function loads the scene image from the [file], extracts each individual golden
 /// image from the scene, and then returns all of those golden images as a [GoldenCollection].
-GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
+(GoldenCollection, GoldenSceneMetadata) extractGoldenCollectionFromSceneFile(File file) {
   FtgLog.pipeline.fine("Extracting golden collection from golden image.");
 
   // Read the scene PNG data into memory.
@@ -38,7 +38,7 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
   }
 
   // Extract the golden images from the scene image.
-  return _extractCollectionFromScene(sceneMetadata, sceneImage);
+  return (_extractCollectionFromScene(sceneMetadata, sceneImage), sceneMetadata);
 }
 
 /// Extracts a [GoldenCollection] from a golden scene within the current widget tree.
@@ -100,10 +100,7 @@ GoldenCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, 
     );
   }
 
-  return GoldenCollection(
-    goldenImages,
-    metadata: sceneMetadata,
-  );
+  return GoldenCollection(goldenImages);
 }
 
 RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
@@ -131,6 +128,7 @@ RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
 class GoldenSceneMetadata {
   static GoldenSceneMetadata fromJson(Map<String, dynamic> json) {
     return GoldenSceneMetadata(
+      description: json["description"] ?? "",
       images: [
         for (final imageJson in (json["images"] as List<dynamic>)) //
           GoldenImageMetadata.fromJson(imageJson),
@@ -139,13 +137,16 @@ class GoldenSceneMetadata {
   }
 
   const GoldenSceneMetadata({
+    required this.description,
     required this.images,
   });
 
+  final String description;
   final List<GoldenImageMetadata> images;
 
   Map<String, dynamic> toJson() {
     return {
+      "description": description,
       "images": images.map((image) => image.toJson()).toList(growable: false),
     };
   }

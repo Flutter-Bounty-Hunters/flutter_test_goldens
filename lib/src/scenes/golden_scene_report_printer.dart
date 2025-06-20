@@ -12,7 +12,7 @@ class GoldenSceneReportPrinter {
     final buffer = StringBuffer();
 
     // Report the summary of passed/failed tests and missing/extra candidates.
-    buffer.write("Golden scene has failures: ${report.sceneDescription} (");
+    buffer.write("Golden scene has failures: ${report.metadata.description} (");
     buffer.write("✅ ${report.totalPassed}/${report.items.length}, ");
     buffer.write("❌ ${report.totalFailed}/${report.items.length}");
     if (report.missingCandidates.isNotEmpty || report.extraCandidates.isNotEmpty) {
@@ -40,11 +40,7 @@ class GoldenSceneReportPrinter {
         }
 
         // This item has a failed check.
-        final mismatch = item.details //
-            .where((detail) => detail.mismatch != null)
-            .firstOrNull
-            ?.mismatch;
-
+        final mismatch = item.mismatch;
         switch (mismatch) {
           case WrongSizeGoldenMismatch():
             buffer.writeln(
