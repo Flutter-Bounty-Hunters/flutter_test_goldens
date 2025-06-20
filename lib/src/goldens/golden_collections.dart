@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:image/image.dart' as img;
 
 /// A collection of in-memory golden images or screenshot images.

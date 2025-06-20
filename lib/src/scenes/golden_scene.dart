@@ -143,13 +143,18 @@ class GoldenSceneReport {
   int get totalPassed => items.where((e) => e.status == GoldenTestStatus.success).length;
 
   /// The total number of failed [items] in the scene.
+  ///
+  /// Only candidates that have a corresponding golden image and failed the golden check
+  /// count as a failure.
+  ///
+  /// See [missingCandidates] for candidates that were expected but not found,
+  /// and [extraCandidates] for candidates that were found but not expected.
   int get totalFailed => items.where((e) => e.status == GoldenTestStatus.failure).length;
 }
 
-/// An item in a golden scene report.
+/// A report of success or failure for a single golden within a scene.
 ///
-/// Each item represents a single gallery item that was found in both the original golden
-/// and the candidate image.
+/// A [GoldenReport] holds the test results for a candidate that has a corresponding golden.
 class GoldenReport {
   factory GoldenReport.success(GoldenImageMetadata metadata) {
     return GoldenReport(

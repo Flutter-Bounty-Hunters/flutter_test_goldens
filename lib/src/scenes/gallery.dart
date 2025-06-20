@@ -511,19 +511,20 @@ class Gallery {
         continue;
       }
 
+      // Find the golden metadata for this candidate.
+      final goldenMetadata = metadata.images.where((image) => image.id == screenshotId).first;
+
       final mismatch = mismatches.mismatches[screenshotId];
       if (mismatch == null) {
         // The golden check passed.
         items.add(
-          GoldenReport.success(
-            metadata.images.where((image) => image.id == screenshotId).first,
-          ),
+          GoldenReport.success(goldenMetadata),
         );
       } else {
         // The golden check failed.
         items.add(
           GoldenReport.failure(
-            metadata: metadata.images.where((image) => image.id == screenshotId).first,
+            metadata: goldenMetadata,
             mismatch: mismatch,
           ),
         );
@@ -553,7 +554,6 @@ class Gallery {
     }
 
     final report = GoldenSceneReport(
-      //sceneDescription: _sceneDescription,
       metadata: metadata,
       items: items,
       missingCandidates: missingCandidates,
