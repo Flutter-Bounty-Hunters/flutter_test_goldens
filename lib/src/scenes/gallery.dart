@@ -460,7 +460,8 @@ class Gallery {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
-    final (goldenCollection, metadata) = extractGoldenCollectionFromSceneFile(goldenFile);
+    final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
+    final metadata = extractGoldenSceneMetadataFromFile(goldenFile);
 
     // Extract scene metadata from the current widget tree.
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");

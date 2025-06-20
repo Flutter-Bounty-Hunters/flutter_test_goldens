@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
@@ -15,20 +16,17 @@ import 'package:image/image.dart';
 ///
 /// This function loads the scene image from the [file], extracts each individual golden
 /// image from the scene, and then returns all of those golden images as a [GoldenCollection].
-(GoldenCollection, GoldenSceneMetadata) extractGoldenCollectionFromSceneFile(File file) {
+GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
   FtgLog.pipeline.fine("Extracting golden collection from golden image.");
 
   // Read the scene PNG data into memory.
   final scenePngBytes = file.readAsBytesSync();
 
   // Extract scene metadata from PNG.
-  final pngText = scenePngBytes.readTextMetadata();
-  final sceneJsonText = pngText["flutter_test_goldens"];
-  if (sceneJsonText == null) {
+  final sceneMetadata = _extractGoldenSceneMetadataFromBytes(scenePngBytes);
+  if (sceneMetadata == null) {
     throw Exception("Golden image is missing scene metadata: ${file.path}");
   }
-  final sceneJson = JsonDecoder().convert(sceneJsonText);
-  final sceneMetadata = GoldenSceneMetadata.fromJson(sceneJson);
 
   // Decode PNG data to an image.
   final sceneImage = decodePng(scenePngBytes);
@@ -38,7 +36,7 @@ import 'package:image/image.dart';
   }
 
   // Extract the golden images from the scene image.
-  return (_extractCollectionFromScene(sceneMetadata, sceneImage), sceneMetadata);
+  return _extractCollectionFromScene(sceneMetadata, sceneImage);
 }
 
 /// Extracts a [GoldenCollection] from a golden scene within the current widget tree.
@@ -82,6 +80,31 @@ Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(
 
   // Extract the golden images from the scene image.
   return _extractCollectionFromScene(sceneMetadata, treeImage);
+}
+
+/// Extracts then golden scene metadata within the given image [file].
+GoldenSceneMetadata extractGoldenSceneMetadataFromFile(File file) {
+  // Read the scene PNG data into memory.
+  final scenePngBytes = file.readAsBytesSync();
+
+  // Extract scene metadata from PNG.
+  final sceneMetadata = _extractGoldenSceneMetadataFromBytes(scenePngBytes);
+  if (sceneMetadata == null) {
+    throw Exception("Golden image is missing scene metadata: ${file.path}");
+  }
+
+  return sceneMetadata;
+}
+
+GoldenSceneMetadata? _extractGoldenSceneMetadataFromBytes(Uint8List pngBytes) {
+  // Extract scene metadata from PNG.
+  final pngText = pngBytes.readTextMetadata();
+  final sceneJsonText = pngText["flutter_test_goldens"];
+  if (sceneJsonText == null) {
+    return null;
+  }
+  final sceneJson = JsonDecoder().convert(sceneJsonText);
+  return GoldenSceneMetadata.fromJson(sceneJson);
 }
 
 GoldenCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, Image sceneImage) {

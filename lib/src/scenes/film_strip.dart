@@ -340,7 +340,7 @@ class FilmStrip {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
-    final (goldenCollection, metadata) = extractGoldenCollectionFromSceneFile(goldenFile);
+    final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
 
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
     late final GoldenCollection screenshotCollection;
