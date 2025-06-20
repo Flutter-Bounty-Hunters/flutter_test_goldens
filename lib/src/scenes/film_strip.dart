@@ -277,6 +277,7 @@ class FilmStrip {
     // Lookup and return metadata for the position and size of each golden image
     // within the gallery.
     return GoldenSceneMetadata(
+      description: goldenName,
       images: [
         for (final golden in renderablePhotos.keys)
           GoldenImageMetadata(

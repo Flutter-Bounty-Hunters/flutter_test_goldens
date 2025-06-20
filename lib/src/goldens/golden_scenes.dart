@@ -128,6 +128,7 @@ RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
 class GoldenSceneMetadata {
   static GoldenSceneMetadata fromJson(Map<String, dynamic> json) {
     return GoldenSceneMetadata(
+      description: json["description"] ?? "",
       images: [
         for (final imageJson in (json["images"] as List<dynamic>)) //
           GoldenImageMetadata.fromJson(imageJson),
@@ -136,13 +137,16 @@ class GoldenSceneMetadata {
   }
 
   const GoldenSceneMetadata({
+    required this.description,
     required this.images,
   });
 
+  final String description;
   final List<GoldenImageMetadata> images;
 
   Map<String, dynamic> toJson() {
     return {
+      "description": description,
       "images": images.map((image) => image.toJson()).toList(growable: false),
     };
   }
