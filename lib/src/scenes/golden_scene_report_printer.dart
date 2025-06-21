@@ -49,17 +49,19 @@ class GoldenSceneReportPrinter {
             buffer.write('  - ');
             // Print the width comparison.
             if (mismatch.golden.size.width > mismatch.screenshot.size.width) {
-              buffer.write("Candidate is ${mismatch.golden.size.width - mismatch.screenshot.size.width} too narrow.");
+              buffer.write("Candidate is ${mismatch.golden.size.width - mismatch.screenshot.size.width}px too narrow.");
             } else if (mismatch.golden.size.width < mismatch.screenshot.size.width) {
-              buffer.write("Candidate is ${mismatch.screenshot.size.width - mismatch.golden.size.width} too wide.");
+              buffer.write("Candidate is ${mismatch.screenshot.size.width - mismatch.golden.size.width}px too wide.");
             } else {
               buffer.write("Candidate has correct width.");
             }
             // Print the height comparison.
             if (mismatch.golden.size.height > mismatch.screenshot.size.height) {
-              buffer.write(" Candidate is ${mismatch.golden.size.height - mismatch.screenshot.size.height} too short.");
+              buffer
+                  .write(" Candidate is ${mismatch.golden.size.height - mismatch.screenshot.size.height}px too short.");
             } else if (mismatch.golden.size.height < mismatch.screenshot.size.height) {
-              buffer.write(" Candidate is ${mismatch.screenshot.size.height - mismatch.golden.size.height} too tall.");
+              buffer
+                  .write(" Candidate is ${mismatch.screenshot.size.height - mismatch.golden.size.height}px too tall.");
             } else {
               buffer.write(" Candidate has correct height.");
             }
