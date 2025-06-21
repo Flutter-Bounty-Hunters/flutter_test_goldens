@@ -10,7 +10,7 @@ void main() {
       tester,
       directory: Directory("./goldens"),
       fileName: "multiple_failures",
-      sceneDescription: "Multiple Failures",
+      sceneDescription: "Example with multiple failures",
       layout: SceneLayout.column,
     )
         .itemFromWidget(
@@ -21,20 +21,28 @@ void main() {
         )
         .itemFromWidget(
           id: '2',
+          description: 'A golden that passes',
+          widget: Container(
+            width: 150,
+            height: 100,
+            color: Colors.green,
+          ),
+        )
+        .itemFromWidget(
+          id: '3',
           description: 'A text',
           // Use _buildGoldenText to build the original golden text.
           widget: _buildMismatchText(),
         )
         // The following item is present in the golden file.
         // .itemFromWidget(
-        //   id: '3',
+        //   id: '4',
         //   description: 'Another Red Rectangle',
         //   widget: _buildGoldenRectangle(),
         // )
-        //
         // The following item is not present in the golden file.
         .itemFromWidget(
-          id: '4',
+          id: '5',
           description: 'An unexpected Rectangle',
           widget: _buildGoldenRectangle(),
         )
