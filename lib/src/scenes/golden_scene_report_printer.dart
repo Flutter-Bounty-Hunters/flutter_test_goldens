@@ -63,6 +63,7 @@ class GoldenSceneReportPrinter {
             } else {
               buffer.write(" Candidate has correct height.");
             }
+            buffer.writeln("");
             break;
           case PixelGoldenMismatch():
             buffer.writeln(
