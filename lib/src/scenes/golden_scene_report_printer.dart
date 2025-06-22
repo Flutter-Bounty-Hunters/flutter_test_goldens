@@ -43,25 +43,28 @@ class GoldenSceneReportPrinter {
         switch (mismatch) {
           case WrongSizeGoldenMismatch():
             buffer.writeln('❌ ${item.metadata.id} (wrong size)');
-            buffer.writeln('  - Golden size: (${mismatch.golden.size.width}, ${mismatch.golden.size.height})');
-            buffer
-                .writeln('  - Candidate size: (${mismatch.screenshot.size.width}, ${mismatch.screenshot.size.height})');
+            buffer.writeln(
+                '  - Golden size: (${mismatch.golden.size.width.toInt()}, ${mismatch.golden.size.height.toInt()})');
+            buffer.writeln(
+                '  - Candidate size: (${mismatch.screenshot.size.width.toInt()}, ${mismatch.screenshot.size.height.toInt()})');
             buffer.write('  - ');
             // Print the width comparison.
             if (mismatch.golden.size.width > mismatch.screenshot.size.width) {
-              buffer.write("Candidate is ${mismatch.golden.size.width - mismatch.screenshot.size.width}px too narrow.");
+              buffer.write(
+                  "Candidate is ${(mismatch.golden.size.width - mismatch.screenshot.size.width).toInt()}px too narrow.");
             } else if (mismatch.golden.size.width < mismatch.screenshot.size.width) {
-              buffer.write("Candidate is ${mismatch.screenshot.size.width - mismatch.golden.size.width}px too wide.");
+              buffer.write(
+                  "Candidate is ${(mismatch.screenshot.size.width - mismatch.golden.size.width).toInt()}px too wide.");
             } else {
               buffer.write("Candidate has correct width.");
             }
             // Print the height comparison.
             if (mismatch.golden.size.height > mismatch.screenshot.size.height) {
-              buffer
-                  .write(" Candidate is ${mismatch.golden.size.height - mismatch.screenshot.size.height}px too short.");
+              buffer.write(
+                  " Candidate is ${(mismatch.golden.size.height - mismatch.screenshot.size.height).toInt()}px too short.");
             } else if (mismatch.golden.size.height < mismatch.screenshot.size.height) {
-              buffer
-                  .write(" Candidate is ${mismatch.screenshot.size.height - mismatch.golden.size.height}px too tall.");
+              buffer.write(
+                  " Candidate is ${(mismatch.screenshot.size.height - mismatch.golden.size.height.toInt())}px too tall.");
             } else {
               buffer.write(" Candidate has correct height.");
             }

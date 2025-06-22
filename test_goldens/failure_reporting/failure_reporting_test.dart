@@ -15,13 +15,13 @@ void main() {
     )
         .itemFromWidget(
           id: '1',
-          description: 'Red Rectangle',
+          description: 'Android caret',
           // Use _buildGoldenRectangle to build the original golden rectangle.
           widget: _buildMismatchRectangle(),
         )
         .itemFromWidget(
           id: '2',
-          description: 'A golden that passes',
+          description: 'Android drag handles',
           widget: Container(
             width: 150,
             height: 100,
@@ -30,20 +30,20 @@ void main() {
         )
         .itemFromWidget(
           id: '3',
-          description: 'A text',
+          description: 'Hint text',
           // Use _buildGoldenText to build the original golden text.
           widget: _buildMismatchText(),
         )
         // The following item is present in the golden file.
         // .itemFromWidget(
         //   id: '4',
-        //   description: 'Another Red Rectangle',
+        //   description: 'iOS caret',
         //   widget: _buildGoldenRectangle(),
         // )
         // The following item is not present in the golden file.
         .itemFromWidget(
           id: '5',
-          description: 'An unexpected Rectangle',
+          description: 'iOS drag handles',
           widget: _buildGoldenRectangle(),
         )
         .renderOrCompareGolden();
