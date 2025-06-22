@@ -12,7 +12,7 @@ class GoldenSceneReportPrinter {
     final buffer = StringBuffer();
 
     // Report the summary of passed/failed tests and missing/extra candidates.
-    buffer.write("Golden scene has failures: ${report.metadata.description} (");
+    buffer.write("Golden scene failed (");
     buffer.write("✅ ${report.totalPassed}/${report.items.length}, ");
     buffer.write("❌ ${report.totalFailed}/${report.items.length}");
     if (report.missingCandidates.isNotEmpty || report.extraCandidates.isNotEmpty) {
@@ -29,10 +29,9 @@ class GoldenSceneReportPrinter {
         buffer.write(" +${report.extraCandidates.length}");
       }
     }
-    buffer.writeln(")");
+    buffer.writeln("):");
 
     if (report.totalFailed > 0) {
-      buffer.writeln("");
       for (final item in report.items) {
         if (item.status == GoldenTestStatus.success) {
           buffer.writeln("✅ ${item.metadata.id}");
@@ -43,12 +42,37 @@ class GoldenSceneReportPrinter {
         final mismatch = item.mismatch;
         switch (mismatch) {
           case WrongSizeGoldenMismatch():
+            buffer.writeln('❌ ${item.metadata.id} (wrong size)');
             buffer.writeln(
-                '"❌ ${item.metadata.id}" has an unexpected size (expected: ${mismatch.golden.size}, actual: ${mismatch.screenshot.size})');
+                '  - Golden size: (${mismatch.golden.size.width.toInt()}, ${mismatch.golden.size.height.toInt()})');
+            buffer.writeln(
+                '  - Candidate size: (${mismatch.screenshot.size.width.toInt()}, ${mismatch.screenshot.size.height.toInt()})');
+            buffer.write('  - ');
+            // Print the width comparison.
+            if (mismatch.golden.size.width > mismatch.screenshot.size.width) {
+              buffer.write(
+                  "Candidate is ${(mismatch.golden.size.width - mismatch.screenshot.size.width).toInt()}px too narrow.");
+            } else if (mismatch.golden.size.width < mismatch.screenshot.size.width) {
+              buffer.write(
+                  "Candidate is ${(mismatch.screenshot.size.width - mismatch.golden.size.width).toInt()}px too wide.");
+            } else {
+              buffer.write("Candidate has correct width.");
+            }
+            // Print the height comparison.
+            if (mismatch.golden.size.height > mismatch.screenshot.size.height) {
+              buffer.write(
+                  " Candidate is ${(mismatch.golden.size.height - mismatch.screenshot.size.height).toInt()}px too short.");
+            } else if (mismatch.golden.size.height < mismatch.screenshot.size.height) {
+              buffer.write(
+                  " Candidate is ${(mismatch.screenshot.size.height - mismatch.golden.size.height.toInt())}px too tall.");
+            } else {
+              buffer.write(" Candidate has correct height.");
+            }
+            buffer.writeln("");
             break;
           case PixelGoldenMismatch():
             buffer.writeln(
-                '"❌ ${item.metadata.id}" has a ${(mismatch.percent * 100).toStringAsFixed(2)}% (${mismatch.mismatchPixelCount}px) mismatch');
+                '❌ ${item.metadata.id} (${mismatch.mismatchPixelCount}px, ${(mismatch.percent * 100).toStringAsFixed(2)}%)');
             break;
           case MissingGoldenMismatch():
           case MissingCandidateMismatch():
