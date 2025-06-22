@@ -611,36 +611,24 @@ Image.memory(
       FtgLog.pipeline.info("No golden mismatches found");
     }
 
-    for (final mismatch in mismatches.mismatches.values) {
-      if (mismatch.golden == null || mismatch.screenshot == null) {
-        continue;
-      }
-
-      FtgLog.pipeline.fine("Painting a golden failure: $mismatch");
-      Directory(_goldenFailureDirectoryPath).createSync();
-
-      await tester.runAsync(() async {
-        final failureImage = await paintGoldenMismatchImages(mismatch);
-
-        try {
-          await encodePngFile(
-            "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
-            failureImage,
-          );
-        } catch (exception) {
-          throw Exception(
-            "Goldens failed with ${mismatches.mismatches.length} mismatch(es), BUT we were unable to paint the mismatches to a failure file. Originating exception: $exception",
-          );
-        }
-      });
-    }
-
     final report = GoldenSceneReport(
       metadata: metadata,
       items: items,
       missingCandidates: missingCandidates,
       extraCandidates: extraCandidates,
     );
+
+    Directory(_goldenFailureDirectoryPath).createSync();
+
+    await tester.runAsync(() async {
+      final failureImage = await paintFailureScene(_tester, report);
+
+      await encodePngFile(
+        "$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png",
+        failureImage,
+      );
+    });
+
     _printReport(report);
 
     if (mismatches.mismatches.isNotEmpty) {
