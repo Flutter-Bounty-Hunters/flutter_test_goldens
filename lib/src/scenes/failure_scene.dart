@@ -88,7 +88,7 @@ Future<Image> paintGoldenMismatchImages(GoldenMismatch mismatch) async {
 }
 
 /// Given a [report], generates that shows all the mismatches found in the report.
-Future<Image> paintFailureScene(WidgetTester tester, GoldenSceneReport report) async {
+Future<(Image, FailureSceneMetadata)> paintFailureScene(WidgetTester tester, GoldenSceneReport report) async {
   final photos = <GoldenFailurePhoto>[];
 
   for (final item in report.items) {
@@ -143,11 +143,12 @@ Future<Image> paintFailureScene(WidgetTester tester, GoldenSceneReport report) a
     );
   }
 
-  return _layoutFailureScene(tester, photos);
+  return _layoutFailureScene(tester, report, photos);
 }
 
 /// Generates a single image that shows all the golden failures.
-Future<Image> _layoutFailureScene(WidgetTester tester, List<GoldenFailurePhoto> images) async {
+Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
+    WidgetTester tester, GoldenSceneReport report, List<GoldenFailurePhoto> images) async {
   final renderablePhotos = <GoldenFailurePhoto, (Uint8List, GlobalKey)>{};
   for (final photo in images) {
     final image = await _convertImagePackageToUiImage(photo.pixels);
@@ -161,7 +162,7 @@ Future<Image> _layoutFailureScene(WidgetTester tester, List<GoldenFailurePhoto> 
       child: IntrinsicHeight(
         child: GoldenFailureScene(
           key: sceneKey,
-          direction: Axis.horizontal,
+          direction: Axis.vertical,
           renderablePhotos: renderablePhotos,
           background: null,
         ),
@@ -180,13 +181,29 @@ Future<Image> _layoutFailureScene(WidgetTester tester, List<GoldenFailurePhoto> 
 
   final uiImage = await captureImage(find.byKey(sceneKey).evaluate().single);
   final bytes = await uiImage.toByteData(format: ui.ImageByteFormat.rawRgba);
-  final result = Image.fromBytes(
+  final failureImage = Image.fromBytes(
     width: uiImage.width,
     height: uiImage.height,
     bytes: bytes!.buffer,
     order: ChannelOrder.rgba,
   );
-  return result;
+
+  // Lookup and return metadata for the position and size of each failure image
+  // within the scene.
+  final metadata = FailureSceneMetadata(
+    description: report.metadata.description,
+    images: [
+      for (final golden in renderablePhotos.keys)
+        FailureImageMetadata(
+          id: golden.description,
+          topLeft:
+              (renderablePhotos[golden]!.$2.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
+          size: renderablePhotos[golden]!.$2.currentContext!.size!,
+        ),
+    ],
+  );
+
+  return (failureImage, metadata);
 }
 
 /// Generates a single image that shows the golden, the candidate, and the
@@ -456,11 +473,15 @@ class GoldenFailureScene extends StatelessWidget {
                         Container(
                           color: material.Colors.white,
                           padding: const EdgeInsets.all(16),
-                          child: Text(
-                            entry.key.description,
-                            style: TextStyle(
-                              color: material.Colors.black,
-                              fontFamily: "packages/flutter_test_goldens/OpenSans",
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              entry.key.description,
+                              softWrap: false,
+                              style: TextStyle(
+                                color: material.Colors.black,
+                                fontFamily: "packages/flutter_test_goldens/OpenSans",
+                              ),
                             ),
                           ),
                         ),
@@ -484,4 +505,71 @@ class GoldenFailurePhoto {
 
   final String description;
   final Image pixels;
+}
+
+class FailureSceneMetadata {
+  static FailureSceneMetadata fromJson(Map<String, dynamic> json) {
+    return FailureSceneMetadata(
+      description: json["description"] ?? "",
+      images: [
+        for (final photoJson in (json["images"] as List<dynamic>)) //
+          FailureImageMetadata.fromJson(photoJson),
+      ],
+    );
+  }
+
+  const FailureSceneMetadata({
+    required this.description,
+    required this.images,
+  });
+
+  final String description;
+  final List<FailureImageMetadata> images;
+
+  Map<String, dynamic> toJson() {
+    return {
+      "description": description,
+      "images": images.map((photo) => photo.toJson()).toList(),
+    };
+  }
+}
+
+class FailureImageMetadata {
+  static FailureImageMetadata fromJson(Map<String, dynamic> json) {
+    return FailureImageMetadata(
+      id: json["id"],
+      topLeft: ui.Offset(
+        (json["topLeft"]["x"] as num).toDouble(),
+        (json["topLeft"]["y"] as num).toDouble(),
+      ),
+      size: ui.Size(
+        (json["size"]["width"] as num).toDouble(),
+        (json["size"]["height"] as num).toDouble(),
+      ),
+    );
+  }
+
+  FailureImageMetadata({
+    required this.id,
+    required this.topLeft,
+    required this.size,
+  });
+
+  final String id;
+  final ui.Offset topLeft;
+  final ui.Size size;
+
+  Map<String, dynamic> toJson() {
+    return {
+      "id": id,
+      "topLeft": {
+        "x": topLeft.dx,
+        "y": topLeft.dy,
+      },
+      "size": {
+        "width": size.width,
+        "height": size.height,
+      },
+    };
+  }
 }

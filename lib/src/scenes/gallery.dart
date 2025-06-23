@@ -621,12 +621,16 @@ Image.memory(
     Directory(_goldenFailureDirectoryPath).createSync();
 
     await tester.runAsync(() async {
-      final failureImage = await paintFailureScene(_tester, report);
+      final (failureImage, metadata) = await paintFailureScene(_tester, report);
 
-      await encodePngFile(
-        "$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png",
-        failureImage,
+      Uint8List pngData = encodePng(failureImage);
+      pngData = pngData.copyWithTextMetadata(
+        "flutter_test_goldens_failure",
+        const JsonEncoder().convert(metadata.toJson()),
       );
+
+      final file = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
+      file.writeAsBytesSync(pngData);
     });
 
     _printReport(report);
