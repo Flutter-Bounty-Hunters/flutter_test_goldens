@@ -59,28 +59,24 @@ Widget yellowItemScaffold(WidgetTester tester, Widget content) {
   );
 }
 
-Widget yellowItemDecorator(WidgetTester tester, String description, Widget content) {
-  return ColoredBox(
-    color: Colors.yellowAccent,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: content,
+Widget yellowItemDecorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget content) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Container(
+        color: Colors.yellowAccent,
+        padding: const EdgeInsets.all(24),
+        child: content,
+      ),
+      Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          metadata.description,
+          textAlign: TextAlign.center,
         ),
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            description,
-            style: TextStyle(
-              color: Colors.black,
-              fontFamily: "packages/flutter_test_goldens/OpenSans",
-            ),
-          ),
-        ),
-      ],
-    ),
+      ),
+    ],
   );
 }
 
@@ -108,27 +104,23 @@ Widget redItemScaffold(WidgetTester tester, Widget content) {
   );
 }
 
-Widget redItemDecorator(WidgetTester tester, String description, Widget content) {
-  return ColoredBox(
-    color: Colors.redAccent,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: content,
+Widget redItemDecorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget content) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Container(
+        color: Colors.redAccent,
+        padding: const EdgeInsets.all(24),
+        child: content,
+      ),
+      Container(
+        color: Colors.white,
+        padding: const EdgeInsets.all(24),
+        child: Text(
+          metadata.description,
+          textAlign: TextAlign.center,
         ),
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            description,
-            style: TextStyle(
-              color: Colors.black,
-              fontFamily: "packages/flutter_test_goldens/OpenSans",
-            ),
-          ),
-        ),
-      ],
-    ),
+      ),
+    ],
   );
 }

@@ -19,6 +19,7 @@ void main() {
   });
 }
 
+// ignore: unused_element
 Widget _buildVersion1() {
   return Center(
     child: Column(

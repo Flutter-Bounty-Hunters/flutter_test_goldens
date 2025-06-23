@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/fonts/golden_toolkit_fonts.dart';
-import 'package:golden_bricks/golden_bricks.dart';
 
 void main() {
   testGoldenSceneOnAndroid("app bar", (tester) async {
@@ -17,26 +16,20 @@ void main() {
             leading: Icon(Icons.adaptive.arrow_back),
             title: Text(
               "Hello",
-              style: TextStyle(fontFamily: "packages/flutter_test_goldens/OpenSans"),
+              style: TextStyle(fontFamily: TestFonts.openSans),
             ),
             backgroundColor: Colors.blue,
           ),
         ),
       ),
     )
-        .withDecoration(
-      (tester, description, content) {
-        return Center(
-          child: GoldenImageBounds(
-            child: content,
-          ),
-        );
-      },
-    ).inScaffold(
+        .inScaffold(
       (tester, content) {
         return MaterialApp(
           home: Scaffold(
-            body: content,
+            body: GoldenImageBounds(
+              child: content,
+            ),
           ),
           debugShowCheckedModeBanner: false,
         );

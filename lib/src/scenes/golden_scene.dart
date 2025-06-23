@@ -1,14 +1,11 @@
 import 'dart:async';
-
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
-import 'package:flutter_test_goldens/src/scenes/gallery.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
@@ -71,7 +68,7 @@ class GoldenSceneTheme {
     background: defaultGoldenSceneBackground,
     defaultTextStyle: TextStyle(
       color: Colors.black,
-      fontFamily: "packages/flutter_test_goldens/OpenSans",
+      fontFamily: TestFonts.openSans,
     ),
     itemScaffold: defaultGoldenSceneItemScaffold,
     itemDecorator: defaultGoldenSceneItemDecorator,
@@ -86,7 +83,7 @@ class GoldenSceneTheme {
     background: defaultDarkGoldenSceneBackground,
     defaultTextStyle: TextStyle(
       color: Colors.white,
-      fontFamily: "packages/flutter_test_goldens/OpenSans",
+      fontFamily: TestFonts.openSans,
     ),
     // The default scaffold is fine - it doesn't have any visual impact.
     itemScaffold: defaultDarkGoldenSceneItemScaffold,
@@ -177,60 +174,6 @@ class GoldenSceneBackground {
   }
 }
 
-class GoldenScene extends StatelessWidget {
-  const GoldenScene({
-    super.key,
-    required this.direction,
-    this.edgePadding = const EdgeInsets.all(48),
-    this.spacing = 48,
-    required this.renderablePhotos,
-    this.background,
-  });
-
-  final Axis direction;
-  final EdgeInsets edgePadding;
-  final double spacing;
-  final Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos;
-  final GoldenSceneBackground? background;
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Positioned.fill(
-          child: (background ?? GoldenSceneTheme.current.background).build(context),
-        ),
-        Padding(
-          padding: edgePadding,
-          child: Flex(
-            direction: direction,
-            mainAxisSize: MainAxisSize.min,
-            spacing: spacing,
-            children: [
-              for (final entry in renderablePhotos.entries) //
-                SizedBox(
-                  width: entry.key.pixels.width.toDouble(),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Image.memory(
-                        key: entry.value.$2,
-                        entry.value.$1,
-                        width: entry.key.pixels.width.toDouble(),
-                        height: entry.key.pixels.height.toDouble(),
-                      ),
-                    ],
-                  ),
-                ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 /// The default background for all [GoldenScene]s.
 const defaultGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFFF0F0EA));
 
@@ -239,13 +182,17 @@ const defaultGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFFF0F0E
 Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
   return MaterialApp(
     home: Scaffold(
+      // FIXME: background probably needs to be configurable.
+      backgroundColor: Colors.white,
       body: Builder(builder: (context) {
         return DefaultTextStyle(
           style: DefaultTextStyle.of(context).style.copyWith(
                 fontFamily: goldenBricks,
               ),
           child: Center(
-            child: GoldenImageBounds(child: content),
+            child: GoldenImageBounds(
+              child: content,
+            ),
           ),
         );
       }),
@@ -256,19 +203,25 @@ Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
 
 /// The widget tree that wraps around each golden image in a Golden Scene, unless using a custom
 /// [GoldenSceneTheme], or is configured directly on a gallery, film strip, etc.
-Widget defaultGoldenSceneItemDecorator(WidgetTester tester, String description, Widget content) {
+Widget defaultGoldenSceneItemDecorator(
+  BuildContext context,
+  GoldenScreenshotMetadata metadata,
+  Widget content,
+) {
   return ColoredBox(
+    // TODO: need this to be configurable, e.g., light vs dark
     color: Colors.white,
     child: Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        content,
         Padding(
           padding: const EdgeInsets.all(24),
-          child: content,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(description),
+          child: Text(
+            metadata.description,
+            style: TextStyle(fontFamily: TestFonts.openSans),
+          ),
         ),
       ],
     ),
@@ -289,7 +242,9 @@ Widget defaultDarkGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
                 fontFamily: goldenBricks,
               ),
           child: Center(
-            child: GoldenImageBounds(child: content),
+            child: GoldenImageBounds(
+              child: content,
+            ),
           ),
         );
       }),
@@ -299,21 +254,16 @@ Widget defaultDarkGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
 }
 
 /// The [GoldenSceneItemDecorator] for [GoldenSceneTheme.standardDark].
-Widget defaultDarkGoldenSceneItemDecorator(WidgetTester tester, String description, Widget content) {
+Widget defaultDarkGoldenSceneItemDecorator(
+  BuildContext context,
+  GoldenScreenshotMetadata metadata,
+  Widget content,
+) {
   return ColoredBox(
     color: const Color(0xFF1A1A1A),
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: content,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(description),
-        ),
-      ],
+    child: Padding(
+      padding: const EdgeInsets.all(24),
+      child: content,
     ),
   );
 }
@@ -333,7 +283,11 @@ typedef GoldenSceneItemScaffold = Widget Function(WidgetTester tester, Widget co
 /// Decorates a golden screenshot by wrapping the given [content] in a new widget tree.
 ///
 /// {@macro gallery_item_structure}
-typedef GoldenSceneItemDecorator = Widget Function(WidgetTester tester, String description, Widget content);
+typedef GoldenSceneItemDecorator = Widget Function(
+  BuildContext context,
+  GoldenScreenshotMetadata metadata,
+  Widget content,
+);
 
 /// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
 ///
@@ -346,7 +300,6 @@ typedef GoldenSceneItemPumper = Future<dynamic> Function(
   WidgetTester tester,
   GoldenSceneItemScaffold scaffold,
   String description,
-  GoldenSceneItemDecorator decorator,
 );
 
 typedef GoldenSetup = FutureOr<void> Function(WidgetTester tester);

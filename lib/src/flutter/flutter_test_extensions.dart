@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -63,5 +65,40 @@ extension FlutterTestGoldens on WidgetTester {
     await gesture.moveTo(hoverPosition);
 
     return (gesture, hoverPosition);
+  }
+
+  /// Loads the image at the given [filePath], places it in Flutter's cache, which allows it to be
+  /// displayed in a golden test, and then returns the [MemoryImage] that was placed into the
+  /// cache.
+  ///
+  /// Callers need to hold onto the [MemoryImage] because that's how the cache is keyed. It's not keyed
+  /// on the file path - to display the loaded image, callers must provide the returned [MemoryImage] to
+  /// an `Image.memory()` widget.
+  ///
+  ///     Image.memory(
+  ///       memoryImage.bytes,
+  ///     )
+  Future<MemoryImage> loadImageFromFile(String filePath) async {
+    final backgroundImageBytes = File(filePath).readAsBytesSync();
+    final image = MemoryImage(backgroundImageBytes);
+    await runAsync(() async {
+      await precacheImage(image, binding.rootElement!);
+    });
+    return image;
+  }
+
+  /// Loads the images at the given [filePaths] and places them in Flutter's cache, which allows them to be
+  /// displayed in a golden test.
+  ///
+  /// This method defers to [loadImageFromFile] for individual image loading.
+  Future<List<MemoryImage>> loadImagesFromFile(List<String> filePaths) async {
+    final futures = <Future<MemoryImage>>[];
+    for (final filePath in filePaths) {
+      futures.add(
+        loadImageFromFile(filePath),
+      );
+    }
+
+    return Future.wait(futures);
   }
 }

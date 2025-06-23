@@ -16,10 +16,11 @@ class FlutterWidgetScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
+        brightness: Brightness.light,
         fontFamily: goldenBricks,
       ),
       home: Scaffold(
-        backgroundColor: const Color(0xFF222222),
+        backgroundColor: Colors.white,
         body: Center(
           child: GoldenImageBounds(
             key: goldenKey,

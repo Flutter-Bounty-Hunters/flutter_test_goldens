@@ -1,3 +1,4 @@
+// ignore: dangling_library_doc_comments
 /// ***************************************************
 /// Copyright 2019-2020 eBay Inc.
 ///
@@ -51,7 +52,7 @@ Future<void> loadAppFonts() async {
 /// GoldenToolkit supplies Roboto because it is free to use.
 ///
 /// However, when a downstream package includes a font, the font family will be prefixed with
-/// /packages/<package name>/<fontFamily> in order to disambiguate when multiple packages include
+/// `/packages/<package name>/<fontFamily>` in order to disambiguate when multiple packages include
 /// fonts with the same name.
 ///
 /// Ultimately, the font loader will load whatever we tell it, so if we see a font that looks like

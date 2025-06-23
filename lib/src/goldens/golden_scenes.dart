@@ -2,20 +2,21 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:image/image.dart';
 
-/// Extracts a [GoldenCollection] from a golden scene within the given image [file].
+/// Extracts a [ScreenshotCollection] from a golden scene within the given image [file].
 ///
 /// A golden scene is an image that contains some number of individual golden files within it.
 /// In other words, a single image contains (possibly) many different golden images.
 ///
 /// This function loads the scene image from the [file], extracts each individual golden
-/// image from the scene, and then returns all of those golden images as a [GoldenCollection].
-GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
+/// image from the scene, and then returns all of those golden images as a [ScreenshotCollection].
+ScreenshotCollection extractGoldenCollectionFromSceneFile(File file) {
   FtgLog.pipeline.fine("Extracting golden collection from golden image.");
 
   // Read the scene PNG data into memory.
@@ -27,8 +28,22 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
   if (sceneJsonText == null) {
     throw Exception("Golden image is missing scene metadata: ${file.path}");
   }
+
   final sceneJson = JsonDecoder().convert(sceneJsonText);
-  final sceneMetadata = GoldenSceneMetadata.fromJson(sceneJson);
+  late final GoldenSceneMetadata sceneMetadata;
+  try {
+    sceneMetadata = GoldenSceneMetadata.fromJson(sceneJson);
+  } catch (exception, stackTrace) {
+    throw Error.throwWithStackTrace(Exception('''
+Failed to parse scene metadata for file: ${file.uri}. 
+
+Originating exception: $exception
+
+The given stack trace belongs to the originating exception.
+
+Scene JSON:
+${const JsonEncoder.withIndent("  ").convert(sceneJson)}'''), stackTrace);
+  }
 
   // Decode PNG data to an image.
   final sceneImage = decodePng(scenePngBytes);
@@ -38,17 +53,18 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
   }
 
   // Extract the golden images from the scene image.
+  print("Extracting goldens from file...");
   return _extractCollectionFromScene(sceneMetadata, sceneImage);
 }
 
-/// Extracts a [GoldenCollection] from a golden scene within the current widget tree.
+/// Extracts a [ScreenshotCollection] from a golden scene within the current widget tree.
 ///
 /// A golden scene is an image that contains some number of individual golden files within it.
 /// In other words, a single image contains (possibly) many different golden images.
 ///
 /// This function screenshots the part of the Flutter UI within the given [sceneBounds], extracts
 /// each individual golden image from the scene, and then returns all of those golden images as
-/// a [GoldenCollection].
+/// a [ScreenshotCollection].
 ///
 /// WARNING: When running this method within a test suite, this method must be run with
 /// `tester.runAsync()` because this method moves image data from the Flutter engine to
@@ -61,7 +77,7 @@ GoldenCollection extractGoldenCollectionFromSceneFile(File file) {
 ///     collection = await extractGoldenCollectionFromSceneWidgetTree(tester);
 ///   });
 /// ```
-Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(
+Future<ScreenshotCollection> extractGoldenCollectionFromSceneWidgetTree(
   WidgetTester tester,
   GoldenSceneMetadata sceneMetadata, [
   Finder? sceneBounds,
@@ -81,26 +97,35 @@ Future<GoldenCollection> extractGoldenCollectionFromSceneWidgetTree(
   final treeImage = decodePng(treeRawImageData)!;
 
   // Extract the golden images from the scene image.
+  print("Extracting candidates from widget tree...");
   return _extractCollectionFromScene(sceneMetadata, treeImage);
 }
 
-GoldenCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, Image sceneImage) {
+ScreenshotCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, Image sceneImage) {
   // Cut each golden image out of the scene.
-  final goldenImages = <String, GoldenImage>{};
-  for (final imageRegion in sceneMetadata.images) {
-    goldenImages[imageRegion.id] = GoldenImage(
-      imageRegion.id,
-      copyCrop(
-        sceneImage,
-        x: imageRegion.topLeft.dx.round(),
-        y: imageRegion.topLeft.dy.round(),
-        width: imageRegion.size.width.round(),
-        height: imageRegion.size.height.round(),
-      ),
+  print("Extracting screenshots from a scene (maybe goldens, maybe candidates):");
+  final goldenImages = <String, GoldenSceneScreenshot>{};
+  for (final golden in sceneMetadata.images) {
+    final image = copyCrop(
+      sceneImage,
+      x: golden.topLeft.dx.round(),
+      y: golden.topLeft.dy.round(),
+      width: golden.size.width.round(),
+      height: golden.size.height.round(),
+    );
+    print(
+        " - ${golden.id} - offset: ${golden.topLeft}, size: ${golden.size}, extracted image size: Size(${image.width}, ${image.height})");
+
+    goldenImages[golden.id] = GoldenSceneScreenshot(
+      golden.id,
+      golden.metadata,
+      image,
+      image.getBytes(),
     );
   }
+  print("----");
 
-  return GoldenCollection(goldenImages);
+  return ScreenshotCollection(goldenImages);
 }
 
 RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
@@ -118,10 +143,10 @@ RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
 /// A golden scene only exists after rendering golden images to a widget tree or a file.
 /// This is because golden images don't have any particular offset or size until they're
 /// positioned in a scene. To work with a related set of golden images that aren't currently
-/// displayed in a widget tree or an image file, use [GoldenCollection].
+/// displayed in a widget tree or an image file, use [ScreenshotCollection].
 ///
 /// [GoldenSceneMetadata] is used, for example, to extract golden images from a golden scene
-/// file, and create a [GoldenCollection] to run golden comparisons.
+/// file, and create a [ScreenshotCollection] to run golden comparisons.
 ///
 /// [GoldenSceneMetadata] does NOT contain golden pixel data - it only tells you where to
 /// find golden pixels within a scene image.
@@ -156,6 +181,10 @@ class GoldenImageMetadata {
   static GoldenImageMetadata fromJson(Map<String, dynamic> json) {
     return GoldenImageMetadata(
       id: json["id"],
+      metadata: GoldenScreenshotMetadata(
+        description: json["metadata"]["description"],
+        simulatedPlatform: _parseTargetPlatform(json["metadata"]["simulatedPlatform"]),
+      ),
       topLeft: ui.Offset(
         (json["topLeft"]["x"] as num).toDouble(),
         (json["topLeft"]["y"] as num).toDouble(),
@@ -169,17 +198,23 @@ class GoldenImageMetadata {
 
   const GoldenImageMetadata({
     required this.id,
+    required this.metadata,
     required this.topLeft,
     required this.size,
   });
 
   final String id;
+  final GoldenScreenshotMetadata metadata;
   final ui.Offset topLeft;
   final ui.Size size;
 
   Map<String, dynamic> toJson() {
     return {
       "id": id,
+      "metadata": {
+        "description": metadata.description,
+        "simulatedPlatform": metadata.simulatedPlatform.name,
+      },
       "topLeft": {
         "x": topLeft.dx,
         "y": topLeft.dy,
@@ -190,4 +225,14 @@ class GoldenImageMetadata {
       },
     };
   }
+}
+
+TargetPlatform _parseTargetPlatform(String name) {
+  for (final platform in TargetPlatform.values) {
+    if (platform.name == name) {
+      return platform;
+    }
+  }
+
+  throw Exception("Unknown TargetPlatform: $name");
 }
