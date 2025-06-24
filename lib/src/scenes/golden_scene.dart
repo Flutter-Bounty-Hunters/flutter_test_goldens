@@ -5,7 +5,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/flutter_test_goldens.dart';
+import 'package:flutter_test_goldens/src/fonts/fonts.dart';
+import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
+import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
+import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
+import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
@@ -189,10 +193,8 @@ Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
           style: DefaultTextStyle.of(context).style.copyWith(
                 fontFamily: goldenBricks,
               ),
-          child: Center(
-            child: GoldenImageBounds(
-              child: content,
-            ),
+          child: GoldenImageBounds(
+            child: content,
           ),
         );
       }),
@@ -303,3 +305,90 @@ typedef GoldenSceneItemPumper = Future<dynamic> Function(
 );
 
 typedef GoldenSetup = FutureOr<void> Function(WidgetTester tester);
+
+/// A report of a golden scene test.
+///
+/// Reports the success or failure of each individual golden in the scene, as well as
+/// the missing candidates and candidates that have no corresponding golden.
+class GoldenSceneReport {
+  GoldenSceneReport({
+    required this.metadata,
+    required this.items,
+    required this.missingCandidates,
+    required this.extraCandidates,
+  });
+
+  /// The metadata of the scene, such as the golden images and their positions.
+  final GoldenSceneMetadata metadata;
+
+  /// The items found in the scene.
+  ///
+  /// Each item might be a successful or a failed golden check.
+  final List<GoldenReport> items;
+
+  /// The golden candidates that were expected to be present in the scene, but were not found.
+  final List<MissingCandidateMismatch> missingCandidates;
+
+  /// The golden candidates that were found in the scene, but were not expected to be present.
+  final List<MissingGoldenMismatch> extraCandidates;
+
+  /// The total number of successful [items] in the scene.
+  int get totalPassed => items.where((e) => e.status == GoldenTestStatus.success).length;
+
+  /// The total number of failed [items] in the scene.
+  ///
+  /// Only candidates that have a corresponding golden image and failed the golden check
+  /// count as a failure.
+  ///
+  /// See [missingCandidates] for candidates that were expected but not found,
+  /// and [extraCandidates] for candidates that were found but not expected.
+  int get totalFailed => items.where((e) => e.status == GoldenTestStatus.failure).length;
+}
+
+/// A report of success or failure for a single golden within a scene.
+///
+/// A [GoldenReport] holds the test results for a candidate that has a corresponding golden.
+class GoldenReport {
+  factory GoldenReport.success(GoldenImageMetadata metadata) {
+    return GoldenReport(
+      status: GoldenTestStatus.success,
+      metadata: metadata,
+    );
+  }
+
+  factory GoldenReport.failure({
+    required GoldenImageMetadata metadata,
+    required GoldenMismatch mismatch,
+  }) {
+    return GoldenReport(
+      status: GoldenTestStatus.failure,
+      metadata: metadata,
+      mismatch: mismatch,
+    );
+  }
+
+  GoldenReport({
+    required this.status,
+    required this.metadata,
+    this.mismatch,
+  }) : assert(
+          status == GoldenTestStatus.success || mismatch != null,
+          "A failure report must have a mismatch.",
+        );
+
+  /// Whether the gallery item passed or failed the golden check.
+  final GoldenTestStatus status;
+
+  /// The metadata of the candidate image of this report.
+  final GoldenImageMetadata metadata;
+
+  /// The failure details of the gallery item, if it failed the golden check.
+  ///
+  /// Non-`null` if [status] is [GoldenTestStatus.failure] and `null` otherwise.
+  final GoldenMismatch? mismatch;
+}
+
+enum GoldenTestStatus {
+  success,
+  failure,
+}

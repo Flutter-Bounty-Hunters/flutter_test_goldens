@@ -11,8 +11,8 @@ GoldenCollectionMismatches compareGoldenCollections(
   // For every golden, look for missing and mismatching screenshots.
   for (final id in goldens.ids) {
     if (!screenshots.hasId(id)) {
-      mismatches[id] = MissingGoldenMismatch(
-        golden: goldens[id],
+      mismatches[id] = MissingCandidateMismatch(
+        golden: goldens[id]!,
       );
       continue;
     }
@@ -44,7 +44,7 @@ GoldenCollectionMismatches compareGoldenCollections(
   for (final id in screenshots.ids) {
     if (!goldens.hasId(id)) {
       mismatches[id] = MissingGoldenMismatch(
-        screenshot: screenshots[id],
+        screenshot: screenshots[id]!,
       );
     }
   }
@@ -132,22 +132,29 @@ class WrongSizeGoldenMismatch extends GoldenMismatch {
   Map<String, dynamic> get describeStructured => throw UnimplementedError();
 }
 
-/// Attempted to compare a screenshot to a golden, but either the screenshot was never
-/// generated, or the screenshot was generated for a golden that doesn't exist.
+/// Attempted to compare a candidate to a golden, but the candidate was generated for a golden that doesn't exist.
 class MissingGoldenMismatch extends GoldenMismatch {
   MissingGoldenMismatch({
-    super.golden,
     super.screenshot,
   });
 
-  GoldenSceneScreenshot get _existingGolden => golden ?? screenshot!;
+  @override
+  String get describe =>
+      "A new screenshot was generated with ID '${screenshot!.id}', but there's no existing golden image with that ID.";
 
   @override
-  String get describe => "A new screenshot was generated with ID '${_existingGolden.id}', $_missingMessage";
+  Map<String, dynamic> get describeStructured => throw UnimplementedError();
+}
 
-  String get _missingMessage => golden != null //
-      ? "but no screenshot was generated with that ID."
-      : "but there's no existing golden image with that ID.";
+/// Attempted to compare a candidate to a golden, but the candidate was never generated.
+class MissingCandidateMismatch extends GoldenMismatch {
+  MissingCandidateMismatch({
+    super.golden,
+  });
+
+  @override
+  String get describe =>
+      "A new screenshot was generated with ID '${golden!.id}', but no screenshot was generated with that ID.";
 
   @override
   Map<String, dynamic> get describeStructured => throw UnimplementedError();

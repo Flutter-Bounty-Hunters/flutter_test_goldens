@@ -98,6 +98,7 @@ class FlexGoldenScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print("Building FlexGoldenScene");
     return DefaultTextStyle(
       style: GoldenSceneTheme.current.defaultTextStyle,
       child: GoldenSceneBounds(
@@ -133,13 +134,11 @@ class FlexGoldenScene extends StatelessWidget {
                 return _decorator(
                   context,
                   entry.key.metadata,
-                  Center(
-                    child: Image.memory(
-                      key: entry.value,
-                      entry.key.pngBytes,
-                      width: entry.key.size.width.toDouble(),
-                      height: entry.key.size.height.toDouble(),
-                    ),
+                  Image.memory(
+                    key: entry.value,
+                    entry.key.pngBytes,
+                    width: entry.key.size.width.toDouble(),
+                    height: entry.key.size.height.toDouble(),
                   ),
                 );
               }),
@@ -150,6 +149,8 @@ class FlexGoldenScene extends StatelessWidget {
   }
 
   Widget _decorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget child) {
+    print(
+        "Building _decorator() - itemDecorator: ${this.itemDecorator}, theme item decorator: ${GoldenSceneTheme.current.itemDecorator}");
     final itemDecorator = this.itemDecorator ?? GoldenSceneTheme.current.itemDecorator;
     return itemDecorator(context, metadata, child);
   }

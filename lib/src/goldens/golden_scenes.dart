@@ -54,12 +54,12 @@ ${const JsonEncoder.withIndent("  ").convert(sceneJson)}'''), stackTrace);
 
   // Extract the golden images from the scene image.
   print("Extracting goldens from file...");
-  return _extractCollectionFromScene(sceneMetadata, sceneImage);
+  return _extractCollectionFromSceneBitmap(sceneMetadata, sceneImage);
 }
 
 /// Extracts a [ScreenshotCollection] from a golden scene within the current widget tree.
 ///
-/// A golden scene is an image that contains some number of individual golden files within it.
+/// A golden scene is an image that contains some number of individual golden screenshots within it.
 /// In other words, a single image contains (possibly) many different golden images.
 ///
 /// This function screenshots the part of the Flutter UI within the given [sceneBounds], extracts
@@ -98,10 +98,10 @@ Future<ScreenshotCollection> extractGoldenCollectionFromSceneWidgetTree(
 
   // Extract the golden images from the scene image.
   print("Extracting candidates from widget tree...");
-  return _extractCollectionFromScene(sceneMetadata, treeImage);
+  return _extractCollectionFromSceneBitmap(sceneMetadata, treeImage);
 }
 
-ScreenshotCollection _extractCollectionFromScene(GoldenSceneMetadata sceneMetadata, Image sceneImage) {
+ScreenshotCollection _extractCollectionFromSceneBitmap(GoldenSceneMetadata sceneMetadata, Image sceneImage) {
   // Cut each golden image out of the scene.
   print("Extracting screenshots from a scene (maybe goldens, maybe candidates):");
   final goldenImages = <String, GoldenSceneScreenshot>{};
@@ -153,6 +153,7 @@ RenderRepaintBoundary? _findNearestRepaintBoundary(Finder bounds) {
 class GoldenSceneMetadata {
   static GoldenSceneMetadata fromJson(Map<String, dynamic> json) {
     return GoldenSceneMetadata(
+      description: json["description"] ?? "",
       images: [
         for (final imageJson in (json["images"] as List<dynamic>)) //
           GoldenImageMetadata.fromJson(imageJson),
@@ -161,13 +162,16 @@ class GoldenSceneMetadata {
   }
 
   const GoldenSceneMetadata({
+    required this.description,
     required this.images,
   });
 
+  final String description;
   final List<GoldenImageMetadata> images;
 
   Map<String, dynamic> toJson() {
     return {
+      "description": description,
       "images": images.map((image) => image.toJson()).toList(growable: false),
     };
   }
