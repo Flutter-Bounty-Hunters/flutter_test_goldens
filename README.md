@@ -2,86 +2,22 @@
 A toolkit for writing golden tests.
 
 ## Getting Started
-The following shows an example of how to define a golden test that captures
-a variety of independent UIs as a gallery.
+Learn how to use `flutter_test_goldens` at [FlutterGoldens.com](https://fluttergoldens.com).
 
-```dart
-testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
-    await Gallery(
-      tester,
-      itemDecorator: (context, child) {
-        return FlutterWidgetScaffold(
-          child: child,
-        );
-      },
-      items: [
-        GalleryItem.withWidget(
-          id: "1",
-          description: "Icon + Text",
-          child: FloatingActionButton.extended(
-            icon: Icon(Icons.edit),
-            label: Text("Hello"),
-            onPressed: () {},
-          ),
-        ),
-        GalleryItem.withWidget(
-          id: "2",
-          description: "Icon",
-          child: FloatingActionButton.extended(
-            icon: Icon(Icons.edit),
-            label: Text(""),
-            onPressed: () {},
-          ),
-        ),
-        GalleryItem.withWidget(
-          id: "3",
-          description: "Text",
-          child: FloatingActionButton.extended(
-            label: Text("Hello"),
-            onPressed: () {},
-          ),
-        ),
-      ],
-    ).renderOrCompareGolden(
-      goldenName: "button_extended_fab_gallery",
-      layout: SceneLayout.row,
-    );
-});
-```
+## Examples
+The following are examples of what you can render in your golden tests with `flutter_test_goldens`:
 
-The following shows an example of how to define a golden test that captures
-screenshots over time, placing all of them in a single scene file.
+### Single Shot Galleries
+![single_shot_standalone](https://github.com/user-attachments/assets/9024157e-68cf-4d72-bdf0-fd7632ac701f)
 
-```dart
-testGoldenSceneOnMac("elevated button interactions", (tester) async {
-    final goldenKey = GlobalKey();
+### Multi-Golden Galleries
+![gallery](https://github.com/user-attachments/assets/5f5810fb-e189-485f-a6b7-5eb558734726)
 
-    await FilmStrip(tester)
-        // Setup the widget tree.
-        .setupWithPump(() {
-          return FlutterWidgetScaffold(
-            goldenKey: goldenKey,
-            child: ElevatedButton(
-              onPressed: () {},
-              child: Text("Hello"),
-            ),
-          );
-        })
-        // Take a photo.
-        .takePhoto(find.byKey(goldenKey), "idle")
-        // Adjust the existing widget tree by hovering over the ElevatedButton.
-        .hoverOver(find.byType(ElevatedButton))
-        // Take a photo.
-        .takePhoto(find.byKey(goldenKey), "hover")
-        // Adjust the existing widget tree by pressing down at the current offset.
-        .pressHover()
-        // Take a photo.
-        .takePhoto(find.byKey(goldenKey), "pressed")
-        // Either stitch the photos into a single scene file, or compare them against
-        // an existing scene file.
-        .renderOrCompareGolden(
-          goldenName: "button_elevated_interactions",
-          layout: SceneLayout.row,
-        );
-});
-```
+### Magazine Galleries
+![slack_chat_magazine_layout](https://github.com/user-attachments/assets/c72b3662-8d93-45a2-9f43-e0ee7c1ed50f)
+
+### Animation Timelines
+![crazy-switch_5-shot](https://github.com/user-attachments/assets/5da0356b-1d88-4302-84eb-358bbb62d234)
+
+### Interaction Timelines
+![otp](https://github.com/user-attachments/assets/a0030a92-03d4-467d-984c-c6566069cd95)
