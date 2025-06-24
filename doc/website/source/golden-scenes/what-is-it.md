@@ -18,7 +18,7 @@ A Golden Scene with independent golden images, such as different configurations 
 widget, is called a [Gallery](/golden-scenes/gallery).
 
 A Golden Scene with golden images that take place over time, such as the idle, hovered, and
-pressed state of a button, is called a [Film Strip](/golden-scenes/filmstrip).
+pressed state of a button, is called a [Timeline](/golden-scenes/timeline).
 
 ## What makes Golden Scenes different?
 Fans of golden tests are no doubt familiar with `golden_toolkit`, a package by eBay Motors,
@@ -50,4 +50,4 @@ What if you want to capture the idle state, the hover state, and the pressed sta
 
 `flutter_test_goldens` includes the concept of a `GoldenCamera`, which allows developers to take screenshots
 over a period of time. Those screenshots can then be stitched together into a Golden Scene, such as
-with a [`FilmStrip`](/golden-scenes/filmstrip).
+with a [`Timeline`](/golden-scenes/timeline).

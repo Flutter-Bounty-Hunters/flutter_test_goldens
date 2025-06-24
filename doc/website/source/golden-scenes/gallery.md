@@ -7,26 +7,19 @@ and/or widget configurations.
 
 ```dart
 await Gallery(
-    tester,
-    sceneName: "button_extended_fab_gallery",
-    layout: SceneLayout.row,
-    itemDecorator: (context, child) {
-      return FlutterWidgetScaffold(
-        child: child,
-      );
-    },
+    "Extended FAB",
+    fileName: "button_extended_fab_gallery",
+    layout: ColumnSceneLayout(),
   )
     .itemFromWidget(
-      id: "1",
       description: "Icon + Text",
       widget: FloatingActionButton.extended(
         icon: Icon(Icons.edit),
         label: Text("Hello"),
-          onPressed: () {},
+        onPressed: () {},
       ),
     )
     .itemFromWidget(
-      id: "2",
       description: "Icon",
       widget: FloatingActionButton.extended(
         icon: Icon(Icons.edit),
@@ -35,12 +28,11 @@ await Gallery(
       ),
     )
     .itemFromWidget(
-      id: "3",
       description: "Text",
       widget: FloatingActionButton.extended(
-      label: Text("Hello"),
-      onPressed: () {},
+        label: Text("Hello"),
+        onPressed: () {},
       ),
     )
-    .renderOrCompareGolden();
+    .run(tester);
 ```
