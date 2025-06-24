@@ -182,7 +182,7 @@ class GoldenSceneBackground {
 const defaultGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFFF0F0EA));
 
 /// The ancestor widget tree for every item in a golden scene, unless using a custom
-/// [GoldenSceneTheme], or is configured directly on a gallery, film strip, etc.
+/// [GoldenSceneTheme], or is configured directly on a gallery, timeline, etc.
 Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
   return MaterialApp(
     home: Scaffold(
@@ -204,7 +204,7 @@ Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
 }
 
 /// The widget tree that wraps around each golden image in a Golden Scene, unless using a custom
-/// [GoldenSceneTheme], or is configured directly on a gallery, film strip, etc.
+/// [GoldenSceneTheme], or is configured directly on a gallery, timeline, etc.
 Widget defaultGoldenSceneItemDecorator(
   BuildContext context,
   GoldenScreenshotMetadata metadata,

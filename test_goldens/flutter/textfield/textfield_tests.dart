@@ -8,7 +8,7 @@ void main() {
   testGoldenSceneOnMac("text field interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
+    await Timeline(
       "TextField Interactions",
       fileName: "textfield_interactions",
       layout: ColumnSceneLayout(),

@@ -16,6 +16,7 @@ void main() {
           id: '1',
           description: 'Android caret',
           // Use _buildGoldenRectangle to build the original golden rectangle.
+          // widget: _buildGoldenRectangle(),
           widget: _buildMismatchRectangle(),
         )
         .itemFromWidget(
@@ -31,15 +32,16 @@ void main() {
           id: '3',
           description: 'Hint text',
           // Use _buildGoldenText to build the original golden text.
+          // widget: _buildGoldenRectangle(),
           widget: _buildMismatchText(),
         )
-        // The following item is present in the golden file.
+        // Comment this out when comparing goldens.
         // .itemFromWidget(
         //   id: '4',
         //   description: 'iOS caret',
         //   widget: _buildGoldenRectangle(),
         // )
-        // The following item is not present in the golden file.
+        // Comment this out when generating goldens.
         .itemFromWidget(
           id: '5',
           description: 'iOS drag handles',

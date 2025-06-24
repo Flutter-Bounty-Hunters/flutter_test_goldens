@@ -475,7 +475,7 @@ Image.memory(
     goldenFile.writeAsBytesSync(pngData);
   }
 
-  // TODO: de-dup this with FilmStrip
+  // TODO: de-dup this with Timeline
   Future<GoldenSceneMetadata> _layoutGalleryWithNewGoldens(
     WidgetTester tester,
     SceneLayout layout,
@@ -648,7 +648,7 @@ Image.memory(
     }
   }
 
-  // TODO: Dedup following with FilmStrip
+  // TODO: Dedup following with Timeline
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
   String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";

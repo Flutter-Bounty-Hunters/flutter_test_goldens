@@ -17,7 +17,7 @@ void main() {
       ));
 
       // The following code is broken apart so we can include pieces across slides.
-      final filmStrip = FilmStrip(
+      final timeline = Timeline(
         "OTP - Digit Entry",
         fileName: 'otp',
         itemScaffold: shadcnItemScaffold,
@@ -27,7 +27,7 @@ void main() {
         ),
       );
 
-      filmStrip.setupWithWidget(Padding(
+      timeline.setupWithWidget(Padding(
         padding: const EdgeInsets.all(48),
         child: ShadInputOTP(
           onChanged: (v) {},
@@ -52,7 +52,7 @@ void main() {
         ),
       ));
 
-      await filmStrip
+      await timeline
           .takePhoto("Idle")
           .tap(find.byType(ShadInputOTPSlot).first)
           .settle()
@@ -74,7 +74,7 @@ void main() {
   });
 }
 
-FilmStripModifySceneDelegate _insertOtpAt(String key, String character) {
+TimelineModifySceneDelegate _insertOtpAt(String key, String character) {
   return (tester, testContext) async {
     await tester.enterText(find.byKey(ValueKey(key)), character);
     await tester.pumpAndSettle();

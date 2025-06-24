@@ -6,7 +6,7 @@ import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 void main() {
   group("Marketing > timeline >", () {
     testGoldenScene("animation", (tester) async {
-      await FilmStrip(
+      await Timeline(
         "Crazy Switch - Flip animation",
         fileName: 'crazy-switch_5-shot',
         layout: AnimationTimelineSceneLayout(),
@@ -22,7 +22,7 @@ void main() {
           .takePhoto("On")
           .run(tester);
 
-      await FilmStrip(
+      await Timeline(
         "Crazy Switch - Flip animation",
         fileName: 'crazy-switch_8-shot',
         layout: AnimationTimelineSceneLayout(),

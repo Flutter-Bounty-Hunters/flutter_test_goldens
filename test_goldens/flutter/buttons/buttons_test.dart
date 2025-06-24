@@ -11,7 +11,7 @@ void main() {
   testGoldenSceneOnMac("elevated button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
+    await Timeline(
       "ElevatedButton Interactions",
       fileName: "button_elevated_interactions",
       layout: RowSceneLayout(),
@@ -36,7 +36,7 @@ void main() {
   testGoldenSceneOnMac("text button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
+    await Timeline(
       "TextButton Interactions",
       fileName: "button_text_interactions",
       layout: RowSceneLayout(),
@@ -61,7 +61,7 @@ void main() {
   testGoldenSceneOnMac("icon button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
+    await Timeline(
       "IconButton Interactions",
       fileName: "button_icon_interactions",
       layout: RowSceneLayout(),
@@ -95,7 +95,7 @@ void main() {
   testGoldenSceneOnMac("floating action button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
+    await Timeline(
       "FAB Interactions",
       fileName: "button_fab_interactions",
       layout: RowSceneLayout(),
@@ -121,7 +121,7 @@ void main() {
     final goldenKey = GlobalKey();
     final image = await tester.loadImageFromFile("test_goldens/assets/flutter_background.png");
 
-    await FilmStrip(
+    await Timeline(
       "Extended FAB Interactions",
       fileName: "button_extended_fab_interactions",
       layout: RowSceneLayout(),

@@ -10,7 +10,7 @@ void main() {
 
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
+    await Timeline(
       "ListTile Interactions",
       fileName: "list_tile_interactions",
       layout: ColumnSceneLayout(),

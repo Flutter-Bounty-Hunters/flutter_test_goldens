@@ -4,11 +4,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 
 void main() {
-  group("Film strips >", () {
+  group("Timeline >", () {
     testGoldenScene("hello world", (tester) async {
-      await FilmStrip(
-        "Hello, Film Strip!",
-        fileName: "hello_film_strip",
+      await Timeline(
+        "Hello, Timeline!",
+        fileName: "hello_timeline",
         layout: ColumnSceneLayout(),
       )
           .setupWithWidget(
