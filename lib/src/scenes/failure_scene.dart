@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' as material;
@@ -88,8 +87,9 @@ Future<Image> paintGoldenMismatchImages(GoldenMismatch mismatch) async {
 }
 
 /// Given a [report], generates that shows all the mismatches found in the report.
-Future<(Image, FailureSceneMetadata)> paintFailureScene(WidgetTester tester, GoldenSceneReport report) async {
-  final photos = <GoldenFailurePhoto>[];
+Future<(Image, FailureSceneMetadata)> paintFailureScene(
+    WidgetTester tester, GoldenSceneReport report, SceneLayout layout) async {
+  final photos = <GoldenSceneScreenshot>[];
 
   for (final item in report.items) {
     final mismatch = item.mismatch;
@@ -110,62 +110,83 @@ Future<(Image, FailureSceneMetadata)> paintFailureScene(WidgetTester tester, Gol
       absoluteDiff: absoluteDiff,
       relativeDiff: relativeDiff,
     );
+    final image = await _convertImagePackageToUiImage(reportImage);
+    final pixels = (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
 
-    String description = item.metadata.id;
+    String description = item.metadata.metadata.description;
     if (mismatch is PixelGoldenMismatch) {
       description += " (${mismatch.mismatchPixelCount.toInt()}px, ${(mismatch.percent * 100).toStringAsFixed(2)}%)";
     } else if (mismatch is WrongSizeGoldenMismatch) {
       description += " (wrong size)";
     }
+
     photos.add(
-      GoldenFailurePhoto(
-        description: description,
-        pixels: reportImage,
+      GoldenSceneScreenshot(
+        item.metadata.id,
+        item.metadata.metadata.copyWith(description: description),
+        reportImage,
+        pixels,
       ),
     );
   }
 
   for (final missingCandidate in report.missingCandidates) {
+    // TODO: Figure out why using missingCandidate.golden!.pngBytes causes an "Invalid image data" error.
+    final image = await _convertImagePackageToUiImage(missingCandidate.golden!.image);
+    final pixels = (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
     photos.add(
-      GoldenFailurePhoto(
-        description: "${missingCandidate.golden!.id} (missing candidate)",
-        pixels: missingCandidate.golden!.image,
+      GoldenSceneScreenshot(
+        missingCandidate.golden!.id,
+        missingCandidate.golden!.metadata.copyWith(
+          description: "${missingCandidate.golden!.metadata.description} (missing candidate)",
+        ),
+        missingCandidate.golden!.image,
+        pixels,
       ),
     );
   }
 
   for (final extraCandidate in report.extraCandidates) {
     photos.add(
-      GoldenFailurePhoto(
-        description: "${extraCandidate.screenshot!.id} (extra candidate)",
-        pixels: extraCandidate.screenshot!.image,
+      GoldenSceneScreenshot(
+        extraCandidate.screenshot!.id,
+        extraCandidate.screenshot!.metadata.copyWith(
+          description: "${extraCandidate.screenshot!.metadata.description} (extra candidate)",
+        ),
+        extraCandidate.screenshot!.image,
+        extraCandidate.screenshot!.pngBytes,
       ),
     );
   }
 
-  return _layoutFailureScene(tester, report, photos);
+  return _layoutFailureScene(tester, report, photos, layout);
 }
 
 /// Generates a single image that shows all the golden failures.
 Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
-    WidgetTester tester, GoldenSceneReport report, List<GoldenFailurePhoto> images) async {
-  final renderablePhotos = <GoldenFailurePhoto, (Uint8List, GlobalKey)>{};
+  WidgetTester tester,
+  GoldenSceneReport report,
+  List<GoldenSceneScreenshot> images,
+  SceneLayout layout,
+) async {
+  final renderablePhotos = <GoldenSceneScreenshot, GlobalKey>{};
   for (final photo in images) {
-    final image = await _convertImagePackageToUiImage(photo.pixels);
-    final pixels = (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
-    renderablePhotos[photo] = (pixels, GlobalKey());
+    renderablePhotos[photo] = GlobalKey();
   }
 
   final sceneKey = GlobalKey();
   final scene = GoldenSceneBounds(
     child: IntrinsicWidth(
       child: IntrinsicHeight(
-        child: GoldenFailureScene(
-          key: sceneKey,
-          direction: Axis.vertical,
-          renderablePhotos: renderablePhotos,
-          background: null,
-        ),
+        child: material.Builder(
+            key: sceneKey,
+            builder: (context) {
+              return layout.build(
+                tester,
+                context,
+                renderablePhotos,
+              );
+            }),
       ),
     ),
   );
@@ -173,10 +194,11 @@ Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
 
   for (final entry in renderablePhotos.entries) {
     await precacheImage(
-      MemoryImage(entry.value.$1),
-      tester.element(find.byKey(entry.value.$2)),
+      MemoryImage(entry.key.pngBytes),
+      tester.element(find.byKey(entry.value)),
     );
   }
+
   await tester.pumpAndSettle();
 
   final uiImage = await captureImage(find.byKey(sceneKey).evaluate().single);
@@ -195,10 +217,10 @@ Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
     images: [
       for (final golden in renderablePhotos.keys)
         FailureImageMetadata(
-          id: golden.description,
+          id: golden.id,
           topLeft:
-              (renderablePhotos[golden]!.$2.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
-          size: renderablePhotos[golden]!.$2.currentContext!.size!,
+              (renderablePhotos[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
+          size: renderablePhotos[golden]!.currentContext!.size!,
         ),
     ],
   );
@@ -215,10 +237,21 @@ Image _layoutGoldenFailure({
   required Image absoluteDiff,
   required Image relativeDiff,
 }) {
+  final maxWidth = max(golden.width, candidate.width);
+  final maxHeight = max(golden.height, candidate.height);
+  const gap = 4;
+
   final image = Image(
-    width: golden.width + candidate.width,
-    height: golden.height + candidate.height,
+    width: maxWidth * 2 + gap,
+    height: maxHeight * 2 + gap,
   );
+
+  final white = ColorUint32.rgb(255, 255, 255);
+  for (int x = 0; x < image.width; x += 1) {
+    for (int y = 0; y < image.height; y += 1) {
+      image.setPixel(x, y, white);
+    }
+  }
 
   // Copy golden to top left corner.
   _drawImage(
@@ -232,7 +265,7 @@ Image _layoutGoldenFailure({
   _drawImage(
     source: candidate,
     destination: image,
-    x: golden.width,
+    x: maxWidth + gap,
     y: 0,
   );
 
@@ -241,15 +274,15 @@ Image _layoutGoldenFailure({
     source: absoluteDiff,
     destination: image,
     x: 0,
-    y: golden.height,
+    y: maxHeight + gap,
   );
 
   // Copy relative diff to bottom right corner.
   _drawImage(
     source: relativeDiff,
     destination: image,
-    x: golden.width,
-    y: golden.height,
+    x: maxWidth + gap,
+    y: maxHeight + gap,
   );
 
   return image;
@@ -258,8 +291,8 @@ Image _layoutGoldenFailure({
 /// Generates an image that shows the absolute differences between the golden
 /// and the candidate images.
 Image _generateAbsoluteDiff(
-  GoldenImage golden,
-  GoldenImage candidate,
+  GoldenSceneScreenshot golden,
+  GoldenSceneScreenshot candidate,
   GoldenMismatch mismatch,
 ) {
   final maxWidth = max(golden.image.width, candidate.image.width);
@@ -283,8 +316,8 @@ void _paintAbsoluteDiff({
   required Image destination,
   required int originX,
   required int originY,
-  required GoldenImage golden,
-  required GoldenImage candidate,
+  required GoldenSceneScreenshot golden,
+  required GoldenSceneScreenshot candidate,
 }) {
   final maxWidth = max(golden.image.width, candidate.image.width);
   final maxHeight = max(golden.image.height, candidate.image.height);
@@ -324,8 +357,8 @@ void _paintAbsoluteDiff({
 /// Generates an image that shows the relative differences between the golden
 /// and the candidate images.
 Image _generateRelativeDiff(
-  GoldenImage golden,
-  GoldenImage candidate,
+  GoldenSceneScreenshot golden,
+  GoldenSceneScreenshot candidate,
   GoldenMismatch mismatch,
 ) {
   final maxWidth = max(golden.image.width, candidate.image.width);
@@ -349,8 +382,8 @@ void _paintRelativeDiff({
   required Image destination,
   required int originX,
   required int originY,
-  required GoldenImage golden,
-  required GoldenImage candidate,
+  required GoldenSceneScreenshot golden,
+  required GoldenSceneScreenshot candidate,
 }) {
   final maxWidth = max(golden.image.width, candidate.image.width);
   final maxHeight = max(golden.image.height, candidate.image.height);
@@ -419,82 +452,6 @@ Future<ui.Image> _convertImagePackageToUiImage(Image image) async {
     (ui.Image img) => completer.complete(img),
   );
   return completer.future;
-}
-
-class GoldenFailureScene extends StatelessWidget {
-  const GoldenFailureScene({
-    super.key,
-    required this.direction,
-    required this.renderablePhotos,
-    this.background,
-  });
-
-  final Axis direction;
-  final Map<GoldenFailurePhoto, (Uint8List, GlobalKey)> renderablePhotos;
-  final Widget? background;
-
-  @override
-  Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const material.Color(0xFF666666),
-      child: Stack(
-        children: [
-          if (background != null) //
-            Positioned.fill(
-              child: ColoredBox(color: material.Colors.green),
-            ),
-          if (background != null) //
-            Positioned.fill(
-              child: background!,
-            ),
-          Padding(
-            padding: const EdgeInsets.all(48),
-            child: Flex(
-              direction: direction,
-              mainAxisSize: MainAxisSize.min,
-              spacing: 48,
-              children: [
-                for (final entry in renderablePhotos.entries) //
-                  SizedBox(
-                    width: entry.key.pixels.width.toDouble(),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        ColoredBox(
-                          color: material.Colors.white,
-                          child: material.Image.memory(
-                            key: entry.value.$2,
-                            entry.value.$1,
-                            width: entry.key.pixels.width.toDouble(),
-                            height: entry.key.pixels.height.toDouble(),
-                          ),
-                        ),
-                        Container(
-                          color: material.Colors.white,
-                          padding: const EdgeInsets.all(16),
-                          child: FittedBox(
-                            fit: BoxFit.scaleDown,
-                            child: Text(
-                              entry.key.description,
-                              softWrap: false,
-                              style: TextStyle(
-                                color: material.Colors.black,
-                                fontFamily: "packages/flutter_test_goldens/OpenSans",
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class GoldenFailurePhoto {
