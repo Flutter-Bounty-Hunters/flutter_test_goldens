@@ -11,10 +11,10 @@ void main() {
   testGoldenSceneOnMac("elevated button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
-      tester,
-      goldenName: "button_elevated_interactions",
-      layout: SceneLayout.row,
+    await Timeline(
+      "ElevatedButton Interactions",
+      fileName: "button_elevated_interactions",
+      layout: RowSceneLayout(),
     )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
@@ -30,16 +30,16 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden();
+        .run(tester);
   });
 
   testGoldenSceneOnMac("text button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
-      tester,
-      goldenName: "button_text_interactions",
-      layout: SceneLayout.row,
+    await Timeline(
+      "TextButton Interactions",
+      fileName: "button_text_interactions",
+      layout: RowSceneLayout(),
     )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
@@ -55,16 +55,16 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden();
+        .run(tester);
   });
 
   testGoldenSceneOnMac("icon button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
-      tester,
-      goldenName: "button_icon_interactions",
-      layout: SceneLayout.row,
+    await Timeline(
+      "IconButton Interactions",
+      fileName: "button_icon_interactions",
+      layout: RowSceneLayout(),
     )
         .setupWithPump(() {
           return MaterialApp(
@@ -72,7 +72,7 @@ void main() {
               fontFamily: goldenBricks,
             ),
             home: Scaffold(
-              backgroundColor: const Color(0xFF222222),
+              backgroundColor: Colors.white,
               body: Padding(
                 key: goldenKey,
                 padding: const EdgeInsets.all(48),
@@ -89,16 +89,16 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden();
+        .run(tester);
   });
 
   testGoldenSceneOnMac("floating action button interactions", (tester) async {
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
-      tester,
-      goldenName: "button_fab_interactions",
-      layout: SceneLayout.row,
+    await Timeline(
+      "FAB Interactions",
+      fileName: "button_fab_interactions",
+      layout: RowSceneLayout(),
     )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
@@ -114,25 +114,22 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden();
+        .run(tester);
   });
 
   testGoldenSceneOnMac("extended floating action button interactions", (tester) async {
     final goldenKey = GlobalKey();
+    final image = await tester.loadImageFromFile("test_goldens/assets/flutter_background.png");
 
-    final backgroundImageBytes = File("test_goldens/assets/flutter_background.png").readAsBytesSync();
-    final imageProvider = MemoryImage(backgroundImageBytes);
-    await tester.runAsync(() async {
-      await precacheImage(imageProvider, tester.binding.rootElement!);
-    });
-
-    await FilmStrip(
-      tester,
-      goldenName: "button_extended_fab_interactions",
-      layout: SceneLayout.row,
-      goldenBackground: Image.memory(
-        backgroundImageBytes,
-        fit: BoxFit.cover,
+    await Timeline(
+      "Extended FAB Interactions",
+      fileName: "button_extended_fab_interactions",
+      layout: RowSceneLayout(),
+      goldenBackground: GoldenSceneBackground.widget(
+        Image.memory(
+          image.bytes,
+          fit: BoxFit.cover,
+        ),
       ),
     )
         .setupWithPump(() {
@@ -150,31 +147,26 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden();
+        .run(tester);
   });
 
   testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
-    final backgroundImageBytes = File("test_goldens/assets/flutter_background.png").readAsBytesSync();
-    final imageProvider = MemoryImage(backgroundImageBytes);
-    await tester.runAsync(() async {
-      await precacheImage(imageProvider, tester.binding.rootElement!);
-    });
+    final image = await tester.loadImageFromFile("test_goldens/assets/flutter_background.png");
 
     await Gallery(
-      tester,
-      directory: Directory("."),
+      "FAB Gallery",
       fileName: "button_extended_fab_gallery",
-      sceneDescription: "FAB Gallery",
-      layout: SceneLayout.row,
+      layout: RowSceneLayout(),
       itemScaffold: (context, child) {
         return FlutterWidgetScaffold(
           child: child,
         );
       },
-      goldenBackground: Image.memory(
-        backgroundImageBytes,
-        fit: BoxFit.cover,
-      ),
+      // TODO: We lost the golden background while refactoring. Bring this back somewhere.
+      // goldenBackground: GoldenSceneBackground.widget(Image.memory(
+      //   image.bytes,
+      //   fit: BoxFit.cover,
+      // )),
     )
         .itemFromWidget(
           id: "1",
@@ -202,6 +194,6 @@ void main() {
             onPressed: () {},
           ),
         )
-        .renderOrCompareGolden();
+        .run(tester);
   });
 }

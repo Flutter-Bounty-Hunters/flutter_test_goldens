@@ -1,32 +1,32 @@
 ---
-title: Filmstrip
+title: Timeline
 navOrder: 30
 ---
-A filmstrip is a Golden Scene, which displays a widget at different points in
+A timeline is a Golden Scene, which displays a widget at different points in
 time, and possibly across various user interactions.
 
 ```dart
-await FilmStrip(
-  tester,
-  goldenName: "button_elevated_interactions",
-  layout: SceneLayout.row,
+await Timeline(
+  "Elevated Button Interactions",
+  fileName: "button_elevated_interactions",
+  layout: RowSceneLayout(),
 )
-  .setupWithPump(() {
-    return FlutterWidgetScaffold(
+  .setupWithWidget(
+    FlutterWidgetScaffold(
       goldenKey: goldenKey,
       child: ElevatedButton(
         onPressed: () {},
         child: Text("Hello"),
       ),
-    );
-  })
-  .takePhoto("idle")
+    ),
+  )
+  .takePhoto("Idle")
   // Screenshot the hovered state.
   .hoverOver(find.byType(ElevatedButton))
-  .takePhoto("hover")
+  .takePhoto("Hover")
   // Screenshot the pressed state.
   .pressHover()
-  .takePhoto("pressed")
+  .takePhoto("Pressed")
   // Render or compare the scene.
-  .renderOrCompareGolden();
+  .run(tester);
 ```

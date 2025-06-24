@@ -1,14 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
-import 'package:flutter/material.dart' as m;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
@@ -18,38 +17,51 @@ import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
-import 'package:image/image.dart';
+import 'package:golden_bricks/golden_bricks.dart';
+import 'package:image/image.dart' hide Color;
+import 'package:path/path.dart';
 
 /// A golden builder that takes screenshots over a period of time and
 /// stitches them together into a single golden file with a given
-/// [FilmStripLayout].
-class FilmStrip {
-  FilmStrip(
-    this._tester, {
-    required this.goldenName,
-    required this.layout,
-    this.goldenBackground,
-  });
+/// [_layout].
+class Timeline {
+  Timeline(
+    this._description, {
+    Directory? directory,
+    required String fileName,
+    GoldenSceneItemScaffold itemScaffold = minimalItemScaffold,
+    required SceneLayout layout,
+    GoldenSceneBackground? goldenBackground,
+  })  : _layout = layout,
+        _goldenBackground = goldenBackground,
+        _fileName = fileName,
+        _itemScaffold = itemScaffold {
+    _directory = directory ?? GoldenSceneTheme.current.directory;
+  }
 
-  final WidgetTester _tester;
+  final String _description;
 
-  final String goldenName;
-  final SceneLayout layout;
-  final Widget? goldenBackground;
+  late final Directory _directory;
+  final String _fileName;
 
-  _FilmStripSetup? _setup;
+  final GoldenSceneItemScaffold _itemScaffold;
+
+  final GoldenSceneBackground? _goldenBackground;
+  final SceneLayout _layout;
+
+  _TimelineSetup? _setup;
   final _steps = <Object>[];
 
   /// Setup the scene before taking any photos.
   ///
   /// If you only need to provide a widget tree, without taking other [WidgetTester]
   /// actions, consider using [setupWithPump] for convenience.
-  FilmStrip setup(FilmStripSetupDelegate delegate) {
+  Timeline setup(TimelineSetupDelegate delegate) {
     if (_setup != null) {
-      throw Exception("FilmStrip was already set up, but tried to call setup() again.");
+      throw Exception("Timeline was already set up, but tried to call setup() again.");
     }
 
-    _setup = _FilmStripSetup(delegate);
+    _setup = _TimelineSetup(delegate);
 
     return this;
   }
@@ -57,14 +69,30 @@ class FilmStrip {
   /// Setup the scene before taking any photos, by pumping a widget tree.
   ///
   /// If you need to take additional actions, beyond a single pump, use [setup] instead.
-  FilmStrip setupWithPump(FilmStripSetupWithPumpFactory sceneBuilder) {
+  Timeline setupWithPump(TimelineSetupWithPumpFactory sceneBuilder) {
     if (_setup != null) {
-      throw Exception("FilmStrip was already set up, but tried to call setupWithPump() again.");
+      throw Exception("Timeline was already set up, but tried to call setupWithPump() again.");
     }
 
-    _setup = _FilmStripSetup((tester) async {
-      final widgetTree = sceneBuilder();
-      await _tester.pumpWidget(widgetTree);
+    _setup = _TimelineSetup((tester) async {
+      final widgetTree = _itemScaffold(tester, sceneBuilder());
+      await tester.pumpWidget(widgetTree);
+    });
+
+    return this;
+  }
+
+  /// Setup the scene before taking any photos, by pumping a widget tree.
+  ///
+  /// If you need to take additional actions, beyond a single pump, use [setup] instead.
+  Timeline setupWithWidget(Widget widget) {
+    if (_setup != null) {
+      throw Exception("Timeline was already set up, but tried to call setupWithWidget().");
+    }
+
+    _setup = _TimelineSetup((tester) async {
+      final widgetTree = _itemScaffold(tester, widget);
+      await tester.pumpWidget(widgetTree);
     });
 
     return this;
@@ -77,17 +105,54 @@ class FilmStrip {
   /// a [GoldenImageBounds] widget. That widget is used as the boundary for this photo.
   /// If no such widget exists, an error is thrown.
   /// {@endtemplate}
-  FilmStrip takePhoto(String description, [Finder? photoBoundsFinder]) {
+  Timeline takePhoto(String description, [Finder? photoBoundsFinder]) {
     if (_setup == null) {
       throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
     }
 
-    _steps.add(_FilmStripPhotoRequest(photoBoundsFinder ?? find.byType(GoldenImageBounds), description));
+    _steps.add(_TimelinePhotoRequest(photoBoundsFinder ?? find.byType(GoldenImageBounds), description));
 
     return this;
   }
 
-  FilmStrip hoverOver(Finder finder, {bool pumpAndSettle = true}) {
+  /// Take a series of [count] photos, waiting [timeBeforeEach] photo is taken.
+  ///
+  /// Each step is given a description equal to the given [baseName] with the step index
+  /// appended to to, starting at "1". E.g., with a [baseName] of "step-", the steps would
+  /// be called "step-1", "step-2", etc. If [baseName] is `null` then the description will
+  /// consist only of the number, e.g., "1", "2", etc.
+  Timeline takePhotos(int count, Duration timeBeforeEach, [String baseName = "", Finder? photoBoundsFinder]) {
+    if (_setup == null) {
+      throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
+    }
+
+    for (int i = 1; i <= count; i += 1) {
+      wait(timeBeforeEach);
+      takePhoto("$baseName$i", photoBoundsFinder);
+    }
+
+    return this;
+  }
+
+  Timeline wait(Duration duration) {
+    return modifyScene((tester, testContext) async {
+      await tester.pump(duration);
+    });
+  }
+
+  Timeline settle() {
+    return modifyScene((tester, testContext) async {
+      await tester.pumpAndSettle();
+    });
+  }
+
+  Timeline tap(Finder finder) {
+    return modifyScene((tester, testContext) async {
+      await tester.tap(finder);
+    });
+  }
+
+  Timeline hoverOver(Finder finder, {bool pumpAndSettle = true}) {
     return modifyScene((tester, testContext) async {
       // Hover over the desired widget and store the gesture details for future
       // scene modifications.
@@ -101,7 +166,7 @@ class FilmStrip {
     });
   }
 
-  FilmStrip pressHover({bool pumpAndSettle = true}) {
+  Timeline pressHover({bool pumpAndSettle = true}) {
     return modifyScene((tester, testContext) async {
       // Press down where the active gesture currently resides.
       await testContext.activeGesture!.down(testContext.activeGestureOffset!);
@@ -112,7 +177,7 @@ class FilmStrip {
     });
   }
 
-  FilmStrip releaseHover({bool pumpAndSettle = true}) {
+  Timeline releaseHover({bool pumpAndSettle = true}) {
     return modifyScene((tester, testContext) async {
       // Release the active gesture.
       await testContext.activeGesture!.up();
@@ -123,48 +188,52 @@ class FilmStrip {
     });
   }
 
-  /// Change the scene in this [FilmStrip] to prepare to take another photo.
-  FilmStrip modifyScene(FilmStripModifySceneDelegate delegate) {
+  /// Change the scene in this [Timeline] to prepare to take another photo.
+  Timeline modifyScene(TimelineModifySceneDelegate delegate) {
     if (_setup == null) {
       throw Exception("Can't modify the scene before setup. Please call setup() or setupWithPump()");
     }
 
-    _steps.add(_FilmStripModifySceneAction(delegate));
+    _steps.add(_TimelineModifySceneAction(delegate));
 
     return this;
   }
 
-  Future<void> renderOrCompareGolden() async {
+  Future<void> run(WidgetTester tester) async {
     if (_setup == null) {
       throw Exception(
           "Can't render or compare golden file without a setup action. Please call setup() or setupWithPump().");
     }
 
-    FtgLog.pipeline.info("Rendering or comparing golden - $goldenName");
+    FtgLog.pipeline.info("Rendering or comparing golden - $_fileName");
 
     // Always operate at a 1:1 logical-to-physical pixel ratio to help reduce
     // anti-aliasing and other artifacts from fractional pixel offsets.
-    _tester.view.devicePixelRatio = 1.0;
+    tester.view.devicePixelRatio = 1.0;
 
-    final camera = GoldenCamera();
-    final testContext = FilmStripTestContext();
+    final camera = FlutterCamera();
+    final testContext = TimelineTestContext();
 
     // Setup the scene.
     FtgLog.pipeline.info("Running any given setup delegate before running steps.");
-    await _setup!.setupDelegate(_tester);
+    await _setup!.setupDelegate(tester);
 
     // Take photos and modify scene over time.
-    for (final step in _steps) {
+    for (int i = 0; i < _steps.length; i += 1) {
+      final step = _steps[i];
       FtgLog.pipeline.info("Running step: $step");
-      if (step is _FilmStripModifySceneAction) {
-        await step.delegate(_tester, testContext);
+
+      if (step is _TimelineModifySceneAction) {
+        await step.delegate(tester, testContext);
         continue;
       }
 
-      if (step is _FilmStripPhotoRequest) {
+      if (step is _TimelinePhotoRequest) {
         expect(step.photoBoundsFinder, findsOne);
+        print("Found photo bounds");
 
         final renderObject = step.photoBoundsFinder.evaluate().first.findRenderObject();
+        print("Render object: $renderObject");
         expect(
           renderObject,
           isNotNull,
@@ -172,57 +241,80 @@ class FilmStrip {
               "Failed to find a render object for photo '${step.description}', using finder '${step.photoBoundsFinder}'",
         );
 
-        await camera.takePhoto(step.description, step.photoBoundsFinder);
+        print("Taking photo");
+        await tester.runAsync(() async {
+          await camera.takePhoto(step.description, step.photoBoundsFinder);
+        });
+        print("Done taking photo");
 
         continue;
       }
 
-      throw Exception("Tried to run a step when rendering a FilmStrip, but we don't recognize this step type: $step");
+      throw Exception("Tried to run a step when rendering a Timeline, but we don't recognize this step type: $step");
     }
 
     // Lay out photos in a row.
     final photos = camera.photos;
     // TODO: cleanup the modeling of these photos vs renderable photos once things are working
-    final renderablePhotos = <GoldenPhoto, (Uint8List, GlobalKey)>{};
-    await _tester.runAsync(() async {
+    final renderablePhotos = <GoldenSceneScreenshot, GlobalKey>{};
+    await tester.runAsync(() async {
       for (final photo in photos) {
-        final byteData = await photo.pixels.toByteData(format: ui.ImageByteFormat.png);
-        renderablePhotos[photo] = (byteData!.buffer.asUint8List(), GlobalKey());
+        final byteData = (await photo.pixels.toByteData(format: ui.ImageByteFormat.png))!;
+
+        final candidate = GoldenSceneScreenshot(
+          // FIXME: When I refactored image modeling to become FlutterScreenshot and GoldenImage, I changed
+          //        how IDs and descriptions were stored. The new structure worked fine for Galleries, where
+          //        we already had an ID and a description. But timeline didn't appear to have an explicit
+          //        ID for a given screenshot, so I gave the description as the "photo ID", which is why it's
+          //        now used in 2 places here. We should probably create a first-class concept of an ID for
+          //        a given timeline screenshot (independent from step index).
+          photo.id,
+          GoldenScreenshotMetadata(
+            description: photo.id,
+            simulatedPlatform: photo.simulatedPlatform,
+          ),
+          decodePng(byteData.buffer.asUint8List())!,
+          byteData.buffer.asUint8List(),
+        );
+
+        renderablePhotos[candidate] = GlobalKey();
       }
     });
 
-    // Layout photos in the filmstrip.
+    // Layout photos in the timeline.
     final sceneMetadata = await _layoutPhotos(
+      tester,
       photos,
       renderablePhotos,
-      layout,
-      goldenBackground: goldenBackground,
+      _layout,
+      goldenBackground: _goldenBackground,
     );
 
     FtgLog.pipeline.finer("Running momentary delay for render flakiness");
-    await _tester.runAsync(() async {
+    await tester.runAsync(() async {
       // Without this delay, the screenshot loading is spotty. However, with
       // this delay, we seem to always get screenshots displayed in the widget tree.
       // FIXME: Root cause this render flakiness and see if we can fix it.
       await Future.delayed(const Duration(milliseconds: 1));
     });
 
-    await _tester.pumpAndSettle();
+    await tester.pumpAndSettle();
 
-    final goldenFileName = "$goldenName.png";
+    final relativeDirectory = _directory?.path ?? GoldenSceneTheme.current.directory.path;
+    final relativeGoldenFilePath = "$relativeDirectory/$_fileName.png";
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
       await _updateGoldenScene(
-        _tester,
-        goldenFileName,
+        tester,
+        relativeGoldenFilePath,
         sceneMetadata,
       );
     } else {
       // Compare to existing goldens.
       await _compareGoldens(
-        _tester,
+        tester,
         sceneMetadata,
-        goldenFileName,
+        relativeGoldenFilePath,
         find.byType(GoldenSceneBounds),
       );
     }
@@ -231,22 +323,15 @@ class FilmStrip {
   }
 
   Future<GoldenSceneMetadata> _layoutPhotos(
-    List<GoldenPhoto> photos,
-    Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
+    WidgetTester tester,
+    List<FlutterScreenshot> photos,
+    Map<GoldenSceneScreenshot, GlobalKey> renderablePhotos,
     SceneLayout layout, {
-    Widget? goldenBackground,
+    GoldenSceneBackground? goldenBackground,
   }) async {
     // Layout the final strip within an OverflowBox to let it be whatever
     // size it wants. Then check the content render object for final dimensions.
     // Set the window size to match.
-
-    late final Axis filmStripDirection;
-    switch (layout) {
-      case SceneLayout.row:
-        filmStripDirection = Axis.horizontal;
-      case SceneLayout.column:
-        filmStripDirection = Axis.vertical;
-    }
 
     // FIXME: When we're comparing existing goldens, we shouldn't need to actually
     //        run full golden layout, we should be able to directly compare the renderable
@@ -255,21 +340,21 @@ class FilmStrip {
     final contentKey = GlobalKey();
     final galleryKey = GlobalKey();
 
-    final filmStrip = _buildFilmStrip(
-      filmStripDirection,
+    final timeline = _buildTimeline(
+      tester,
       contentKey,
       renderablePhotos,
       galleryKey: galleryKey,
       goldenBackground: goldenBackground,
     );
 
-    await _tester.pumpWidgetAndAdjustWindow(filmStrip);
+    await tester.pumpWidgetAndAdjustWindow(timeline);
 
-    await _tester.runAsync(() async {
+    await tester.runAsync(() async {
       for (final entry in renderablePhotos.entries) {
         await precacheImage(
-          MemoryImage(entry.value.$1),
-          _tester.element(find.byKey(entry.value.$2)),
+          MemoryImage(entry.key.pngBytes),
+          tester.element(find.byKey(entry.value)),
         );
       }
     });
@@ -277,25 +362,26 @@ class FilmStrip {
     // Lookup and return metadata for the position and size of each golden image
     // within the gallery.
     return GoldenSceneMetadata(
-      description: goldenName,
+      description: _description,
       images: [
         for (final golden in renderablePhotos.keys)
           GoldenImageMetadata(
-            id: golden.description,
-            topLeft: (renderablePhotos[golden]!.$2.currentContext!.findRenderObject() as RenderBox)
-                .localToGlobal(Offset.zero),
-            size: renderablePhotos[golden]!.$2.currentContext!.size!,
+            id: golden.id,
+            metadata: golden.metadata,
+            topLeft:
+                (renderablePhotos[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
+            size: renderablePhotos[golden]!.currentContext!.size!,
           ),
       ],
     );
   }
 
-  Future<void> _updateGoldenScene(WidgetTester tester, String goldenFileName, GoldenSceneMetadata sceneMetadata) async {
-    FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
-    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(goldenFileName));
+  Future<void> _updateGoldenScene(
+      WidgetTester tester, String relativeGoldenFilePath, GoldenSceneMetadata sceneMetadata) async {
+    FtgLog.pipeline.finer("Doing golden generation - window height: ${tester.view.physicalSize.height}");
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
 
-    final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
-    final goldenFile = File("$testFileDirectory$goldenFileName");
+    final goldenFile = File(_goldenFilePath());
     var pngData = goldenFile.readAsBytesSync();
     pngData = pngData.copyWithTextMetadata(
       "flutter_test_goldens",
@@ -304,38 +390,29 @@ class FilmStrip {
     goldenFile.writeAsBytesSync(pngData);
   }
 
-  Widget _buildFilmStrip(
-    Axis filmStripDirection,
+  Widget _buildTimeline(
+    WidgetTester tester,
     GlobalKey contentKey,
-    Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
+    Map<GoldenSceneScreenshot, GlobalKey> renderablePhotos, {
     Key? galleryKey,
-    Widget? goldenBackground,
+    GoldenSceneBackground? goldenBackground,
   }) {
-    return GoldenSceneBounds(
-      child: IntrinsicWidth(
-        child: IntrinsicHeight(
-          child: GoldenScene(
-            key: galleryKey,
-            direction: filmStripDirection,
-            renderablePhotos: renderablePhotos,
-            background: goldenBackground,
-          ),
-        ),
-      ),
-    );
+    return Builder(builder: (context) {
+      return _layout.build(tester, context, renderablePhotos);
+    });
   }
 
   Future<void> _compareGoldens(
     WidgetTester tester,
     GoldenSceneMetadata sceneMetadata,
-    String existingGoldenFileName,
+    String relativeGoldenFilePath,
     Finder goldenBounds,
   ) async {
     FtgLog.pipeline.finer("Comparing existing goldens...");
 
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
-    final goldenFile = File("$testFileDirectory$existingGoldenFileName");
+    final goldenFile = File(_goldenFilePath());
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
       throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
@@ -343,7 +420,7 @@ class FilmStrip {
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
 
     FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
-    late final GoldenCollection screenshotCollection;
+    late final ScreenshotCollection screenshotCollection;
     await tester.runAsync(() async {
       screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(tester, sceneMetadata);
     });
@@ -351,7 +428,7 @@ class FilmStrip {
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
     final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
     if (mismatches.mismatches.isNotEmpty) {
-      FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
+      FtgLog.pipeline.fine("Mismatches ($relativeGoldenFilePath):");
       for (final mismatch in mismatches.mismatches.values) {
         FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
       }
@@ -437,7 +514,7 @@ class FilmStrip {
           }
 
           await encodePngFile(
-            "${failureDirectory.path}/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
+            "${failureDirectory.path}/failure_${relativeGoldenFilePath}_${mismatch.golden!.id}.png",
             failureImage,
           );
         });
@@ -448,38 +525,71 @@ class FilmStrip {
       FtgLog.pipeline.info("No golden mismatches found");
     }
 
-    FtgLog.pipeline.finer("Done comparing goldens for film strip");
+    FtgLog.pipeline.finer("Done comparing goldens for timeline");
   }
+
+  String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
+
+  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
+
+  /// Calculates and returns a complete file path to the golden file specified by
+  /// this gallery, which consists of the current test file directory + an optional
+  /// golden subdirectory + the golden file name.
+  String _goldenFilePath([bool includeExtension = true]) =>
+      "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
+
+  String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 }
 
-class _FilmStripSetup {
-  const _FilmStripSetup(this.setupDelegate);
+class _TimelineSetup {
+  const _TimelineSetup(this.setupDelegate);
 
-  final FilmStripSetupDelegate setupDelegate;
+  final TimelineSetupDelegate setupDelegate;
 }
 
-typedef FilmStripSetupDelegate = Future<void> Function(WidgetTester tester);
+typedef TimelineSetupDelegate = Future<void> Function(WidgetTester tester);
 
-typedef FilmStripSetupWithPumpFactory = Widget Function();
+typedef TimelineSetupWithPumpFactory = Widget Function();
 
-class _FilmStripPhotoRequest {
-  const _FilmStripPhotoRequest(this.photoBoundsFinder, this.description);
+class _TimelinePhotoRequest {
+  const _TimelinePhotoRequest(this.photoBoundsFinder, this.description);
 
   final Finder photoBoundsFinder;
   final String description;
 }
 
-class _FilmStripModifySceneAction {
-  const _FilmStripModifySceneAction(this.delegate);
+class _TimelineModifySceneAction {
+  const _TimelineModifySceneAction(this.delegate);
 
-  final FilmStripModifySceneDelegate delegate;
+  final TimelineModifySceneDelegate delegate;
 }
 
-typedef FilmStripModifySceneDelegate = Future<void> Function(WidgetTester tester, FilmStripTestContext testContext);
+typedef TimelineModifySceneDelegate = Future<void> Function(WidgetTester tester, TimelineTestContext testContext);
 
-class FilmStripTestContext {
+class TimelineTestContext {
   TestGesture? activeGesture;
   Offset? activeGestureOffset;
 
   final scratchPad = <String, dynamic>{};
+}
+
+Widget minimalItemScaffold(WidgetTester tester, Widget content) {
+  return MaterialApp(
+    theme: ThemeData(
+      brightness: Brightness.dark,
+      fontFamily: goldenBricks,
+    ),
+    home: Center(
+      child: ColoredBox(
+        color: Color(0xff020817),
+        child: GoldenImageBounds(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: content,
+          ),
+        ),
+      ),
+    ),
+    debugShowCheckedModeBanner: false,
+  );
 }

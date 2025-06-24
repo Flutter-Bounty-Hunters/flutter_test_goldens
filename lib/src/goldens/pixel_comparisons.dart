@@ -33,11 +33,15 @@ double calculateColorMismatchPercent(Color c1, Color c2) {
   // color variations will all be at the highest intensity, but that's OK, be there is more than one color
   // difference that's worthy of attention.
   final difference = (deltaValue + ((deltaHue * 3) + deltaSaturation) / 4).clamp(0.0, 1.0);
+  // ignore: dead_code
   if (doLog) {
+    // ignore: avoid_print
     print(
         "Color 1 - red: ${c1.r}, green: ${c1.g}, blue: ${c1.b} - h: ${hsv1.hue}, s: ${hsv1.saturation}, v: ${hsv1.value}");
+    // ignore: avoid_print
     print(
         "Color 2 - red: ${c2.r}, green: ${c2.g}, blue: ${c2.b} - h: ${hsv2.hue}, s: ${hsv2.saturation}, v: ${hsv2.value}");
+    // ignore: avoid_print
     print("Difference: $difference");
   }
 

@@ -11,17 +11,7 @@ void main() {
         "A single-shot scene",
         fileName: "single_shot_scene",
       ) //
-          .fromWidget(Text("Hello, world!"))
-          .run(tester);
-    });
-
-    testGoldenScene("only decorated", (tester) async {
-      await SingleShot(
-        "A single-shot scene",
-        fileName: "single_shot_scene",
-      ) //
-          .fromWidget(Text("Hello, world!"))
-          .withDecoration(defaultGalleryItemDecorator)
+          .fromWidget(_content)
           .run(tester);
     });
 
@@ -30,8 +20,8 @@ void main() {
         "A single-shot scene",
         fileName: "single_shot_scene",
       ) //
-          .fromWidget(Text("Hello, world!"))
-          .inScaffold(defaultGalleryItemScaffold)
+          .fromWidget(_content)
+          .inScaffold(defaultGoldenSceneItemScaffold)
           .run(tester);
     });
 
@@ -40,7 +30,7 @@ void main() {
         "A single-shot scene",
         fileName: "single_shot_scene",
       ) //
-          .fromWidget(Text("Hello, world!"))
+          .fromWidget(_content)
           .findBounds(find.byType(GoldenImageBounds))
           .run(tester);
     });
@@ -50,7 +40,7 @@ void main() {
         "A single-shot scene",
         fileName: "single_shot_scene",
       ) //
-          .fromWidget(Text("Hello, world!"))
+          .fromWidget(_content)
           .withSetup((tester) async {
         // no-op
       }).run(tester);
@@ -61,9 +51,8 @@ void main() {
         "A single-shot scene",
         fileName: "single_shot_scene",
       ) //
-          .fromWidget(Text("Hello, world!"))
-          .withDecoration(defaultGalleryItemDecorator)
-          .inScaffold(defaultGalleryItemScaffold)
+          .fromWidget(_content)
+          .inScaffold(defaultGoldenSceneItemScaffold)
           .withSetup((tester) async {
             // no-op
           })
@@ -77,46 +66,13 @@ void main() {
         directory: Directory("goldens"),
         fileName: "single_shot_scene",
       ) //
-          .fromWidget(Text("Hello, world!"))
+          .fromWidget(_content)
           .run(tester);
     });
-
-    testGoldenScene(
-      "with a red border",
-      (tester) async {
-        await SingleShot(
-          "With a red border",
-          fileName: "single_shot_scene_with_red_border",
-        )
-            .fromWidget(
-              Text("Hello, world!"),
-            )
-            .withDecoration(
-              (context, child) => Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  border: Border.all(width: 5, color: Colors.red),
-                ),
-                child: child,
-              ),
-            )
-            .run(tester);
-
-        // await SingleShot.fromWidget(
-        //   tester,
-        //   directory: Directory("."),
-        //   fileName: "single_shot_scene",
-        //   description: "A single-shot scene",
-        //   itemDecorator: (context, child) => Container(
-        //     padding: const EdgeInsets.all(24),
-        //     decoration: BoxDecoration(
-        //       border: Border.all(width: 5, color: Colors.red),
-        //     ),
-        //     child: child,
-        //   ),
-        //   widget: Text("Hello, world!"),
-        // ).renderOrCompareGolden();
-      },
-    );
   });
 }
+
+const _content = Padding(
+  padding: EdgeInsets.all(24),
+  child: Text("Hello, World!"),
+);

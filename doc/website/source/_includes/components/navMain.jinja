@@ -1,21 +1,4 @@
 <nav class="main">
-  <ol class="organization-links">
-    <!-- Hard-coded, specific top-level menu items -->
-    {% if package.github != null %}
-    <a href="{{  package.github.url  }}" target="_blank" role="button" class="btn"><span class="fa fa-brands fa-github"></span>&nbsp;&nbsp;GitHub</a>
-    {% endif %}
-
-    {% if package.discord != null %}
-    <a href="{{  package.discord  }}" target="_blank" role="button" class="btn"><span class="fa fa-brands fa-discord"></span>&nbsp;&nbsp;Discord</a>
-    {% endif %}
-
-    {% if package.sponsorship != null %}
-    <a href="{{  package.sponsorship  }}" target="_blank" role="button" class="btn"><span class="fa fa-dollar-sign"></span>&nbsp;&nbsp;Sponsor</a>
-    {% endif %}
-  </ol>
-
-  <div class="organization-nav-divider">&nbsp;</div>
-
   {% if navigation != null %}
   <ol>
     {% for item in navigation.items %}

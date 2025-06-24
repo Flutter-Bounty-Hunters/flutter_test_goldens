@@ -1,10 +1,10 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/scenes/gallery.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
+import 'package:flutter_test_goldens/src/scenes/layouts/row_and_column_layout.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 
 class SingleShot {
@@ -30,7 +30,7 @@ class SingleShot {
         _config.copyWith(builder: builder),
       );
 
-  SingleShotConfigurator fromPumper(GoldenPumper pumper) => SingleShotConfigurator(
+  SingleShotConfigurator fromPumper(GoldenSceneItemPumper pumper) => SingleShotConfigurator(
         _config.copyWith(pumper: pumper),
       );
 }
@@ -42,16 +42,7 @@ class SingleShotConfigurator {
 
   final Set<String> _stepsCompleted;
 
-  SingleShotConfigurator withDecoration(GoldenDecorator decorator) {
-    _ensureStepNotComplete("decoration");
-
-    return SingleShotConfigurator(
-      _config.copyWith(itemDecorator: decorator),
-      {..._stepsCompleted, "decoration"},
-    );
-  }
-
-  SingleShotConfigurator inScaffold(GoldenScaffold scaffold) {
+  SingleShotConfigurator inScaffold(GoldenSceneItemScaffold scaffold) {
     _ensureStepNotComplete("scaffold");
 
     return SingleShotConfigurator(
@@ -78,6 +69,15 @@ class SingleShotConfigurator {
     );
   }
 
+  SingleShotConfigurator withLayout(SceneLayout layout) {
+    _ensureStepNotComplete("layout");
+
+    return SingleShotConfigurator(
+      _config.copyWith(sceneLayout: layout),
+      {..._stepsCompleted, "layout"},
+    );
+  }
+
   void _ensureStepNotComplete(String name) {
     if (!_stepsCompleted.contains(name)) {
       return;
@@ -89,17 +89,12 @@ class SingleShotConfigurator {
   }
 
   Future<void> run(WidgetTester tester) async {
-    final scaffold = _config.itemScaffold ?? defaultGalleryItemScaffold;
-    final decorator = _config.itemDecorator ?? defaultGalleryItemDecorator;
-
     final gallery = Gallery(
-      tester,
+      _config.description!,
       directory: _config.directory!,
       fileName: _config.fileName!,
-      sceneDescription: _config.description!,
-      layout: SceneLayout.column,
-      itemScaffold: scaffold,
-      itemDecorator: decorator,
+      itemScaffold: _config.itemScaffold,
+      layout: _config.sceneLayout ?? ColumnSceneLayout(),
     );
 
     if (_config.widget != null) {
@@ -131,7 +126,7 @@ class SingleShotConfigurator {
       );
     }
 
-    await gallery.renderOrCompareGolden();
+    await gallery.run(tester);
   }
 }
 
@@ -142,7 +137,7 @@ class SingleShotConfiguration {
     this.description,
     this.constraints,
     this.itemScaffold,
-    this.itemDecorator,
+    this.sceneLayout,
     this.widget,
     this.builder,
     this.pumper,
@@ -162,12 +157,13 @@ class SingleShotConfiguration {
   /// Optional constraints for the golden, or unbounded if `null`.
   final BoxConstraints? constraints;
 
-  final GoldenScaffold? itemScaffold;
-  final GoldenDecorator? itemDecorator;
+  final GoldenSceneItemScaffold? itemScaffold;
+
+  final SceneLayout? sceneLayout;
 
   final Widget? widget;
   final WidgetBuilder? builder;
-  final GoldenPumper? pumper;
+  final GoldenSceneItemPumper? pumper;
 
   final GoldenSetup? setup;
 
@@ -178,11 +174,11 @@ class SingleShotConfiguration {
     Directory? directory,
     String? fileName,
     BoxConstraints? constraints,
-    GoldenScaffold? itemScaffold,
-    GoldenDecorator? itemDecorator,
+    GoldenSceneItemScaffold? itemScaffold,
+    SceneLayout? sceneLayout,
     Widget? widget,
     WidgetBuilder? builder,
-    GoldenPumper? pumper,
+    GoldenSceneItemPumper? pumper,
     GoldenSetup? setup,
     Finder? boundsFinder,
   }) {
@@ -192,7 +188,7 @@ class SingleShotConfiguration {
       fileName: fileName ?? this.fileName,
       constraints: constraints ?? this.constraints,
       itemScaffold: itemScaffold ?? this.itemScaffold,
-      itemDecorator: itemDecorator ?? this.itemDecorator,
+      sceneLayout: sceneLayout ?? this.sceneLayout,
       widget: widget ?? this.widget,
       builder: builder ?? this.builder,
       pumper: pumper ?? this.pumper,

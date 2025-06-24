@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 
 import '../flutter_widget_scaffold.dart';
 
@@ -11,10 +10,10 @@ void main() {
 
     final goldenKey = GlobalKey();
 
-    await FilmStrip(
-      tester,
-      goldenName: "list_tile_interactions",
-      layout: SceneLayout.column,
+    await Timeline(
+      "ListTile Interactions",
+      fileName: "list_tile_interactions",
+      layout: ColumnSceneLayout(),
     )
         .setupWithPump(() {
           return FlutterWidgetScaffold(
@@ -37,6 +36,6 @@ void main() {
         .takePhoto("hover", find.byKey(goldenKey))
         .pressHover()
         .takePhoto("pressed", find.byKey(goldenKey))
-        .renderOrCompareGolden();
+        .run(tester);
   });
 }

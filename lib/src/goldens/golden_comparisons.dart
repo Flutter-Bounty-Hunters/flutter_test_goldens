@@ -3,8 +3,8 @@ import 'package:flutter_test_goldens/src/logging.dart';
 
 /// Compares new [screenshots] to existing [goldens] and reports any mismatches between them.
 GoldenCollectionMismatches compareGoldenCollections(
-  GoldenCollection goldens,
-  GoldenCollection screenshots,
+  ScreenshotCollection goldens,
+  ScreenshotCollection screenshots,
 ) {
   final mismatches = <String, GoldenMismatch>{};
 
@@ -54,7 +54,7 @@ GoldenCollectionMismatches compareGoldenCollections(
 
 /// Compares every pixel between [golden] and [screenshot] and returns the total
 /// number of pixels that are different between the two images.
-int _calculatePixelMismatch(GoldenImage golden, GoldenImage screenshot) {
+int _calculatePixelMismatch(GoldenSceneScreenshot golden, GoldenSceneScreenshot screenshot) {
   FtgLog.pipeline.fine("Running a pixel comparison for ${golden.id}");
   int mismatchCount = 0;
   for (int x = 0; x < golden.image.width; x += 1) {
@@ -74,10 +74,10 @@ class GoldenCollectionMismatches {
   GoldenCollectionMismatches(this.goldens, this.screenshots, this.mismatches);
 
   /// The golden images used in the comparison.
-  final GoldenCollection goldens;
+  final ScreenshotCollection goldens;
 
   /// The current screenshots which were compared against the goldens.
-  final GoldenCollection screenshots;
+  final ScreenshotCollection screenshots;
 
   /// The errors between the screenshots and the goldens.
   final Map<String, GoldenMismatch> mismatches;
@@ -92,10 +92,10 @@ class PixelGoldenMismatch extends GoldenMismatch {
   });
 
   @override
-  GoldenImage get golden => super.golden!;
+  GoldenSceneScreenshot get golden => super.golden!;
 
   @override
-  GoldenImage get screenshot => super.screenshot!;
+  GoldenSceneScreenshot get screenshot => super.screenshot!;
 
   final int mismatchPixelCount;
 
@@ -119,10 +119,10 @@ class WrongSizeGoldenMismatch extends GoldenMismatch {
   });
 
   @override
-  GoldenImage get golden => super.golden!;
+  GoldenSceneScreenshot get golden => super.golden!;
 
   @override
-  GoldenImage get screenshot => super.screenshot!;
+  GoldenSceneScreenshot get screenshot => super.screenshot!;
 
   @override
   String get describe => "A new screenshot has a different size than its existing golden image (${golden.id}) - "
@@ -135,8 +135,8 @@ class WrongSizeGoldenMismatch extends GoldenMismatch {
 /// Attempted to compare a candidate to a golden, but the candidate was generated for a golden that doesn't exist.
 class MissingGoldenMismatch extends GoldenMismatch {
   MissingGoldenMismatch({
-    required GoldenImage screenshot,
-  }) : super(screenshot: screenshot);
+    super.screenshot,
+  });
 
   @override
   String get describe =>
@@ -146,11 +146,11 @@ class MissingGoldenMismatch extends GoldenMismatch {
   Map<String, dynamic> get describeStructured => throw UnimplementedError();
 }
 
-/// Attempted to compare a candidante to a golden, but the candidate was never generated.
+/// Attempted to compare a candidate to a golden, but the candidate was never generated.
 class MissingCandidateMismatch extends GoldenMismatch {
   MissingCandidateMismatch({
-    required GoldenImage golden,
-  }) : super(golden: golden);
+    super.golden,
+  });
 
   @override
   String get describe =>
@@ -175,14 +175,14 @@ abstract class GoldenMismatch {
   ///
   /// If [golden] it means that no existing golden was found, which corresponds
   /// to the [screenshot]. I.e., the new collection has an extra golden.
-  final GoldenImage? golden;
+  final GoldenSceneScreenshot? golden;
 
   /// A golden image that was generated to compare to [golden].
   ///
   /// If [screenshot] is `null`, it means that the latest golden collection
   /// didn't render with an image that corresponds to [golden]. I.e., the
   /// new collection is missing this golden.
-  final GoldenImage? screenshot;
+  final GoldenSceneScreenshot? screenshot;
 
   /// Describes the mismatch in a human-readable way.
   String get describe;

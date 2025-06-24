@@ -5,9 +5,8 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/golden_bricks.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
-import 'package:flutter_test_goldens/src/goldens/golden_camera.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
@@ -15,7 +14,6 @@ import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/failure_scene.dart';
-import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene_report_printer.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
@@ -27,35 +25,67 @@ import 'package:path/path.dart';
 /// scene file.
 class Gallery {
   Gallery(
-    this._tester, {
+    String sceneDescription, {
     Directory? directory,
     required String fileName,
-    required String sceneDescription,
+    GoldenSceneItemScaffold? itemScaffold,
+    BoxConstraints? itemConstraints,
+    Finder? itemBoundsFinder,
     required SceneLayout layout,
-    GoldenScaffold itemScaffold = defaultGalleryItemScaffold,
-    GoldenDecorator? itemDecorator = defaultGalleryItemDecorator,
-    Widget? goldenBackground,
   })  : _fileName = fileName,
         _sceneDescription = sceneDescription,
-        _layout = layout,
         _itemScaffold = itemScaffold,
-        _itemDecorator = itemDecorator,
-        _goldenBackground = goldenBackground {
-    _directory = directory ?? defaultGoldenDirectory;
+        _itemConstraints = itemConstraints,
+        _itemBoundsFinder = itemBoundsFinder,
+        _layout = layout {
+    _directory = directory ?? GoldenSceneTheme.current.directory;
   }
 
-  final WidgetTester _tester;
-
-  /// A scaffold built around each item in this scene.
+  /// A scaffold built around each item widget tree in this scene when new screenshots are
+  /// being taken.
   ///
-  /// Defaults to [defaultGalleryItemScaffold].
-  final GoldenScaffold _itemScaffold;
+  /// This scaffold has no impact when painting the final scene.
+  ///
+  /// Defaults to [defaultGoldenSceneItemScaffold].
+  final GoldenSceneItemScaffold? _itemScaffold;
 
-  /// A decoration applied to each item in this scene.
-  final GoldenDecorator? _itemDecorator;
+  /// (Optional) size constraints applied to every item widget tree in the gallery, by default.
+  ///
+  /// The [_itemConstraints] are applied inside of the [_itemScaffold]. In theory, developers could
+  /// accomplish this same goal by replacing [_itemScaffold] with another one that includes constraints,
+  /// and then ignore [_itemConstraints]. However, in practice, it's a pain to create a new [_itemScaffold]
+  /// just to constrain the size of each item. Therefore, [_itemConstraints] is provided.
+  ///
+  /// This [_itemConstraints] can be overridden on a per item basis, by providing preferred constraints
+  /// for a specific item.
+  ///
+  /// [_itemConstraints] have no effect on "pumper" items because the pumper makes all decisions about
+  /// layout.
+  ///
+  /// Sizing priority:
+  ///
+  /// 1. Constraints set on a specific item.
+  /// 2. [_itemConstraints].
+  /// 3. The layout behavior in [_itemScaffold].
+  final BoxConstraints? _itemConstraints;
 
-  /// All screenshots within this scene.
-  final _items = <GalleryItem>[];
+  /// An (optional) [Finder] that selects which part of each gallery item is screenshotted.
+  ///
+  /// While [_itemBoundsFinder] is optional, a [Finder] is always used to select the content for a
+  /// screenshot. By default, the screenshotter looks for a [GoldenImageBounds] in the widget
+  /// tree. If [_itemBoundsFinder] is provided, it will be used instead, for every item in the gallery.
+  /// However, each item in the gallery can also provide its own bounds [Finder], which is taken
+  /// as the highest priority, and will override this [_itemBoundsFinder].
+  ///
+  /// Bounds priority:
+  ///
+  /// 1. Bounds [Finder] provided by a specific item.
+  /// 2. [_itemBoundsFinder].
+  /// 3. `find.byType(GoldenImageBounds)`.
+  final Finder? _itemBoundsFinder;
+
+  /// Requests for all screenshots within this scene, by their ID.
+  final _requests = <String, GalleryGoldenRequest>{};
 
   /// The directory where the golden scene file will be saved.
   late final Directory _directory;
@@ -69,15 +99,13 @@ class Gallery {
   /// The layout to use to position all the items in this scene.
   final SceneLayout _layout;
 
-  /// The background behind the items in this scene.
-  final Widget? _goldenBackground;
-
   /// Adds a screenshot item to the scene, based on a given [widget].
   Gallery itemFromWidget({
-    required String id,
+    String? id,
     required String description,
     TargetPlatform? platform,
     bool forEachPlatform = false,
+    GoldenSceneItemScaffold? scaffold,
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
@@ -88,34 +116,37 @@ class Gallery {
       "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
     );
 
+    id = id ?? description;
+    boundsFinder = boundsFinder ?? _itemBoundsFinder;
+
     if (forEachPlatform) {
-      for (final platform in TargetPlatform.values) {
-        _items.add(
-          GalleryItem.withWidget(
-            id: id,
-            description: "description (${platform.name})",
-            platform: platform,
-            constraints: constraints,
-            boundsFinder: boundsFinder,
-            setup: setup,
-            child: widget,
-          ),
+      for (final platform in _allPlatforms) {
+        final platformId = "${id}_${platform.name}";
+
+        _requests[platformId] = GalleryGoldenRequest.withWidget(
+          id: platformId,
+          description: "$description (${platform.name})",
+          platform: platform,
+          scaffold: scaffold,
+          constraints: constraints,
+          boundsFinder: boundsFinder,
+          setup: setup,
+          child: widget,
         );
       }
 
       return this;
     }
 
-    _items.add(
-      GalleryItem.withWidget(
-        id: id,
-        description: description,
-        platform: platform,
-        constraints: constraints,
-        boundsFinder: boundsFinder,
-        setup: setup,
-        child: widget,
-      ),
+    _requests[id] = GalleryGoldenRequest.withWidget(
+      id: id,
+      description: description,
+      platform: platform,
+      scaffold: scaffold,
+      constraints: constraints,
+      boundsFinder: boundsFinder,
+      setup: setup,
+      child: widget,
     );
 
     return this;
@@ -123,10 +154,11 @@ class Gallery {
 
   /// Adds a screenshot item to the scene, based on a widget created with a given [builder].
   Gallery itemFromBuilder({
-    required String id,
+    String? id,
     required String description,
     TargetPlatform? platform,
     bool forEachPlatform = false,
+    GoldenSceneItemScaffold? scaffold,
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
@@ -137,34 +169,37 @@ class Gallery {
       "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
     );
 
+    id = id ?? description;
+    boundsFinder = boundsFinder ?? _itemBoundsFinder;
+
     if (forEachPlatform) {
-      for (final platform in TargetPlatform.values) {
-        _items.add(
-          GalleryItem.withBuilder(
-            id: id,
-            description: "description (${platform.name})",
-            platform: platform,
-            constraints: constraints,
-            boundsFinder: boundsFinder,
-            setup: setup,
-            builder: builder,
-          ),
+      for (final platform in _allPlatforms) {
+        final platformId = "${id}_${platform.name}";
+
+        _requests[platformId] = GalleryGoldenRequest.withBuilder(
+          id: platformId,
+          description: "$description (${platform.name})",
+          platform: platform,
+          scaffold: scaffold,
+          constraints: constraints,
+          boundsFinder: boundsFinder,
+          setup: setup,
+          builder: builder,
         );
       }
 
       return this;
     }
 
-    _items.add(
-      GalleryItem.withBuilder(
-        id: id,
-        description: description,
-        platform: platform,
-        constraints: constraints,
-        boundsFinder: boundsFinder,
-        setup: setup,
-        builder: builder,
-      ),
+    _requests[id] = GalleryGoldenRequest.withBuilder(
+      id: id,
+      description: description,
+      platform: platform,
+      scaffold: scaffold,
+      constraints: constraints,
+      boundsFinder: boundsFinder,
+      setup: setup,
+      builder: builder,
     );
 
     return this;
@@ -188,48 +223,52 @@ class Gallery {
   /// to render, or the expected decoration won't be applied.
   /// {@endtemplate}
   Gallery itemFromPumper({
-    required String id,
+    String? id,
     required String description,
     TargetPlatform? platform,
     bool forEachPlatform = false,
+    GoldenSceneItemScaffold? scaffold,
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
-    required GalleryItemPumper pumper,
+    required GoldenSceneItemPumper pumper,
   }) {
     assert(
       forEachPlatform && platform == null || !forEachPlatform,
       "You can either specify a `platform` or you can set `forEachPlatform` to `true`, but not both",
     );
 
+    id = id ?? description;
+    boundsFinder = boundsFinder ?? _itemBoundsFinder;
+
     if (forEachPlatform) {
-      for (final platform in TargetPlatform.values) {
-        _items.add(
-          GalleryItem.withPumper(
-            id: id,
-            description: "description (${platform.name})",
-            platform: platform,
-            constraints: constraints,
-            boundsFinder: boundsFinder,
-            setup: setup,
-            pumper: pumper,
-          ),
+      for (final platform in _allPlatforms) {
+        final platformId = "${id}_${platform.name}";
+
+        _requests[platformId] = GalleryGoldenRequest.withPumper(
+          id: platformId,
+          description: "$description (${platform.name})",
+          platform: platform,
+          scaffold: scaffold,
+          constraints: constraints,
+          boundsFinder: boundsFinder,
+          setup: setup,
+          pumper: pumper,
         );
       }
 
       return this;
     }
 
-    _items.add(
-      GalleryItem.withPumper(
-        id: id,
-        description: description,
-        platform: platform,
-        constraints: constraints,
-        boundsFinder: boundsFinder,
-        setup: setup,
-        pumper: pumper,
-      ),
+    _requests[id] = GalleryGoldenRequest.withPumper(
+      id: id,
+      description: description,
+      platform: platform,
+      scaffold: scaffold,
+      constraints: constraints,
+      boundsFinder: boundsFinder,
+      setup: setup,
+      pumper: pumper,
     );
 
     return this;
@@ -237,13 +276,50 @@ class Gallery {
 
   /// Either renders a new golden to a scene file, or compares new screenshots against an existing
   /// golden scene file.
-  Future<void> renderOrCompareGolden() async {
+  Future<void> run(WidgetTester tester) async {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
 
-    // Build each gallery item and screenshot it.
-    final camera = GoldenCamera();
-    for (final item in _items) {
-      FtgLog.pipeline.info("Building gallery item: ${item.description}, item decorated: $_itemDecorator");
+    // Build each golden tree and take `FlutterScreenshot`s.
+    final camera = FlutterCamera();
+    await _takeNewScreenshots(tester, camera);
+
+    // Convert each `FlutterScreenshot` to a golden `GoldenSceneScreenshot`, which includes
+    // additional metadata, and multiple image representations.
+    final screenshots = await _convertFlutterScreenshotsToSceneScreenshots(tester, camera.photos);
+
+    if (autoUpdateGoldenFiles) {
+      // Generate new goldens.
+      FtgLog.pipeline.finer("Generating new goldens...");
+      // TODO: Return a success/failure report that we can publish to the test output.
+      await _updateGoldenScene(
+        tester,
+        _fileName,
+        screenshots,
+      );
+      FtgLog.pipeline.finer("Done generating new goldens.");
+    } else {
+      // Compare to existing goldens.
+      FtgLog.pipeline.finer("Comparing existing goldens...");
+      // TODO: Return a success/failure report that we can publish to the test output.
+      await _compareGoldens(
+        tester,
+        _fileName,
+        screenshots,
+      );
+      FtgLog.pipeline.finer("Done comparing goldens.");
+    }
+
+    FtgLog.pipeline.fine("Done with golden generation/comparison");
+  }
+
+  /// For each scene screenshot request, pumps its widget tree, and then screenshots it with
+  /// the given [camera].
+  Future<void> _takeNewScreenshots(WidgetTester tester, FlutterCamera camera) async {
+    print("Taking screenshots:");
+    for (final item in _requests.values) {
+      FtgLog.pipeline.info("Building gallery item: ${item.description}");
+      final itemScaffold = item.scaffold ?? _itemScaffold ?? GoldenSceneTheme.current.itemScaffold;
+      final itemConstraints = item.constraints ?? _itemConstraints;
 
       // Simulate the desired platform for this item.
       final previousPlatform = debugDefaultTargetPlatformOverride;
@@ -251,193 +327,145 @@ class Gallery {
 
       if (item.pumper != null) {
         // Defer to the `pumper` to pump the entire widget tree for this gallery item.
-        await item.pumper!.call(_tester, _itemScaffold, _itemDecorator);
+        await item.pumper!.call(tester, itemScaffold, item.description);
       } else if (item.builder != null) {
         // Pump this gallery item, deferring to a `WidgetBuilder` for the content.
-        await _tester.pumpWidget(
-          _buildItem(item.constraints, Builder(builder: item.builder!)),
+        await tester.pumpWidget(
+          KeyedSubtree(
+            // ^ Always pump with a new GlobalKey to force a fresh tree between screenshots.
+            key: GlobalKey(),
+            child: _buildItem(tester, itemScaffold, itemConstraints, Builder(builder: item.builder!)),
+          ),
         );
       } else {
         // Pump this gallery item, deferring to a `Widget` for the content.
-        await _tester.pumpWidget(
-          _buildItem(item.constraints, item.child!),
+        await tester.pumpWidget(
+          KeyedSubtree(
+            // ^ Always pump with a new GlobalKey to force a fresh tree between screenshots.
+            key: GlobalKey(),
+            child: _buildItem(tester, itemScaffold, itemConstraints, item.child!),
+          ),
         );
       }
 
       // Run the item's setup function, if there is one.
-      await item.setup?.call(_tester);
-
-      // Return the simulated platform to whatever it was before this item.
-      debugDefaultTargetPlatformOverride = previousPlatform;
+      await item.setup?.call(tester);
 
       // Take a screenshot.
       expect(item.boundsFinder, findsOne);
       final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
+      print(
+          " - Taking screenshot. Bounds: ${item.boundsFinder}, Render object size: ${(renderObject as RenderBox?)?.size}");
       expect(
         renderObject,
         isNotNull,
         reason: "Failed to find a render object for gallery item '${item.description}'",
       );
 
-      await camera.takePhoto(item.description, item.boundsFinder);
+      await tester.runAsync(() async {
+        await camera.takePhoto(item.id, item.boundsFinder);
+      });
+      print(" - Done taking photo - ${camera.photos.last.id} - size: ${camera.photos.last.size}");
+
+      // Revert the simulated platform to whatever it was before this item.
+      debugDefaultTargetPlatformOverride = previousPlatform;
     }
-
-    // Lay out gallery items in the desired layout.
-    final photos = camera.photos;
-    // TODO: cleanup the modeling of these photos vs renderable photos once things are working
-    final renderablePhotos = <GoldenPhoto, (Uint8List, GlobalKey)>{};
-    await _tester.runAsync(() async {
-      for (final photo in photos) {
-        final byteData = await photo.pixels.toByteData(format: ui.ImageByteFormat.png);
-        renderablePhotos[photo] = (byteData!.buffer.asUint8List(), GlobalKey());
-      }
-    });
-
-    // Layout photos in the gallery so we can lookup their final offsets and sizes.
-    var sceneMetadata = await _layoutPhotos(
-      photos,
-      renderablePhotos,
-      _layout,
-      goldenBackground: _goldenBackground,
-    );
-
-    FtgLog.pipeline.finer("Running momentary delay for render flakiness");
-    await _tester.runAsync(() async {
-      // Without this delay, the screenshot loading is spotty. However, with
-      // this delay, we seem to always get screenshots displayed in the widget tree.
-      // FIXME: Root cause this render flakiness and see if we can fix it.
-      await Future.delayed(const Duration(milliseconds: 1));
-    });
-
-    await _tester.pumpAndSettle();
-
-    if (autoUpdateGoldenFiles) {
-      // Generate new goldens.
-      await _updateGoldenScene(
-        _tester,
-        _fileName,
-        sceneMetadata,
-      );
-    } else {
-      // Compare to existing goldens.
-      FtgLog.pipeline.finer("Comparing existing goldens...");
-      await _compareGoldens(
-        _tester,
-        sceneMetadata,
-        _fileName,
-        find.byType(GoldenSceneBounds),
-      );
-      FtgLog.pipeline.finer("Done comparing goldens for gallery");
-    }
-
-    FtgLog.pipeline.finer("Done with golden generation/comparison");
   }
 
-  Widget _buildItem(BoxConstraints? constraints, Widget content) {
-    return _itemScaffold(
-      _tester,
+  Widget _buildItem(
+      WidgetTester tester, GoldenSceneItemScaffold itemScaffold, BoxConstraints? constraints, Widget content) {
+    print("Building with item constraints: $constraints");
+    return itemScaffold(
+      tester,
       ConstrainedBox(
-        constraints: constraints ?? BoxConstraints(),
-        child: _itemDecorator != null
-            ? _itemDecorator.call(
-                _tester,
-                content,
-              )
-            : content,
+        constraints: constraints ?? const BoxConstraints(),
+        child: content,
       ),
     );
   }
 
-  // TODO: de-dup this with FilmStrip
-  Future<GoldenSceneMetadata> _layoutPhotos(
-    List<GoldenPhoto> photos,
-    Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos,
-    SceneLayout layout, {
-    Widget? goldenBackground,
-  }) async {
-    // Layout the final strip within an OverflowBox to let it be whatever
-    // size it wants. Then check the content render object for final dimensions.
-    // Set the window size to match.
+  Future<Map<String, GoldenSceneScreenshot>> _convertFlutterScreenshotsToSceneScreenshots(
+    WidgetTester tester,
+    List<FlutterScreenshot> flutterScreenshots,
+  ) async {
+    print("Converting Flutter screenshots to golden candidates:");
+    final candidateScreenshots = <String, GoldenSceneScreenshot>{};
+    await tester.runAsync(() async {
+      for (final flutterScreenshot in flutterScreenshots) {
+        // Decode Flutter screenshot to raw PNG data.
+        final byteData = (await flutterScreenshot.pixels.toByteData(format: ui.ImageByteFormat.png))!;
 
-    late final Axis galleryDirection;
-    switch (layout) {
-      case SceneLayout.row:
-        galleryDirection = Axis.horizontal;
-      case SceneLayout.column:
-        galleryDirection = Axis.vertical;
-    }
-
-    // FIXME: When we're comparing existing goldens, we shouldn't need to actually
-    //        run full golden layout, we should be able to directly compare the renderable
-    //        images to the regions of the existing golden.
-
-    final contentKey = GlobalKey();
-    final galleryKey = GlobalKey();
-
-    final gallery = _buildGallery(
-      galleryDirection,
-      contentKey,
-      renderablePhotos,
-      galleryKey: galleryKey,
-      goldenBackground: goldenBackground,
-    );
-
-    await _tester.pumpWidgetAndAdjustWindow(gallery);
-
-    await _tester.runAsync(() async {
-      for (final entry in renderablePhotos.entries) {
-        await precacheImage(
-          MemoryImage(entry.value.$1),
-          _tester.element(find.byKey(entry.value.$2)),
+        // Create a golden representation of the screenshot and store it.
+        final candidate = GoldenSceneScreenshot(
+          flutterScreenshot.id,
+          GoldenScreenshotMetadata(
+            description: _requests[flutterScreenshot.id]!.description,
+            simulatedPlatform: flutterScreenshot.simulatedPlatform,
+          ),
+          decodePng(byteData.buffer.asUint8List())!,
+          byteData.buffer.asUint8List(),
         );
+
+        candidateScreenshots[flutterScreenshot.id] = candidate;
+        print(
+            " - ${candidate.id} - size: ${candidate.size}, inner PNG size: ${candidate.image.width}, ${candidate.image.height}");
       }
     });
 
-    // Lookup and return metadata for the position and size of each golden image
-    // within the gallery.
-    return GoldenSceneMetadata(
-      description: _sceneDescription,
-      images: [
-        for (final golden in renderablePhotos.keys)
-          GoldenImageMetadata(
-            id: golden.description,
-            topLeft: (renderablePhotos[golden]!.$2.currentContext!.findRenderObject() as RenderBox)
-                .localToGlobal(Offset.zero),
-            size: renderablePhotos[golden]!.$2.currentContext!.size!,
-          ),
-      ],
-    );
-  }
-
-  Widget _buildGallery(
-    Axis galleryDirection,
-    GlobalKey contentKey,
-    Map<GoldenPhoto, (Uint8List, GlobalKey)> renderablePhotos, {
-    Key? galleryKey,
-    Widget? goldenBackground,
-  }) {
-    return GoldenSceneBounds(
-      child: IntrinsicWidth(
-        child: IntrinsicHeight(
-          child: GoldenScene(
-            key: galleryKey,
-            direction: galleryDirection,
-            renderablePhotos: renderablePhotos,
-            background: goldenBackground,
-          ),
-        ),
-      ),
-    );
+    return candidateScreenshots;
   }
 
   Future<void> _updateGoldenScene(
     WidgetTester tester,
     String goldenFileName,
-    GoldenSceneMetadata sceneMetadata,
+    Map<String, GoldenSceneScreenshot> newGoldens,
   ) async {
-    FtgLog.pipeline.finer("Doing golden generation - window height: ${_tester.view.physicalSize.height}");
+    // Layout candidate screenshots in the gallery so we can lookup their final offsets and sizes.
+    var sceneMetadata = await _layoutGalleryWithNewGoldens(tester, _layout, newGoldens);
+
+    print("Saving new scene metadata. Here are the golden bounds:");
+    for (final golden in sceneMetadata.images) {
+      print(" - ${golden.id} - at: ${golden.topLeft}, size: ${golden.size}");
+    }
+    print("---");
+
+    FtgLog.pipeline.finer("Running momentary delay for render flakiness");
+    await tester.runAsync(() async {
+      // Without this delay, the screenshot loading is spotty. However, with
+      // this delay, we seem to always get screenshots displayed in the widget tree.
+      // FIXME: Root cause this render flakiness and see if we can fix it.
+      await Future.delayed(const Duration(milliseconds: 1));
+    });
+    await tester.pumpAndSettle();
+
+    FtgLog.pipeline.finer("Doing golden generation - window size: ${tester.view.physicalSize}");
+    expect(
+      find.byType(GoldenSceneBounds),
+      findsOne,
+      reason:
+          "Every scene layout must include exactly one GoldenSceneBounds widget, which describes the area to screenshot.",
+    );
+    if (tester.view.physicalSize == Size.zero) {
+      throw Exception(
+        '''After laying out golden images, the intrinsic size of the scene is zero. This is an error. 
+
+Check the scene layout implementation. The golden images are probably rendered using an Image.memory() widget.
+
+Make sure that the Image.memory widget explicitly sets its "width" and "height". This is because, with the way images are loaded into golden tests, we need to pump a frame without the bitmap data, and then pump another frame with the bitmap data. If you don't specify the width/height on the first frame, Flutter will layout the Image with zero size. 
+
+For example:
+
+Image.memory(
+  key: myGoldenGlobalKey,
+  goldenPngUint8List,
+  width: goldenWidth,
+  height: goldenHeight,
+)''',
+      );
+    }
     await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
 
+    FtgLog.pipeline.finer("Writing updated golden scene to file");
     final goldenFile = File(_goldenFilePath());
     var pngData = goldenFile.readAsBytesSync();
     pngData = pngData.copyWithTextMetadata(
@@ -447,11 +475,66 @@ class Gallery {
     goldenFile.writeAsBytesSync(pngData);
   }
 
+  // TODO: de-dup this with Timeline
+  Future<GoldenSceneMetadata> _layoutGalleryWithNewGoldens(
+    WidgetTester tester,
+    SceneLayout layout,
+    Map<String, GoldenSceneScreenshot> goldenScreenshots,
+  ) async {
+    print("_layoutGalleryWithNewGoldens()");
+    final goldensAndGlobalKeys = Map<GoldenSceneScreenshot, GlobalKey>.fromEntries(
+      goldenScreenshots.entries.map((entry) => MapEntry(entry.value, GlobalKey())),
+    );
+
+    // Layout the gallery scene with the new goldens, check the intrinsic size of the
+    // gallery, then change the test window size to match it, so it fits exactly.
+    //
+    // We also need to do this because Flutter will only "precache" images for which there is
+    // a corresponding `GlobalKey` already in the tree. Therefore, this layout pass inserts a
+    // `GlobalKey` for every golden screenshot that we want to render.
+    await tester.pumpWidgetAndAdjustWindow(
+      _buildGalleryLayout(tester, goldensAndGlobalKeys),
+    );
+
+    // Use Flutter's `precacheImage()` mechanism to get each golden screenshot bitmap to
+    // render in this widget test.
+    await tester.runAsync(() async {
+      for (final entry in goldensAndGlobalKeys.entries) {
+        await precacheImage(
+          MemoryImage(entry.key.pngBytes),
+          tester.element(find.byKey(entry.value)),
+        );
+      }
+    });
+
+    // Now that the gallery scene is fully rendered, calculate and return the metadata for
+    // all screenshots in the scene.
+    return GoldenSceneMetadata(
+      description: _sceneDescription,
+      images: [
+        for (final golden in goldensAndGlobalKeys.keys)
+          GoldenImageMetadata(
+            id: golden.id,
+            metadata: golden.metadata,
+            topLeft: (goldensAndGlobalKeys[golden]!.currentContext!.findRenderObject() as RenderBox)
+                .localToGlobal(Offset.zero),
+            size: goldensAndGlobalKeys[golden]!.currentContext!.size!,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildGalleryLayout(WidgetTester tester, Map<GoldenSceneScreenshot, GlobalKey> candidatesAndGlobalKeys) {
+    print("Building Gallery scene layout");
+    return Builder(builder: (context) {
+      return _layout.build(tester, context, candidatesAndGlobalKeys);
+    });
+  }
+
   Future<void> _compareGoldens(
     WidgetTester tester,
-    GoldenSceneMetadata newSceneMetadata,
     String existingGoldenFileName,
-    Finder goldenBounds,
+    Map<String, GoldenSceneScreenshot> candidateCollection,
   ) async {
     // Extract scene metadata and golden images from image file.
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
@@ -472,16 +555,9 @@ class Gallery {
     final sceneJson = JsonDecoder().convert(sceneJsonText);
     final metadata = GoldenSceneMetadata.fromJson(sceneJson);
 
-    // Extract scene metadata from the current widget tree.
-    FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
-    late final GoldenCollection screenshotCollection;
-    await tester.runAsync(() async {
-      screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(tester, newSceneMetadata);
-    });
-
     // Compare goldens in the scene.
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
-    final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
+    final mismatches = compareGoldenCollections(goldenCollection, ScreenshotCollection(candidateCollection));
 
     final items = <GoldenReport>[];
     final missingCandidates = <MissingCandidateMismatch>[];
@@ -503,8 +579,8 @@ class Gallery {
     }
 
     // For each candidate found in the scene, report whether it passed or failed.
-    for (final screenshotId in screenshotCollection.ids) {
-      if (!goldenCollection.hasId(screenshotId)) {
+    for (final candidateId in candidateCollection.keys) {
+      if (!goldenCollection.hasId(candidateId)) {
         // This candidate is an extra candidate, i.e., it was found in the scene,
         // but it doesn't have a golden counterpart. We already reported extra candidates
         // above, so we can skip this candidate.
@@ -512,9 +588,9 @@ class Gallery {
       }
 
       // Find the golden metadata for this candidate.
-      final goldenMetadata = metadata.images.where((image) => image.id == screenshotId).first;
+      final goldenMetadata = metadata.images.where((image) => image.id == candidateId).first;
 
-      final mismatch = mismatches.mismatches[screenshotId];
+      final mismatch = mismatches.mismatches[candidateId];
       if (mismatch == null) {
         // The golden check passed.
         items.add(
@@ -546,10 +622,16 @@ class Gallery {
       await tester.runAsync(() async {
         final failureImage = await paintGoldenMismatchImages(mismatch);
 
-        await encodePngFile(
-          "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
-          failureImage,
-        );
+        try {
+          await encodePngFile(
+            "$_goldenFailureDirectoryPath/failure_${existingGoldenFileName}_${mismatch.golden!.id}.png",
+            failureImage,
+          );
+        } catch (exception) {
+          throw Exception(
+            "Goldens failed with ${mismatches.mismatches.length} mismatch(es), BUT we were unable to paint the mismatches to a failure file. Originating exception: $exception",
+          );
+        }
       });
     }
 
@@ -566,6 +648,7 @@ class Gallery {
     }
   }
 
+  // TODO: Dedup following with Timeline
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
   String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
@@ -584,25 +667,13 @@ class Gallery {
   }
 }
 
-/// Pumps a widget tree into the given [tester], wrapping its content within the given [decorator].
-///
-/// {@macro gallery_item_pumper_purpose}
-///
-/// {@macro gallery_item_structure}
-///
-/// {@macro gallery_item_pumper_requirements}
-typedef GalleryItemPumper = Future<void> Function(
-  WidgetTester tester,
-  GoldenScaffold scaffold,
-  GoldenDecorator? decorator,
-);
-
-/// A single UI screenshot within a gallery of gallery items.
-class GalleryItem {
-  GalleryItem.withWidget({
+/// A request for a single UI screenshot within a gallery of independent screenshots.
+class GalleryGoldenRequest {
+  GalleryGoldenRequest.withWidget({
     required this.id,
     required this.description,
     this.platform,
+    this.scaffold,
     this.constraints,
     Finder? boundsFinder,
     this.setup,
@@ -612,10 +683,11 @@ class GalleryItem {
     this.boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds);
   }
 
-  GalleryItem.withBuilder({
+  GalleryGoldenRequest.withBuilder({
     required this.id,
     required this.description,
     this.platform,
+    this.scaffold,
     this.constraints,
     Finder? boundsFinder,
     this.setup,
@@ -625,10 +697,11 @@ class GalleryItem {
     this.boundsFinder = boundsFinder ?? find.byType(GoldenImageBounds);
   }
 
-  GalleryItem.withPumper({
+  GalleryGoldenRequest.withPumper({
     required this.id,
     required this.description,
     this.platform,
+    this.scaffold,
     this.constraints,
     Finder? boundsFinder,
     this.setup,
@@ -653,6 +726,8 @@ class GalleryItem {
   /// at all - it uses whatever is configured by the test suite.
   final TargetPlatform? platform;
 
+  final GoldenSceneItemScaffold? scaffold;
+
   /// Optional constraints for the golden, or unbounded if `null`.
   final BoxConstraints? constraints;
 
@@ -666,7 +741,7 @@ class GalleryItem {
 
   /// The [GalleryItemPumper] that creates this gallery item, or `null` if this gallery
   /// item is created with a [builder] or a [child].
-  final GalleryItemPumper? pumper;
+  final GoldenSceneItemPumper? pumper;
 
   /// The [WidgetBuilder] that creates this gallery item, or `null` if this gallery
   /// item is created with a [pumper] or a [child].
@@ -677,29 +752,10 @@ class GalleryItem {
   final Widget? child;
 }
 
-/// The ancestor widget tree for every item in a gallery, unless overridden by
-/// the gallery configuration.
-Widget defaultGalleryItemScaffold(WidgetTester tester, Widget content) {
-  return MaterialApp(
-    home: Scaffold(
-      body: Builder(builder: (context) {
-        return DefaultTextStyle(
-          style: DefaultTextStyle.of(context).style.copyWith(
-                fontFamily: goldenBricks,
-              ),
-          child: Center(
-            child: GoldenImageBounds(child: content),
-          ),
-        );
-      }),
-    ),
-    debugShowCheckedModeBanner: false,
-  );
-}
-
-Widget defaultGalleryItemDecorator(WidgetTester tester, Widget content) {
-  return Padding(
-    padding: const EdgeInsets.all(24),
-    child: content,
-  );
-}
+const _allPlatforms = {
+  TargetPlatform.android,
+  TargetPlatform.iOS,
+  TargetPlatform.macOS,
+  TargetPlatform.windows,
+  TargetPlatform.linux,
+};
