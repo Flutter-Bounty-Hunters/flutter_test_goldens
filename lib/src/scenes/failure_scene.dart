@@ -87,8 +87,7 @@ Future<Image> paintGoldenMismatchImages(GoldenMismatch mismatch) async {
 }
 
 /// Given a [report], generates that shows all the mismatches found in the report.
-Future<(Image, FailureSceneMetadata)> paintFailureScene(
-    WidgetTester tester, GoldenSceneReport report, SceneLayout layout) async {
+Future<(Image, FailureSceneMetadata)> paintFailureScene(WidgetTester tester, GoldenSceneReport report) async {
   final photos = <GoldenSceneScreenshot>[];
 
   for (final item in report.items) {
@@ -103,7 +102,7 @@ Future<(Image, FailureSceneMetadata)> paintFailureScene(
     final absoluteDiff = _generateAbsoluteDiff(golden, candidate, mismatch);
     final relativeDiff = _generateRelativeDiff(golden, candidate, mismatch);
 
-    final reportImage = _layoutGoldenFailure(
+    final reportImage = await _layoutGoldenFailure(
       report: report,
       golden: golden.image,
       candidate: candidate.image,
@@ -130,36 +129,36 @@ Future<(Image, FailureSceneMetadata)> paintFailureScene(
     );
   }
 
-  for (final missingCandidate in report.missingCandidates) {
-    // TODO: Figure out why using missingCandidate.golden!.pngBytes causes an "Invalid image data" error.
-    final image = await _convertImagePackageToUiImage(missingCandidate.golden!.image);
-    final pixels = (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
-    photos.add(
-      GoldenSceneScreenshot(
-        missingCandidate.golden!.id,
-        missingCandidate.golden!.metadata.copyWith(
-          description: "${missingCandidate.golden!.metadata.description} (missing candidate)",
-        ),
-        missingCandidate.golden!.image,
-        pixels,
-      ),
-    );
-  }
+  // for (final missingCandidate in report.missingCandidates) {
+  //   // TODO: Figure out why using missingCandidate.golden!.pngBytes causes an "Invalid image data" error.
+  //   final image = await _convertImagePackageToUiImage(missingCandidate.golden!.image);
+  //   final pixels = (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer.asUint8List();
+  //   photos.add(
+  //     GoldenSceneScreenshot(
+  //       missingCandidate.golden!.id,
+  //       missingCandidate.golden!.metadata.copyWith(
+  //         description: "${missingCandidate.golden!.metadata.description} (missing candidate)",
+  //       ),
+  //       missingCandidate.golden!.image,
+  //       pixels,
+  //     ),
+  //   );
+  // }
 
-  for (final extraCandidate in report.extraCandidates) {
-    photos.add(
-      GoldenSceneScreenshot(
-        extraCandidate.screenshot!.id,
-        extraCandidate.screenshot!.metadata.copyWith(
-          description: "${extraCandidate.screenshot!.metadata.description} (extra candidate)",
-        ),
-        extraCandidate.screenshot!.image,
-        extraCandidate.screenshot!.pngBytes,
-      ),
-    );
-  }
+  // for (final extraCandidate in report.extraCandidates) {
+  //   photos.add(
+  //     GoldenSceneScreenshot(
+  //       extraCandidate.screenshot!.id,
+  //       extraCandidate.screenshot!.metadata.copyWith(
+  //         description: "${extraCandidate.screenshot!.metadata.description} (extra candidate)",
+  //       ),
+  //       extraCandidate.screenshot!.image,
+  //       extraCandidate.screenshot!.pngBytes,
+  //     ),
+  //   );
+  // }
 
-  return _layoutFailureScene(tester, report, photos, layout);
+  return _layoutFailureScene(tester, report, photos);
 }
 
 /// Generates a single image that shows all the golden failures.
@@ -167,26 +166,30 @@ Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
   WidgetTester tester,
   GoldenSceneReport report,
   List<GoldenSceneScreenshot> images,
-  SceneLayout layout,
 ) async {
   final renderablePhotos = <GoldenSceneScreenshot, GlobalKey>{};
   for (final photo in images) {
     renderablePhotos[photo] = GlobalKey();
   }
 
+  final layout = RowSceneLayout(
+    itemDecorator: _itemDecorator,
+  );
+
   final sceneKey = GlobalKey();
   final scene = GoldenSceneBounds(
     child: IntrinsicWidth(
       child: IntrinsicHeight(
         child: material.Builder(
-            key: sceneKey,
-            builder: (context) {
-              return layout.build(
-                tester,
-                context,
-                renderablePhotos,
-              );
-            }),
+          key: sceneKey,
+          builder: (context) {
+            return layout.build(
+              tester,
+              context,
+              renderablePhotos,
+            );
+          },
+        ),
       ),
     ),
   );
@@ -230,13 +233,13 @@ Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
 
 /// Generates a single image that shows the golden, the candidate, and the
 /// absolute and relative differences between them.
-Image _layoutGoldenFailure({
+Future<Image> _layoutGoldenFailure({
   required GoldenSceneReport report,
   required Image golden,
   required Image candidate,
   required Image absoluteDiff,
   required Image relativeDiff,
-}) {
+}) async {
   final maxWidth = max(golden.width, candidate.width);
   final maxHeight = max(golden.height, candidate.height);
   const gap = 4;
@@ -270,11 +273,12 @@ Image _layoutGoldenFailure({
   );
 
   // Copy absolute diff to bottom left corner.
+  final diffY = maxHeight + gap;
   _drawImage(
     source: absoluteDiff,
     destination: image,
     x: 0,
-    y: maxHeight + gap,
+    y: diffY,
   );
 
   // Copy relative diff to bottom right corner.
@@ -282,7 +286,7 @@ Image _layoutGoldenFailure({
     source: relativeDiff,
     destination: image,
     x: maxWidth + gap,
-    y: maxHeight + gap,
+    y: diffY,
   );
 
   return image;
@@ -529,4 +533,40 @@ class FailureImageMetadata {
       },
     };
   }
+}
+
+Widget _itemDecorator(
+  BuildContext context,
+  GoldenScreenshotMetadata metadata,
+  Widget content,
+) {
+  return Padding(
+    padding: const EdgeInsets.all(24),
+    child: IntrinsicWidth(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        spacing: 4,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(child: Text('Golden')),
+              Expanded(child: Text('Candidate')),
+            ],
+          ),
+          content,
+          Row(
+            children: [
+              Expanded(child: Text('Absolute Diff')),
+              Expanded(child: Text('Relative Diff')),
+            ],
+          ),
+          const material.Divider(),
+          Expanded(
+            child: Text(metadata.description),
+          ),
+        ],
+      ),
+    ),
+  );
 }

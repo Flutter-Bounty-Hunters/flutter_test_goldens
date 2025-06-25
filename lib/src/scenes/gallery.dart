@@ -621,7 +621,7 @@ Image.memory(
     Directory(_goldenFailureDirectoryPath).createSync();
 
     await tester.runAsync(() async {
-      final (failureImage, metadata) = await paintFailureScene(tester, report, _layout);
+      final (failureImage, metadata) = await paintFailureScene(tester, report);
 
       Uint8List pngData = encodePng(failureImage);
       pngData = pngData.copyWithTextMetadata(
