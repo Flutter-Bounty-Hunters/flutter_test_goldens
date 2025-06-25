@@ -68,4 +68,14 @@ class GoldenScreenshotMetadata {
   ///
   /// This is *NOT* the same thing as the platform used to run the golden test suite.
   final TargetPlatform simulatedPlatform;
+
+  GoldenScreenshotMetadata copyWith({
+    String? description,
+    TargetPlatform? simulatedPlatform,
+  }) {
+    return GoldenScreenshotMetadata(
+      description: description ?? this.description,
+      simulatedPlatform: simulatedPlatform ?? this.simulatedPlatform,
+    );
+  }
 }
