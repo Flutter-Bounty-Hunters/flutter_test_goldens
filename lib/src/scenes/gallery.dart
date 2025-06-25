@@ -315,7 +315,6 @@ class Gallery {
   /// For each scene screenshot request, pumps its widget tree, and then screenshots it with
   /// the given [camera].
   Future<void> _takeNewScreenshots(WidgetTester tester, FlutterCamera camera) async {
-    print("Taking screenshots:");
     for (final item in _requests.values) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}");
       final itemScaffold = item.scaffold ?? _itemScaffold ?? GoldenSceneTheme.current.itemScaffold;
@@ -354,8 +353,6 @@ class Gallery {
       // Take a screenshot.
       expect(item.boundsFinder, findsOne);
       final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
-      print(
-          " - Taking screenshot. Bounds: ${item.boundsFinder}, Render object size: ${(renderObject as RenderBox?)?.size}");
       expect(
         renderObject,
         isNotNull,
@@ -365,7 +362,6 @@ class Gallery {
       await tester.runAsync(() async {
         await camera.takePhoto(item.id, item.boundsFinder);
       });
-      print(" - Done taking photo - ${camera.photos.last.id} - size: ${camera.photos.last.size}");
 
       // Revert the simulated platform to whatever it was before this item.
       debugDefaultTargetPlatformOverride = previousPlatform;
@@ -374,7 +370,6 @@ class Gallery {
 
   Widget _buildItem(
       WidgetTester tester, GoldenSceneItemScaffold itemScaffold, BoxConstraints? constraints, Widget content) {
-    print("Building with item constraints: $constraints");
     return itemScaffold(
       tester,
       ConstrainedBox(
@@ -388,7 +383,6 @@ class Gallery {
     WidgetTester tester,
     List<FlutterScreenshot> flutterScreenshots,
   ) async {
-    print("Converting Flutter screenshots to golden candidates:");
     final candidateScreenshots = <String, GoldenSceneScreenshot>{};
     await tester.runAsync(() async {
       for (final flutterScreenshot in flutterScreenshots) {
@@ -407,8 +401,6 @@ class Gallery {
         );
 
         candidateScreenshots[flutterScreenshot.id] = candidate;
-        print(
-            " - ${candidate.id} - size: ${candidate.size}, inner PNG size: ${candidate.image.width}, ${candidate.image.height}");
       }
     });
 
@@ -422,12 +414,6 @@ class Gallery {
   ) async {
     // Layout candidate screenshots in the gallery so we can lookup their final offsets and sizes.
     var sceneMetadata = await _layoutGalleryWithNewGoldens(tester, _layout, newGoldens);
-
-    print("Saving new scene metadata. Here are the golden bounds:");
-    for (final golden in sceneMetadata.images) {
-      print(" - ${golden.id} - at: ${golden.topLeft}, size: ${golden.size}");
-    }
-    print("---");
 
     FtgLog.pipeline.finer("Running momentary delay for render flakiness");
     await tester.runAsync(() async {
@@ -481,7 +467,6 @@ Image.memory(
     SceneLayout layout,
     Map<String, GoldenSceneScreenshot> goldenScreenshots,
   ) async {
-    print("_layoutGalleryWithNewGoldens()");
     final goldensAndGlobalKeys = Map<GoldenSceneScreenshot, GlobalKey>.fromEntries(
       goldenScreenshots.entries.map((entry) => MapEntry(entry.value, GlobalKey())),
     );
@@ -525,7 +510,6 @@ Image.memory(
   }
 
   Widget _buildGalleryLayout(WidgetTester tester, Map<GoldenSceneScreenshot, GlobalKey> candidatesAndGlobalKeys) {
-    print("Building Gallery scene layout");
     return Builder(builder: (context) {
       return _layout.build(tester, context, candidatesAndGlobalKeys);
     });

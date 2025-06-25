@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
@@ -151,7 +149,8 @@ void main() {
   });
 
   testGoldenSceneOnMac("extended floating action button gallery", (tester) async {
-    final image = await tester.loadImageFromFile("test_goldens/assets/flutter_background.png");
+    // TODO: We lost the golden background while refactoring. Bring this back somewhere.
+    // final image = await tester.loadImageFromFile("test_goldens/assets/flutter_background.png");
 
     await Gallery(
       "FAB Gallery",

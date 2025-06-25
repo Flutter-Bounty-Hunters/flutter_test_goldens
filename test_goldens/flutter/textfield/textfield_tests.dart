@@ -39,8 +39,6 @@ void main() {
 
           expect(find.byKey(goldenKey), findsOne);
           expect(find.byType(TextField), findsOne);
-          final textField = find.byType(TextField).evaluate().first;
-          print("TextField: $textField");
           expect(find.text("Hello, world!"), findsOne);
         })
         .takePhoto("typed text", find.byKey(goldenKey))

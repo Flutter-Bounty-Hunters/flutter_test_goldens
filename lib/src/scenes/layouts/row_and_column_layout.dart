@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
@@ -98,7 +96,6 @@ class FlexGoldenScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print("Building FlexGoldenScene");
     return DefaultTextStyle(
       style: GoldenSceneTheme.current.defaultTextStyle,
       child: GoldenSceneBounds(
@@ -149,8 +146,6 @@ class FlexGoldenScene extends StatelessWidget {
   }
 
   Widget _decorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget child) {
-    print(
-        "Building _decorator() - itemDecorator: ${this.itemDecorator}, theme item decorator: ${GoldenSceneTheme.current.itemDecorator}");
     final itemDecorator = this.itemDecorator ?? GoldenSceneTheme.current.itemDecorator;
     return itemDecorator(context, metadata, child);
   }

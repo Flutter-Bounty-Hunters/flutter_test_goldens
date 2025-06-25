@@ -3,7 +3,6 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:ui' as ui;
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
@@ -32,16 +31,15 @@ class Timeline {
     GoldenSceneItemScaffold itemScaffold = minimalItemScaffold,
     required SceneLayout layout,
     GoldenSceneBackground? goldenBackground,
-  })  : _layout = layout,
-        _goldenBackground = goldenBackground,
+  })  : _directory = directory,
         _fileName = fileName,
-        _itemScaffold = itemScaffold {
-    _directory = directory ?? GoldenSceneTheme.current.directory;
-  }
+        _layout = layout,
+        _goldenBackground = goldenBackground,
+        _itemScaffold = itemScaffold;
 
   final String _description;
 
-  late final Directory _directory;
+  late final Directory? _directory;
   final String _fileName;
 
   final GoldenSceneItemScaffold _itemScaffold;
@@ -230,10 +228,8 @@ class Timeline {
 
       if (step is _TimelinePhotoRequest) {
         expect(step.photoBoundsFinder, findsOne);
-        print("Found photo bounds");
 
         final renderObject = step.photoBoundsFinder.evaluate().first.findRenderObject();
-        print("Render object: $renderObject");
         expect(
           renderObject,
           isNotNull,
@@ -241,11 +237,9 @@ class Timeline {
               "Failed to find a render object for photo '${step.description}', using finder '${step.photoBoundsFinder}'",
         );
 
-        print("Taking photo");
         await tester.runAsync(() async {
           await camera.takePhoto(step.description, step.photoBoundsFinder);
         });
-        print("Done taking photo");
 
         continue;
       }
@@ -300,8 +294,7 @@ class Timeline {
 
     await tester.pumpAndSettle();
 
-    final relativeDirectory = _directory?.path ?? GoldenSceneTheme.current.directory.path;
-    final relativeGoldenFilePath = "$relativeDirectory/$_fileName.png";
+    final relativeGoldenFilePath = "$_relativeGoldenDirectory/$_fileName.png";
     if (autoUpdateGoldenFiles) {
       // Generate new goldens.
       await _updateGoldenScene(
@@ -530,15 +523,15 @@ class Timeline {
 
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
-  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
+  String get _goldenDirectory => "$_testFileDirectory$_relativeGoldenDirectory$separator";
+
+  String get _relativeGoldenDirectory => _directory?.path ?? GoldenSceneTheme.current.directory.path;
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
   /// golden subdirectory + the golden file name.
   String _goldenFilePath([bool includeExtension = true]) =>
       "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
-
-  String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 }
 
 class _TimelineSetup {

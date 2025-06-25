@@ -1,8 +1,6 @@
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
@@ -110,6 +108,7 @@ Widget _itemDecorator(
           children: [
             SvgPicture.file(
               _getIconFileForPlatform(metadata.simulatedPlatform),
+              // ignore: deprecated_member_use
               color: Colors.black,
               width: 24,
               height: 24,

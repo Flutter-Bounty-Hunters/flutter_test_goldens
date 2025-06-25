@@ -44,7 +44,6 @@ Widget _centeredItemDecorator(
   GoldenScreenshotMetadata metadata,
   Widget content,
 ) {
-  print("Building CENTERED item decorator. Content: $content");
   return ColoredBox(
     // TODO: need this to be configurable, e.g., light vs dark
     color: Colors.white,

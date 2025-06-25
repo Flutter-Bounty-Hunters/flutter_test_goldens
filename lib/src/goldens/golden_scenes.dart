@@ -53,7 +53,6 @@ ${const JsonEncoder.withIndent("  ").convert(sceneJson)}'''), stackTrace);
   }
 
   // Extract the golden images from the scene image.
-  print("Extracting goldens from file...");
   return _extractCollectionFromSceneBitmap(sceneMetadata, sceneImage);
 }
 
@@ -97,13 +96,11 @@ Future<ScreenshotCollection> extractGoldenCollectionFromSceneWidgetTree(
   final treeImage = decodePng(treeRawImageData)!;
 
   // Extract the golden images from the scene image.
-  print("Extracting candidates from widget tree...");
   return _extractCollectionFromSceneBitmap(sceneMetadata, treeImage);
 }
 
 ScreenshotCollection _extractCollectionFromSceneBitmap(GoldenSceneMetadata sceneMetadata, Image sceneImage) {
   // Cut each golden image out of the scene.
-  print("Extracting screenshots from a scene (maybe goldens, maybe candidates):");
   final goldenImages = <String, GoldenSceneScreenshot>{};
   for (final golden in sceneMetadata.images) {
     final image = copyCrop(
@@ -113,8 +110,6 @@ ScreenshotCollection _extractCollectionFromSceneBitmap(GoldenSceneMetadata scene
       width: golden.size.width.round(),
       height: golden.size.height.round(),
     );
-    print(
-        " - ${golden.id} - offset: ${golden.topLeft}, size: ${golden.size}, extracted image size: Size(${image.width}, ${image.height})");
 
     goldenImages[golden.id] = GoldenSceneScreenshot(
       golden.id,
@@ -123,7 +118,6 @@ ScreenshotCollection _extractCollectionFromSceneBitmap(GoldenSceneMetadata scene
       image.getBytes(),
     );
   }
-  print("----");
 
   return ScreenshotCollection(goldenImages);
 }

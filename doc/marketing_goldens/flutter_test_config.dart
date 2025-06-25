@@ -11,6 +11,7 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   ));
 
   // Disable animations in Super Editor.
+  // ignore: invalid_use_of_visible_for_testing_member
   BlinkController.indeterminateAnimationsEnabled = false;
 
   return testMain();

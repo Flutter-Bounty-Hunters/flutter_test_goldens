@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:typed_data';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -24,13 +23,11 @@ class FlutterCamera {
   /// that the photo captures widgets that sit in the app overlay, such as the mobile drag
   /// handles, magnifier, or popover toolbar for a text field.
   Future<void> takePhoto(String id, [Finder? finder]) async {
-    print("takePhoto() - id: $id, finder: $finder");
     final fullscreenRenderObject = find
         .byElementPredicate((element) => element.renderObject is RenderRepaintBoundary)
         .evaluate()
         .first
         .findRenderObject() as RenderRepaintBoundary?;
-    print("fullscreenRenderObject: $fullscreenRenderObject");
     if (fullscreenRenderObject == null) {
       throw Exception(
         "Tried to take a photo of a Flutter UI but the widget tree doesn't have any repaint boundaries. Can't take any screenshots.",
@@ -40,36 +37,29 @@ class FlutterCamera {
     final pictureRecorder = PictureRecorder();
     final canvas = Canvas(pictureRecorder);
     final screenSize = fullscreenRenderObject.size;
-    print("screenSize: $screenSize");
 
     final paintingContext = TestRecordingPaintingContext(canvas);
     fullscreenRenderObject.paint(paintingContext, Offset.zero);
 
-    print("Finishing picture recording...");
     final fullscreenPhoto = await pictureRecorder.endRecording().toImage(
           screenSize.width.round(),
           screenSize.height.round(),
         );
-    print("Picture is finished");
 
     final contentFinder = finder ?? find.byType(GoldenImageBounds);
     expect(finder, findsOne);
-    print("Found the content");
     final contentRenderObject = contentFinder.evaluate().first.findRenderObject();
-    print("Content render object: $contentRenderObject");
     if (contentRenderObject is! RenderBox) {
       throw Exception(
         "Tried to take screenshot of $contentFinder but its render object is not a RenderBox. Can't take screenshot.",
       );
     }
-    print(
-        "Cropping content out of fullscreen image - offset: ${contentRenderObject.localToGlobal(Offset.zero)}, size: ${contentRenderObject.size}");
+
     final contentPhoto = await _cropImage(
       fullscreenPhoto,
       contentRenderObject.localToGlobal(Offset.zero),
       contentRenderObject.size,
     );
-    print("Done cropping image");
 
     _photos.add(
       FlutterScreenshot(id, contentPhoto, defaultTargetPlatform),
