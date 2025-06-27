@@ -19,7 +19,7 @@ how we solve them.
    which is painted to a single golden file.
  * **Widget Interaction States:** What does your widget look like when the user hovers
    over it? Or presses it? What does your animation look like at 10ms, 20ms, 30ms?
-   With `flutter_test_goldens`, you can paint a film strip that shows how your widget
+   With `flutter_test_goldens`, you can paint a Timeline that shows how your widget
    changes over time, and across user interactions.
  * **Focus and Semantic Bounds:** Widgets aren't just what you see, they're also what you
    don't see. Traditional Flutter goldens have no way of tracking and verifying invisible

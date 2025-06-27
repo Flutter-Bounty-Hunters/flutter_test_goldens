@@ -1,3 +1,6 @@
+$backgroundColor: #0a0e12;
+$footerBackgroundColor: #05080a;
+
 $dividerColor: rgba(255, 255, 255, 0.05);
 $standardDividerBorder: 1px solid $dividerColor;
 
@@ -48,7 +51,7 @@ html[data-bs-theme="dark"] {
 
     .link-group {
       ol {
-        border-left: 2px solid #FF8888;
+        border-left: 2px solid #7f00a6;
       }
     }
 
@@ -59,6 +62,10 @@ html[data-bs-theme="dark"] {
         }
       }
     }
+  }
+
+  body {
+    background: $backgroundColor;
   }
 
   main {
@@ -86,7 +93,7 @@ html[data-bs-theme="dark"] {
   }
 
   footer {
-    background: #202026;
+    background: $footerBackgroundColor;
 
     color: #AAAAAA;
 

@@ -1,6 +1,6 @@
 ---
 title: Scene Metadata
-navOrder: 10
+navOrder: 20
 ---
 For Golden Scenes to work, `flutter_test_goldens` needs to know the offset and size of every
 golden image in the scene. This is how each golden image is compared and reported individually.

@@ -1,6 +1,7 @@
 ---
 title: Gallery
 navOrder: 20
+headerImage: /images/gallery.png
 ---
 A gallery is a Golden Scene, which includes a variety of different widgets
 and/or widget configurations.

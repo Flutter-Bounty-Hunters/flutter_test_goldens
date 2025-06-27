@@ -37,12 +37,20 @@ navigation:
     - title: "Get Started"
       url: /get-started
 
-    - title: Golden Scenes
-      tag: scenes
+    - title: Galleries
+      tag: gallery
       sortBy: navOrder
 
-    - title: How it Works
-      tag: how-it-works
+    - title: Timelines
+      tag: timeline
+      sortBy: navOrder
+
+    - title: Golden Scenes
+      tag: golden-scenes
+      sortBy: navOrder
+
+    - title: Failure Scenes
+      tag: failure-scenes
       sortBy: navOrder
 
     - title: Flutter's Implementation

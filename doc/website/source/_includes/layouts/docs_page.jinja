@@ -23,13 +23,15 @@
 
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
     <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/obsidian.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/languages/dart.min.js"></script>
-    <script>hljs.highlightAll();</script>
+    <script>
+      hljs.highlightAll();
+    </script>
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@docsearch/css@3" />
 
     <link rel="stylesheet" href="/styles/docs_page_layout.css">
-    <link rel="stylesheet" href="/styles/docs_page_layout_light.css">
     <link rel="stylesheet" href="/styles/docs_page_layout_dark.css">
   </head>
 
@@ -97,11 +99,17 @@
 
         <!-- Page/article content -->
         <main class="page-content col-12 col-lg-10 col-xl-8">
+          {% if headerImage is defined %}
+          <header class="image">
+            <img class="background" src="{{ headerImage }}">
+          </header>
+          {% else %}
           <header>
             <h1>{{  title  }}</h1>
           </header>
+          {% endif %}
 
-         {{   content   }}
+          {{   content   }}
         </main>
 
         <!-- Table of contents for the page/article on desktop -->
@@ -126,12 +134,12 @@
       // - not in an "onload" function - because we need this code to
       // run before anything is painted. Otherwise we get a flicker from
       // light mode to dark mode on load.
-      var brightness = localStorage.getItem('brightness');
-      if (brightness === "light" || brightness === null) {
-        goToLightMode();
-      } else {
+      //var brightness = localStorage.getItem('brightness');
+      //if (brightness === "light" || brightness === null) {
+      //  goToLightMode();
+      //} else {
         goToDarkMode();
-      }
+      //}
 
       // Configure the global text search input.
       //docsearch({
@@ -158,10 +166,6 @@
         // For Algolia Docsearch bar theme
         html.setAttribute("data-theme", "light");
 
-        var button = document.getElementById("brightness-button");
-        button.classList.remove("fa-sun");
-        button.classList.add("fa-moon");
-
         localStorage.setItem('brightness', 'light');
       }
 
@@ -171,10 +175,6 @@
 
         // For Algolia Docsearch bar theme
         html.setAttribute("data-theme", "dark");
-
-        var button = document.getElementById("brightness-button");
-        button.classList.remove("fa-moon");
-        button.classList.add("fa-sun");
 
         localStorage.setItem('brightness', 'dark');
       }

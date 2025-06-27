@@ -11,5 +11,5 @@ dev_dependencies:
 With the packaged added, you may want to accomplish a variety of goals:
 
  * [Write a gallery test](/golden-scenes/gallery)
- * [Write a film strip test](/golden-scenes/filmstrip)
+ * [Write a timeline test](/golden-scenes/filmstrip)
  * [Add focus and semantic tracking](/golden-metadata/payload)

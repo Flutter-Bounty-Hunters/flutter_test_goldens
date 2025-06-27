@@ -1,6 +1,6 @@
 ---
-title: Failures
-navOrder: 40
+title: What is a Failure Scene?
+navOrder: 10
 ---
 Building on the concept of [Golden Scenes](/golden-scenes/what-is-it), `flutter_test_goldens` introduces
 the concept of "Failure Scenes". A Failure Scene is just like a Golden Scene, except instead of painting
