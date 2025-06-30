@@ -3,6 +3,23 @@ on:
   pull_request:
 
 jobs:
+  test_goldens:
+    runs-on: ubuntu-latest
+    steps:
+      # Checkout the repository
+      - uses: actions/checkout@v3
+
+      # Setup Flutter environment
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      # Download all the packages that the app uses
+      - run: flutter pub get
+
+      # Run all tests
+      - run: flutter test test_goldens
+
   build_website:
     runs-on: ubuntu-latest
     defaults:

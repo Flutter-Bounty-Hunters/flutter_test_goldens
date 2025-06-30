@@ -31,10 +31,6 @@ dev_dependencies:
 
   # For demos:
   device_frame: ^1.3.0
-  forui: ^0.12.0
-  lucid:
-    git:
-      url: git@github.com:Flutter-Bounty-Hunters/lucid.git
   super_editor:
     git:
       url: https://github.com/superlistapp/super_editor
