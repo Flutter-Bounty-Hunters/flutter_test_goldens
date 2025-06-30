@@ -369,7 +369,11 @@ class Gallery {
   }
 
   Widget _buildItem(
-      WidgetTester tester, GoldenSceneItemScaffold itemScaffold, BoxConstraints? constraints, Widget content) {
+    WidgetTester tester,
+    GoldenSceneItemScaffold itemScaffold,
+    BoxConstraints? constraints,
+    Widget content,
+  ) {
     return itemScaffold(
       tester,
       ConstrainedBox(
@@ -593,8 +597,10 @@ Image.memory(
 
     if (mismatches.mismatches.isEmpty) {
       FtgLog.pipeline.info("No golden mismatches found");
+      return;
     }
 
+    FtgLog.pipeline.info("Found ${mismatches.mismatches.length} golden mismatches in scene.");
     final report = GoldenSceneReport(
       metadata: metadata,
       items: items,
