@@ -1,6 +1,6 @@
 name: flutter_test_goldens
 description: "A toolkit for writing golden tests"
-version: 0.0.2
+version: 0.0.3
 homepage: https://github.com/Flutter-Bounty-Hunters/flutter_test_goldens
 repository: https://github.com/Flutter-Bounty-Hunters/flutter_test_goldens
 
