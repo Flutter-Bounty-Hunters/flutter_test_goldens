@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 
 void main() {
   testWidgets("show an image", (tester) async {
@@ -28,6 +29,7 @@ void main() {
 
     await tester.pump();
 
-    await expectLater(find.byType(MaterialApp), matchesGoldenFile("image_test.png"));
+    // Note: This test produces slightly different pixels between Ubuntu Docker and GitHub Ubuntu runner.
+    await expectLater(find.byType(MaterialApp), matchesGoldenFileWithPixelAllowance("image_test.png", 5));
   });
 }

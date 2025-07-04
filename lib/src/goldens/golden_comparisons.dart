@@ -4,8 +4,9 @@ import 'package:flutter_test_goldens/src/logging.dart';
 /// Compares new [screenshots] to existing [goldens] and reports any mismatches between them.
 GoldenCollectionMismatches compareGoldenCollections(
   ScreenshotCollection goldens,
-  ScreenshotCollection screenshots,
-) {
+  ScreenshotCollection screenshots, {
+  Map<String, int> tolerances = const {},
+}) {
   final mismatches = <String, GoldenMismatch>{};
 
   // For every golden, look for missing and mismatching screenshots.
@@ -30,7 +31,8 @@ GoldenCollectionMismatches compareGoldenCollections(
 
     // The golden and screenshot have the same size. Look for a pixel mismatch.
     final mismatchPixelCount = _calculatePixelMismatch(golden, screenshot);
-    if (mismatchPixelCount > 0) {
+    final tolerance = tolerances[golden.id] ?? 0;
+    if (mismatchPixelCount > tolerance) {
       mismatches[id] = PixelGoldenMismatch(
         golden: golden,
         screenshot: screenshot,
