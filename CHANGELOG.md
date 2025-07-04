@@ -1,6 +1,9 @@
-## 0.0.3 - July 4, 2025
+## 0.0.4 - July 4, 2025
  * FIX: Blank failure images were being generated for passing tests.
  * FEATURE: Pixel mismatch tolerances for `SingleShot` and `Gallery`.
+
+## 0.0.3 - July 4, 2025
+Messed up this release. Replaced by `v0.0.4`.
 
 ## 0.0.2 - June 24, 2025 - Alpha
  * FEATURE: `SingleShot`: A Golden Scene that shows a single screenshot with an ergonomic API.
