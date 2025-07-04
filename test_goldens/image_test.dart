@@ -22,6 +22,7 @@ void main() {
             ),
           ),
         ),
+        debugShowCheckedModeBanner: false,
       ),
     );
 
