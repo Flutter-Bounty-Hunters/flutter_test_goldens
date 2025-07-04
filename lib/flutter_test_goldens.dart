@@ -1,7 +1,8 @@
+export 'src/flutter/flutter_camera.dart';
+export 'src/flutter/flutter_golden_matcher.dart';
 export 'src/flutter/flutter_test_extensions.dart';
 export 'src/fonts/fonts.dart';
 export 'src/fonts/icons.dart';
-export 'src/flutter/flutter_camera.dart';
 export 'src/goldens/golden_collections.dart';
 export 'src/goldens/golden_comparisons.dart';
 export 'src/goldens/golden_rendering.dart';

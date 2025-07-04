@@ -217,7 +217,10 @@ Widget defaultGoldenSceneItemDecorator(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        content,
+        Align(
+          alignment: Alignment.centerLeft,
+          child: content,
+        ),
         Padding(
           padding: const EdgeInsets.all(24),
           child: Text(

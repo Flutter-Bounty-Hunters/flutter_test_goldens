@@ -109,6 +109,7 @@ class Gallery {
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
+    int tolerancePx = 0,
     required Widget widget,
   }) {
     assert(
@@ -131,6 +132,7 @@ class Gallery {
           constraints: constraints,
           boundsFinder: boundsFinder,
           setup: setup,
+          tolerancePx: tolerancePx,
           child: widget,
         );
       }
@@ -146,6 +148,7 @@ class Gallery {
       constraints: constraints,
       boundsFinder: boundsFinder,
       setup: setup,
+      tolerancePx: tolerancePx,
       child: widget,
     );
 
@@ -162,6 +165,7 @@ class Gallery {
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
+    int tolerancePx = 0,
     required WidgetBuilder builder,
   }) {
     assert(
@@ -184,6 +188,7 @@ class Gallery {
           constraints: constraints,
           boundsFinder: boundsFinder,
           setup: setup,
+          tolerancePx: tolerancePx,
           builder: builder,
         );
       }
@@ -199,6 +204,7 @@ class Gallery {
       constraints: constraints,
       boundsFinder: boundsFinder,
       setup: setup,
+      tolerancePx: tolerancePx,
       builder: builder,
     );
 
@@ -231,6 +237,7 @@ class Gallery {
     BoxConstraints? constraints,
     Finder? boundsFinder,
     GoldenSetup? setup,
+    int tolerancePx = 0,
     required GoldenSceneItemPumper pumper,
   }) {
     assert(
@@ -253,6 +260,7 @@ class Gallery {
           constraints: constraints,
           boundsFinder: boundsFinder,
           setup: setup,
+          tolerancePx: tolerancePx,
           pumper: pumper,
         );
       }
@@ -268,6 +276,7 @@ class Gallery {
       constraints: constraints,
       boundsFinder: boundsFinder,
       setup: setup,
+      tolerancePx: tolerancePx,
       pumper: pumper,
     );
 
@@ -301,11 +310,7 @@ class Gallery {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
       // TODO: Return a success/failure report that we can publish to the test output.
-      await _compareGoldens(
-        tester,
-        _fileName,
-        screenshots,
-      );
+      await _compareGoldens(tester, _fileName, screenshots);
       FtgLog.pipeline.finer("Done comparing goldens.");
     }
 
@@ -369,7 +374,11 @@ class Gallery {
   }
 
   Widget _buildItem(
-      WidgetTester tester, GoldenSceneItemScaffold itemScaffold, BoxConstraints? constraints, Widget content) {
+    WidgetTester tester,
+    GoldenSceneItemScaffold itemScaffold,
+    BoxConstraints? constraints,
+    Widget content,
+  ) {
     return itemScaffold(
       tester,
       ConstrainedBox(
@@ -541,7 +550,11 @@ Image.memory(
 
     // Compare goldens in the scene.
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
-    final mismatches = compareGoldenCollections(goldenCollection, ScreenshotCollection(candidateCollection));
+    final mismatches = compareGoldenCollections(
+      goldenCollection,
+      ScreenshotCollection(candidateCollection),
+      tolerances: _requests.map((id, request) => MapEntry(id, request.tolerancePx)),
+    );
 
     final items = <GoldenReport>[];
     final missingCandidates = <MissingCandidateMismatch>[];
@@ -593,8 +606,10 @@ Image.memory(
 
     if (mismatches.mismatches.isEmpty) {
       FtgLog.pipeline.info("No golden mismatches found");
+      return;
     }
 
+    FtgLog.pipeline.info("Found ${mismatches.mismatches.length} golden mismatches in scene.");
     final report = GoldenSceneReport(
       metadata: metadata,
       items: items,
@@ -653,6 +668,7 @@ class GalleryGoldenRequest {
     this.constraints,
     Finder? boundsFinder,
     this.setup,
+    this.tolerancePx = 0,
     required this.child,
   })  : pumper = null,
         builder = null {
@@ -667,6 +683,7 @@ class GalleryGoldenRequest {
     this.constraints,
     Finder? boundsFinder,
     this.setup,
+    this.tolerancePx = 0,
     required this.builder,
   })  : pumper = null,
         child = null {
@@ -681,6 +698,7 @@ class GalleryGoldenRequest {
     this.constraints,
     Finder? boundsFinder,
     this.setup,
+    this.tolerancePx = 0,
     required this.pumper,
   })  : builder = null,
         child = null {
@@ -714,6 +732,18 @@ class GalleryGoldenRequest {
   /// Optional function that runs after the [pumper], [builder], or [child] is pumped
   /// into the widget tree, but before the screenshot is taken.
   final GoldenSetup? setup;
+
+  /// {@template tolerance}
+  /// The number of mismatched pixels that are permitted for this item before triggering
+  /// a test failure.
+  ///
+  /// Tolerance is designed primarily for situations where local runs can't match CI runs.
+  /// For example, there are situations where using an Ubuntu Docker runner locally produces
+  /// different screenshots than the GitHub Ubuntu runner. When this happens, there's no
+  /// good answer. In such cases, it typically suffices to add a tolerance for the small number
+  /// of pixels that don't match.
+  /// {@endtemplate}
+  final int tolerancePx;
 
   /// The [GalleryItemPumper] that creates this gallery item, or `null` if this gallery
   /// item is created with a [builder] or a [child].

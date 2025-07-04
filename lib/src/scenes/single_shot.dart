@@ -78,6 +78,15 @@ class SingleShotConfigurator {
     );
   }
 
+  SingleShotConfigurator withTolerance(int tolerancePx) {
+    _ensureStepNotComplete("tolerance");
+
+    return SingleShotConfigurator(
+      _config.copyWith(tolerancePx: tolerancePx),
+      {..._stepsCompleted, "tolerance"},
+    );
+  }
+
   void _ensureStepNotComplete(String name) {
     if (!_stepsCompleted.contains(name)) {
       return;
@@ -104,6 +113,7 @@ class SingleShotConfigurator {
         widget: _config.widget!,
         constraints: _config.constraints,
         boundsFinder: _config.boundsFinder,
+        tolerancePx: _config.tolerancePx ?? 0,
         setup: _config.setup,
       );
     } else if (_config.builder != null) {
@@ -113,6 +123,7 @@ class SingleShotConfigurator {
         constraints: _config.constraints,
         builder: _config.builder!,
         boundsFinder: _config.boundsFinder,
+        tolerancePx: _config.tolerancePx ?? 0,
         setup: _config.setup,
       );
     } else {
@@ -122,6 +133,7 @@ class SingleShotConfigurator {
         constraints: _config.constraints,
         pumper: _config.pumper!,
         boundsFinder: _config.boundsFinder,
+        tolerancePx: _config.tolerancePx ?? 0,
         setup: _config.setup,
       );
     }
@@ -142,6 +154,7 @@ class SingleShotConfiguration {
     this.builder,
     this.pumper,
     this.setup,
+    this.tolerancePx,
     this.boundsFinder,
   });
 
@@ -161,6 +174,9 @@ class SingleShotConfiguration {
 
   final SceneLayout? sceneLayout;
 
+  /// {@macro tolerance}
+  final int? tolerancePx;
+
   final Widget? widget;
   final WidgetBuilder? builder;
   final GoldenSceneItemPumper? pumper;
@@ -176,6 +192,7 @@ class SingleShotConfiguration {
     BoxConstraints? constraints,
     GoldenSceneItemScaffold? itemScaffold,
     SceneLayout? sceneLayout,
+    int? tolerancePx,
     Widget? widget,
     WidgetBuilder? builder,
     GoldenSceneItemPumper? pumper,
@@ -189,6 +206,7 @@ class SingleShotConfiguration {
       constraints: constraints ?? this.constraints,
       itemScaffold: itemScaffold ?? this.itemScaffold,
       sceneLayout: sceneLayout ?? this.sceneLayout,
+      tolerancePx: tolerancePx ?? this.tolerancePx,
       widget: widget ?? this.widget,
       builder: builder ?? this.builder,
       pumper: pumper ?? this.pumper,
