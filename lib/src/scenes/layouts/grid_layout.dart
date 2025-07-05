@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -71,14 +72,20 @@ class GridGoldenScene extends StatelessWidget {
         }
 
         items.add(
-          _buildItem(
-            context,
-            entries[index].key.metadata,
-            Image.memory(
-              key: entries[index].value,
-              entries[index].key.pngBytes,
-              width: entries[index].key.size.width,
-              height: entries[index].key.size.height,
+          Padding(
+            padding: EdgeInsets.only(
+              top: row > 0 ? defaultGridSpacing.between : 0,
+              left: col > 0 ? defaultGridSpacing.between : 0,
+            ),
+            child: _buildItem(
+              context,
+              entries[index].key.metadata,
+              Image.memory(
+                key: entries[index].value,
+                entries[index].key.pngBytes,
+                width: entries[index].key.size.width,
+                height: entries[index].key.size.height,
+              ),
             ),
           ),
         );
@@ -96,37 +103,13 @@ class GridGoldenScene extends StatelessWidget {
       child: GoldenSceneBounds(
         child: ColoredBox(
           color: Colors.white,
-          child: Table(
-            defaultColumnWidth: IntrinsicColumnWidth(),
-            children: rows,
+          child: Padding(
+            padding: spacing.around,
+            child: Table(
+              defaultColumnWidth: IntrinsicColumnWidth(),
+              children: rows,
+            ),
           ),
-          // child: ConstrainedBox(
-          //   constraints: BoxConstraints(maxWidth: maxWidth),
-          //   // ^ We have to constrain the width due to the vertical scrolling viewport in the
-          //   //   the GridView.
-          //   // TODO: Use some other grid implementation that doesn't include scrolling.
-          //   child: GridView(
-          //     gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          //       mainAxisSpacing: 0,
-          //       crossAxisCount: 3,
-          //       crossAxisSpacing: 0,
-          //     ),
-          //     shrinkWrap: true,
-          //     padding: const EdgeInsets.all(0),
-          //     children: [
-          //       for (final entry in goldens.entries)
-          //         ColoredBox(
-          //           color: Colors.green,
-          //           child: Image.memory(
-          //             key: entry.value,
-          //             entry.key.pngBytes,
-          //             width: entry.key.size.width,
-          //             height: entry.key.size.height,
-          //           ),
-          //         ),
-          //     ],
-          //   ),
-          // ),
         ),
       ),
     );
