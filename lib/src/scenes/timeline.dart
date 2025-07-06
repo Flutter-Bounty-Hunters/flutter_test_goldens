@@ -28,19 +28,23 @@ class Timeline {
     this._description, {
     Directory? directory,
     required String fileName,
-    GoldenSceneItemScaffold itemScaffold = minimalItemScaffold,
+    Size? windowSize,
+    GoldenSceneItemScaffold itemScaffold = standardTimelineItemScaffold,
     required SceneLayout layout,
     GoldenSceneBackground? goldenBackground,
   })  : _directory = directory,
         _fileName = fileName,
+        _windowSize = windowSize,
+        _itemScaffold = itemScaffold,
         _layout = layout,
-        _goldenBackground = goldenBackground,
-        _itemScaffold = itemScaffold;
+        _goldenBackground = goldenBackground;
 
   final String _description;
 
   late final Directory? _directory;
   final String _fileName;
+
+  final Size? _windowSize;
 
   final GoldenSceneItemScaffold _itemScaffold;
 
@@ -59,7 +63,11 @@ class Timeline {
       throw Exception("Timeline was already set up, but tried to call setup() again.");
     }
 
-    _setup = _TimelineSetup(delegate);
+    _setup = _TimelineSetup((tester) async {
+      _configureWindowSize(tester);
+
+      await delegate(tester);
+    });
 
     return this;
   }
@@ -73,6 +81,8 @@ class Timeline {
     }
 
     _setup = _TimelineSetup((tester) async {
+      _configureWindowSize(tester);
+
       final widgetTree = _itemScaffold(tester, sceneBuilder());
       await tester.pumpWidget(widgetTree);
     });
@@ -89,11 +99,21 @@ class Timeline {
     }
 
     _setup = _TimelineSetup((tester) async {
+      _configureWindowSize(tester);
+
       final widgetTree = _itemScaffold(tester, widget);
       await tester.pumpWidget(widgetTree);
     });
 
     return this;
+  }
+
+  void _configureWindowSize(WidgetTester tester) {
+    if (_windowSize != null) {
+      final previousWindowSize = tester.view.physicalSize;
+      tester.view.physicalSize = _windowSize;
+      addTearDown(() => tester.view.physicalSize = previousWindowSize);
+    }
   }
 
   /// Take a golden photo screenshot of the current Flutter UI.
@@ -566,7 +586,9 @@ class TimelineTestContext {
   final scratchPad = <String, dynamic>{};
 }
 
-Widget minimalItemScaffold(WidgetTester tester, Widget content) {
+/// The standard [GoldenSceneItemScaffold] that wraps the content of a [Timeline], which
+/// includes a dark theme, a dark background color, and some padding around the content.
+Widget standardTimelineItemScaffold(WidgetTester tester, Widget content) {
   return MaterialApp(
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -581,6 +603,21 @@ Widget minimalItemScaffold(WidgetTester tester, Widget content) {
             child: content,
           ),
         ),
+      ),
+    ),
+    debugShowCheckedModeBanner: false,
+  );
+}
+
+/// An absolute minimal [GoldenSceneItemScaffold] that wraps the content within a [Timeline].
+Widget minimalTimelineItemScaffold(WidgetTester tester, Widget content) {
+  return MaterialApp(
+    theme: ThemeData(
+      fontFamily: goldenBricks,
+    ),
+    home: Center(
+      child: GoldenImageBounds(
+        child: content,
       ),
     ),
     debugShowCheckedModeBanner: false,

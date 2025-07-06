@@ -337,6 +337,14 @@ class Gallery {
       final previousPlatform = debugDefaultTargetPlatformOverride;
       debugDefaultTargetPlatformOverride = item.platform ?? previousPlatform;
 
+      if (itemConstraints != null && itemConstraints.hasBoundedWidth && itemConstraints.hasBoundedHeight) {
+        // Some tests may want to control the size of the window. If we're given bounded
+        // constraints, make the window the biggest allowable size.
+        final previousSize = tester.view.physicalSize;
+        tester.view.physicalSize = itemConstraints.biggest;
+        addTearDown(() => tester.view.physicalSize = previousSize);
+      }
+
       if (item.pumper != null) {
         // Defer to the `pumper` to pump the entire widget tree for this gallery item.
         await item.pumper!.call(tester, itemScaffold, item.description);
