@@ -492,8 +492,11 @@ Image.memory(
     SceneLayout layout,
     Map<String, GoldenSceneScreenshot> goldenScreenshots,
   ) async {
-    final goldensAndGlobalKeys = Map<GoldenSceneScreenshot, GlobalKey>.fromEntries(
-      goldenScreenshots.entries.map((entry) => MapEntry(entry.value, GlobalKey())),
+    final content = SceneLayoutContent(
+      description: _sceneDescription,
+      goldens: Map<GoldenSceneScreenshot, GlobalKey>.fromEntries(
+        goldenScreenshots.entries.map((entry) => MapEntry(entry.value, GlobalKey())),
+      ),
     );
 
     // Layout the gallery scene with the new goldens, check the intrinsic size of the
@@ -503,13 +506,13 @@ Image.memory(
     // a corresponding `GlobalKey` already in the tree. Therefore, this layout pass inserts a
     // `GlobalKey` for every golden screenshot that we want to render.
     await tester.pumpWidgetAndAdjustWindow(
-      _buildGalleryLayout(tester, goldensAndGlobalKeys),
+      _buildGalleryLayout(tester, content),
     );
 
     // Use Flutter's `precacheImage()` mechanism to get each golden screenshot bitmap to
     // render in this widget test.
     await tester.runAsync(() async {
-      for (final entry in goldensAndGlobalKeys.entries) {
+      for (final entry in content.goldens.entries) {
         await precacheImage(
           MemoryImage(entry.key.pngBytes),
           tester.element(find.byKey(entry.value)),
@@ -522,21 +525,21 @@ Image.memory(
     return GoldenSceneMetadata(
       description: _sceneDescription,
       images: [
-        for (final golden in goldensAndGlobalKeys.keys)
+        for (final golden in content.goldens.keys)
           GoldenImageMetadata(
             id: golden.id,
             metadata: golden.metadata,
-            topLeft: (goldensAndGlobalKeys[golden]!.currentContext!.findRenderObject() as RenderBox)
-                .localToGlobal(Offset.zero),
-            size: goldensAndGlobalKeys[golden]!.currentContext!.size!,
+            topLeft:
+                (content.goldens[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
+            size: content.goldens[golden]!.currentContext!.size!,
           ),
       ],
     );
   }
 
-  Widget _buildGalleryLayout(WidgetTester tester, Map<GoldenSceneScreenshot, GlobalKey> candidatesAndGlobalKeys) {
+  Widget _buildGalleryLayout(WidgetTester tester, SceneLayoutContent content) {
     return Builder(builder: (context) {
-      return _layout.build(tester, context, candidatesAndGlobalKeys);
+      return _layout.build(tester, context, content);
     });
   }
 

@@ -24,13 +24,13 @@ class GridGoldenSceneLayout implements SceneLayout {
   Widget build(
     WidgetTester tester,
     BuildContext context,
-    Map<GoldenSceneScreenshot, GlobalKey<State<StatefulWidget>>> goldens,
+    SceneLayoutContent content,
   ) {
     return GridGoldenScene(
       background: background,
       spacing: spacing,
       itemDecorator: itemDecorator,
-      goldens: goldens,
+      goldens: content.goldens,
     );
   }
 }

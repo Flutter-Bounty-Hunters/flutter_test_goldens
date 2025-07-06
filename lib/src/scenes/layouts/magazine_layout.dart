@@ -41,9 +41,9 @@ class MagazineGoldenSceneLayout implements SceneLayout {
   Widget build(
     WidgetTester tester,
     BuildContext context,
-    Map<GoldenSceneScreenshot, GlobalKey<State<StatefulWidget>>> goldens,
+    SceneLayoutContent content,
   ) {
-    final goldensList = goldens.entries.toList();
+    final goldensList = content.goldens.entries.toList();
 
     return MagazineGoldenScene(
       sceneBackground: sceneBackground,

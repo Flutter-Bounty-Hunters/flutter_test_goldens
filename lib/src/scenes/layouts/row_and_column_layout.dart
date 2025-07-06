@@ -57,14 +57,14 @@ class FlexSceneLayout implements SceneLayout {
   Widget build(
     WidgetTester tester,
     BuildContext context,
-    Map<GoldenSceneScreenshot, GlobalKey<State<StatefulWidget>>> goldens,
+    SceneLayoutContent content,
   ) {
     return FlexGoldenScene(
       direction: direction,
       background: background,
       spacing: spacing,
       itemDecorator: itemDecorator,
-      goldens: goldens,
+      goldens: content.goldens,
     );
   }
 }

@@ -299,7 +299,10 @@ class Timeline {
     final sceneMetadata = await _layoutPhotos(
       tester,
       photos,
-      renderablePhotos,
+      SceneLayoutContent(
+        description: _description,
+        goldens: renderablePhotos,
+      ),
       _layout,
       goldenBackground: _goldenBackground,
     );
@@ -338,7 +341,7 @@ class Timeline {
   Future<GoldenSceneMetadata> _layoutPhotos(
     WidgetTester tester,
     List<FlutterScreenshot> photos,
-    Map<GoldenSceneScreenshot, GlobalKey> renderablePhotos,
+    SceneLayoutContent content,
     SceneLayout layout, {
     GoldenSceneBackground? goldenBackground,
   }) async {
@@ -356,7 +359,7 @@ class Timeline {
     final timeline = _buildTimeline(
       tester,
       contentKey,
-      renderablePhotos,
+      content,
       galleryKey: galleryKey,
       goldenBackground: goldenBackground,
     );
@@ -364,7 +367,7 @@ class Timeline {
     await tester.pumpWidgetAndAdjustWindow(timeline);
 
     await tester.runAsync(() async {
-      for (final entry in renderablePhotos.entries) {
+      for (final entry in content.goldens.entries) {
         await precacheImage(
           MemoryImage(entry.key.pngBytes),
           tester.element(find.byKey(entry.value)),
@@ -377,13 +380,13 @@ class Timeline {
     return GoldenSceneMetadata(
       description: _description,
       images: [
-        for (final golden in renderablePhotos.keys)
+        for (final golden in content.goldens.keys)
           GoldenImageMetadata(
             id: golden.id,
             metadata: golden.metadata,
             topLeft:
-                (renderablePhotos[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
-            size: renderablePhotos[golden]!.currentContext!.size!,
+                (content.goldens[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
+            size: content.goldens[golden]!.currentContext!.size!,
           ),
       ],
     );
@@ -406,12 +409,12 @@ class Timeline {
   Widget _buildTimeline(
     WidgetTester tester,
     GlobalKey contentKey,
-    Map<GoldenSceneScreenshot, GlobalKey> renderablePhotos, {
+    SceneLayoutContent content, {
     Key? galleryKey,
     GoldenSceneBackground? goldenBackground,
   }) {
     return Builder(builder: (context) {
-      return _layout.build(tester, context, renderablePhotos);
+      return _layout.build(tester, context, content);
     });
   }
 
