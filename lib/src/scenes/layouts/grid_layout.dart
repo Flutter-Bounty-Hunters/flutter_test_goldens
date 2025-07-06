@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
@@ -59,6 +58,25 @@ class GridGoldenScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return DefaultTextStyle(
+      style: GoldenSceneTheme.current.defaultTextStyle,
+      child: GoldenSceneBounds(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: _buildBackground(context),
+            ),
+            Padding(
+              padding: spacing.around,
+              child: _buildGoldens(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGoldens() {
     final entries = goldens.entries.toList();
 
     final rows = <TableRow>[];
@@ -77,16 +95,18 @@ class GridGoldenScene extends StatelessWidget {
               top: row > 0 ? defaultGridSpacing.between : 0,
               left: col > 0 ? defaultGridSpacing.between : 0,
             ),
-            child: _buildItem(
-              context,
-              entries[index].key.metadata,
-              Image.memory(
-                key: entries[index].value,
-                entries[index].key.pngBytes,
-                width: entries[index].key.size.width,
-                height: entries[index].key.size.height,
-              ),
-            ),
+            child: Builder(builder: (context) {
+              return _decorator(
+                context,
+                entries[index].key.metadata,
+                Image.memory(
+                  key: entries[index].value,
+                  entries[index].key.pngBytes,
+                  width: entries[index].key.size.width,
+                  height: entries[index].key.size.height,
+                ),
+              );
+            }),
           ),
         );
       }
@@ -98,28 +118,18 @@ class GridGoldenScene extends StatelessWidget {
       );
     }
 
-    return DefaultTextStyle(
-      style: GoldenSceneTheme.current.defaultTextStyle,
-      child: GoldenSceneBounds(
-        child: ColoredBox(
-          color: Colors.white,
-          child: Padding(
-            padding: spacing.around,
-            child: Table(
-              defaultColumnWidth: IntrinsicColumnWidth(),
-              children: rows,
-            ),
-          ),
-        ),
-      ),
+    return Table(
+      defaultColumnWidth: IntrinsicColumnWidth(),
+      children: rows,
     );
   }
 
-  Widget _buildItem(BuildContext context, GoldenScreenshotMetadata metadata, Widget content) {
-    if (itemDecorator == null) {
-      return content;
-    }
+  Widget _decorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget child) {
+    final itemDecorator = this.itemDecorator ?? GoldenSceneTheme.current.itemDecorator;
+    return itemDecorator(context, metadata, child);
+  }
 
-    return itemDecorator!(context, metadata, content);
+  Widget _buildBackground(BuildContext context) {
+    return (background ?? GoldenSceneTheme.current.background).build(context);
   }
 }
