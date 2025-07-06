@@ -32,12 +32,14 @@ class Gallery {
     BoxConstraints? itemConstraints,
     Finder? itemBoundsFinder,
     required SceneLayout layout,
+    GoldenSetup? itemSetup,
   })  : _fileName = fileName,
         _sceneDescription = sceneDescription,
         _itemScaffold = itemScaffold,
         _itemConstraints = itemConstraints,
         _itemBoundsFinder = itemBoundsFinder,
-        _layout = layout {
+        _layout = layout,
+        _itemSetup = itemSetup {
     _directory = directory ?? GoldenSceneTheme.current.directory;
   }
 
@@ -83,6 +85,12 @@ class Gallery {
   /// 2. [_itemBoundsFinder].
   /// 3. `find.byType(GoldenImageBounds)`.
   final Finder? _itemBoundsFinder;
+
+  /// An optional setup method that runs after pumping an item's tree, and just before the
+  /// item is screenshotted.
+  ///
+  /// This setup runs for every item in the scene unless an individual item overrides it.
+  final GoldenSetup? _itemSetup;
 
   /// Requests for all screenshots within this scene, by their ID.
   final _requests = <String, GalleryGoldenRequest>{};
@@ -353,7 +361,7 @@ class Gallery {
       }
 
       // Run the item's setup function, if there is one.
-      await item.setup?.call(tester);
+      await (item.setup ?? _itemSetup)?.call(tester);
 
       // Take a screenshot.
       expect(item.boundsFinder, findsOne);
