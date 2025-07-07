@@ -12,7 +12,7 @@ how we solve them.
 
  * **Failure Files:** Flutter spreads a single test failure across four different files.
    It's frustrating to have to open up multiple files to cross reference. With
-   `flutter_test_goldes`, your failure output is painted to a single file for easy review.
+   `flutter_test_goldens`, your failure output is painted to a single file for easy review.
  * **Widget Galleries:** Flutter developers often want to verify multiple configurations
    of a single widget, or multiple related widgets, at the same time. With
    `flutter_test_goldens`, you can easily paint a variety of widgets into a gallery,

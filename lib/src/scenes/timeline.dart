@@ -28,19 +28,23 @@ class Timeline {
     this._description, {
     Directory? directory,
     required String fileName,
-    GoldenSceneItemScaffold itemScaffold = minimalItemScaffold,
+    Size? windowSize,
+    GoldenSceneItemScaffold itemScaffold = standardTimelineItemScaffold,
     required SceneLayout layout,
     GoldenSceneBackground? goldenBackground,
   })  : _directory = directory,
         _fileName = fileName,
+        _windowSize = windowSize,
+        _itemScaffold = itemScaffold,
         _layout = layout,
-        _goldenBackground = goldenBackground,
-        _itemScaffold = itemScaffold;
+        _goldenBackground = goldenBackground;
 
   final String _description;
 
   late final Directory? _directory;
   final String _fileName;
+
+  final Size? _windowSize;
 
   final GoldenSceneItemScaffold _itemScaffold;
 
@@ -53,26 +57,32 @@ class Timeline {
   /// Setup the scene before taking any photos.
   ///
   /// If you only need to provide a widget tree, without taking other [WidgetTester]
-  /// actions, consider using [setupWithPump] for convenience.
+  /// actions, consider using [setupWithBuilder] for convenience.
   Timeline setup(TimelineSetupDelegate delegate) {
     if (_setup != null) {
       throw Exception("Timeline was already set up, but tried to call setup() again.");
     }
 
-    _setup = _TimelineSetup(delegate);
+    _setup = _TimelineSetup((tester) async {
+      _configureWindowSize(tester);
+
+      await delegate(tester);
+    });
 
     return this;
   }
 
-  /// Setup the scene before taking any photos, by pumping a widget tree.
+  /// Setup the scene before taking any photos, by building a widget tree.
   ///
-  /// If you need to take additional actions, beyond a single pump, use [setup] instead.
-  Timeline setupWithPump(TimelineSetupWithPumpFactory sceneBuilder) {
+  /// If you need to take additional actions, beyond a builder delegate, use [setup] instead.
+  Timeline setupWithBuilder(TimelineSetupBuilder sceneBuilder) {
     if (_setup != null) {
       throw Exception("Timeline was already set up, but tried to call setupWithPump() again.");
     }
 
     _setup = _TimelineSetup((tester) async {
+      _configureWindowSize(tester);
+
       final widgetTree = _itemScaffold(tester, sceneBuilder());
       await tester.pumpWidget(widgetTree);
     });
@@ -89,11 +99,21 @@ class Timeline {
     }
 
     _setup = _TimelineSetup((tester) async {
+      _configureWindowSize(tester);
+
       final widgetTree = _itemScaffold(tester, widget);
       await tester.pumpWidget(widgetTree);
     });
 
     return this;
+  }
+
+  void _configureWindowSize(WidgetTester tester) {
+    if (_windowSize != null) {
+      final previousWindowSize = tester.view.physicalSize;
+      tester.view.physicalSize = _windowSize;
+      addTearDown(() => tester.view.physicalSize = previousWindowSize);
+    }
   }
 
   /// Take a golden photo screenshot of the current Flutter UI.
@@ -279,7 +299,10 @@ class Timeline {
     final sceneMetadata = await _layoutPhotos(
       tester,
       photos,
-      renderablePhotos,
+      SceneLayoutContent(
+        description: _description,
+        goldens: renderablePhotos,
+      ),
       _layout,
       goldenBackground: _goldenBackground,
     );
@@ -318,7 +341,7 @@ class Timeline {
   Future<GoldenSceneMetadata> _layoutPhotos(
     WidgetTester tester,
     List<FlutterScreenshot> photos,
-    Map<GoldenSceneScreenshot, GlobalKey> renderablePhotos,
+    SceneLayoutContent content,
     SceneLayout layout, {
     GoldenSceneBackground? goldenBackground,
   }) async {
@@ -336,7 +359,7 @@ class Timeline {
     final timeline = _buildTimeline(
       tester,
       contentKey,
-      renderablePhotos,
+      content,
       galleryKey: galleryKey,
       goldenBackground: goldenBackground,
     );
@@ -344,7 +367,7 @@ class Timeline {
     await tester.pumpWidgetAndAdjustWindow(timeline);
 
     await tester.runAsync(() async {
-      for (final entry in renderablePhotos.entries) {
+      for (final entry in content.goldens.entries) {
         await precacheImage(
           MemoryImage(entry.key.pngBytes),
           tester.element(find.byKey(entry.value)),
@@ -357,13 +380,13 @@ class Timeline {
     return GoldenSceneMetadata(
       description: _description,
       images: [
-        for (final golden in renderablePhotos.keys)
+        for (final golden in content.goldens.keys)
           GoldenImageMetadata(
             id: golden.id,
             metadata: golden.metadata,
             topLeft:
-                (renderablePhotos[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
-            size: renderablePhotos[golden]!.currentContext!.size!,
+                (content.goldens[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
+            size: content.goldens[golden]!.currentContext!.size!,
           ),
       ],
     );
@@ -386,12 +409,12 @@ class Timeline {
   Widget _buildTimeline(
     WidgetTester tester,
     GlobalKey contentKey,
-    Map<GoldenSceneScreenshot, GlobalKey> renderablePhotos, {
+    SceneLayoutContent content, {
     Key? galleryKey,
     GoldenSceneBackground? goldenBackground,
   }) {
     return Builder(builder: (context) {
-      return _layout.build(tester, context, renderablePhotos);
+      return _layout.build(tester, context, content);
     });
   }
 
@@ -542,7 +565,7 @@ class _TimelineSetup {
 
 typedef TimelineSetupDelegate = Future<void> Function(WidgetTester tester);
 
-typedef TimelineSetupWithPumpFactory = Widget Function();
+typedef TimelineSetupBuilder = Widget Function();
 
 class _TimelinePhotoRequest {
   const _TimelinePhotoRequest(this.photoBoundsFinder, this.description);
@@ -566,7 +589,9 @@ class TimelineTestContext {
   final scratchPad = <String, dynamic>{};
 }
 
-Widget minimalItemScaffold(WidgetTester tester, Widget content) {
+/// The standard [GoldenSceneItemScaffold] that wraps the content of a [Timeline], which
+/// includes a dark theme, a dark background color, and some padding around the content.
+Widget standardTimelineItemScaffold(WidgetTester tester, Widget content) {
   return MaterialApp(
     theme: ThemeData(
       brightness: Brightness.dark,
@@ -581,6 +606,21 @@ Widget minimalItemScaffold(WidgetTester tester, Widget content) {
             child: content,
           ),
         ),
+      ),
+    ),
+    debugShowCheckedModeBanner: false,
+  );
+}
+
+/// An absolute minimal [GoldenSceneItemScaffold] that wraps the content within a [Timeline].
+Widget minimalTimelineItemScaffold(WidgetTester tester, Widget content) {
+  return MaterialApp(
+    theme: ThemeData(
+      fontFamily: goldenBricks,
+    ),
+    home: Center(
+      child: GoldenImageBounds(
+        child: content,
       ),
     ),
     debugShowCheckedModeBanner: false,

@@ -57,9 +57,9 @@ class ShadcnSingleShotSceneLayout implements SceneLayout {
   Widget build(
     WidgetTester tester,
     BuildContext context,
-    Map<GoldenSceneScreenshot, GlobalKey<State<StatefulWidget>>> goldens,
+    SceneLayoutContent content,
   ) {
-    final golden = goldens.entries.first;
+    final golden = content.goldens.entries.first;
 
     return DefaultTextStyle(
       style: GoldenSceneTheme.current.defaultTextStyle.copyWith(
@@ -129,9 +129,9 @@ class ShadcnGalleryLayout implements SceneLayout {
   Widget build(
     WidgetTester tester,
     BuildContext context,
-    Map<GoldenSceneScreenshot, GlobalKey<State<StatefulWidget>>> goldens,
+    SceneLayoutContent content,
   ) {
-    final entries = goldens.entries.toList();
+    final entries = content.goldens.entries.toList();
 
     return DefaultTextStyle(
       style: GoldenSceneTheme.current.defaultTextStyle.copyWith(

@@ -15,7 +15,7 @@ void main() {
       fileName: "list_tile_interactions",
       layout: ColumnSceneLayout(),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
             child: SizedBox(

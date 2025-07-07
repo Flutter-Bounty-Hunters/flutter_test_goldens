@@ -34,17 +34,7 @@ class FlutterCamera {
       );
     }
 
-    final pictureRecorder = PictureRecorder();
-    final canvas = Canvas(pictureRecorder);
-    final screenSize = fullscreenRenderObject.size;
-
-    final paintingContext = TestRecordingPaintingContext(canvas);
-    fullscreenRenderObject.paint(paintingContext, Offset.zero);
-
-    final fullscreenPhoto = await pictureRecorder.endRecording().toImage(
-          screenSize.width.round(),
-          screenSize.height.round(),
-        );
+    final fullscreenPhoto = fullscreenRenderObject.toImageSync();
 
     final contentFinder = finder ?? find.byType(GoldenImageBounds);
     expect(finder, findsOne);

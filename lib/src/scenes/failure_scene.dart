@@ -186,7 +186,7 @@ Future<(Image, FailureSceneMetadata)> _layoutFailureScene(
             return layout.build(
               tester,
               context,
-              renderablePhotos,
+              SceneLayoutContent(goldens: renderablePhotos),
             );
           },
         ),

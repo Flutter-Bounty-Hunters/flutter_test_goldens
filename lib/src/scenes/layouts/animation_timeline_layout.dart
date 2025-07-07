@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/fonts/fonts.dart';
@@ -11,6 +13,7 @@ class AnimationTimelineSceneLayout implements SceneLayout {
     this.background = const GoldenSceneBackground.color(Color(0xff020817)),
     this.spacing = defaultGridSpacing,
     this.itemDecorator,
+    this.rowBreakPolicy,
   });
 
   final GoldenSceneBackground? background;
@@ -23,19 +26,57 @@ class AnimationTimelineSceneLayout implements SceneLayout {
   /// only impacts the final painted scene, after the screenshots have been taken.
   final GoldenSceneItemDecorator? itemDecorator;
 
+  /// An optional policy for where to break rows in the layout, or `null` to use a single row.
+  final AnimationTimelineRowBreak? rowBreakPolicy;
+
   @override
   Widget build(
     WidgetTester tester,
     BuildContext context,
-    Map<GoldenSceneScreenshot, GlobalKey<State<StatefulWidget>>> goldens,
+    SceneLayoutContent content,
   ) {
     return AnimationTimelineGoldenScene(
       background: background,
       spacing: spacing,
       itemDecorator: itemDecorator,
-      goldens: goldens,
+      content: content,
+      rowBreakPolicy: rowBreakPolicy,
     );
   }
+}
+
+/// Policy for where to break rows in an [AnimationTimeline].
+class AnimationTimelineRowBreak {
+  /// Breaks rows after a maximum number of columns of items.
+  const AnimationTimelineRowBreak.afterMaxColumnCount(this.maxColumnCount)
+      : beforeItemDescription = null,
+        afterItemDescription = null;
+
+  /// Breaks rows before each item with the given description.
+  const AnimationTimelineRowBreak.beforeItemDescription(this.beforeItemDescription)
+      : maxColumnCount = null,
+        afterItemDescription = null;
+
+  /// Breaks rows after each item with the given description.
+  const AnimationTimelineRowBreak.afterItemDescription(this.afterItemDescription)
+      : beforeItemDescription = null,
+        maxColumnCount = null;
+
+  final int? maxColumnCount;
+  final String? beforeItemDescription;
+  final String? afterItemDescription;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AnimationTimelineRowBreak &&
+          runtimeType == other.runtimeType &&
+          maxColumnCount == other.maxColumnCount &&
+          beforeItemDescription == other.beforeItemDescription &&
+          afterItemDescription == other.afterItemDescription;
+
+  @override
+  int get hashCode => maxColumnCount.hashCode ^ beforeItemDescription.hashCode ^ afterItemDescription.hashCode;
 }
 
 class AnimationTimelineGoldenScene extends StatelessWidget {
@@ -44,7 +85,8 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
     this.background,
     this.spacing = defaultGridSpacing,
     this.itemDecorator,
-    required this.goldens,
+    required this.content,
+    this.rowBreakPolicy,
   });
 
   final GridSpacing spacing;
@@ -57,7 +99,9 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
   /// only impacts the final painted scene, after the screenshots have been taken.
   final GoldenSceneItemDecorator? itemDecorator;
 
-  final Map<GoldenSceneScreenshot, GlobalKey> goldens;
+  final SceneLayoutContent content;
+
+  final AnimationTimelineRowBreak? rowBreakPolicy;
 
   @override
   Widget build(BuildContext context) {
@@ -97,59 +141,162 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
               letterSpacing: 4,
             ),
           ),
-          const SizedBox(height: 16),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            spacing: spacing.between,
-            children: [
-              for (final entry in goldens.entries) //
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IntrinsicWidth(
-                      // ^ Intrinsic width is needed in case the following decorator has a `Column`, to not blow up
-                      //   when the `Flex` above is a row.
-                      child: Builder(builder: (context) {
-                        return _decorator(
-                          context,
-                          entry.key.metadata,
-                          Image.memory(
-                            key: entry.value,
-                            entry.key.pngBytes,
-                            width: entry.key.size.width.toDouble(),
-                            height: entry.key.size.height.toDouble(),
-                          ),
-                        );
-                      }),
-                    ),
-                    Center(
-                      child: Container(
-                        width: 2,
-                        height: 20,
-                        color: _accentColor,
-                      ),
-                    ),
-                  ],
-                ),
-            ],
-          ),
-          Divider(height: 2, thickness: 2, color: _accentColor),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Text(
-                "Start >",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          if (content.description != null && content.description!.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(
+              content.description!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 18,
+                letterSpacing: 2,
               ),
-              Spacer(),
-              Text(
-                "> End",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-            ],
-          ),
+            ),
+          ],
+          const SizedBox(height: 24),
+          _buildRows(),
         ],
       ),
+    );
+  }
+
+  Widget _buildRows() {
+    final itemRows = _breakDownRows();
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      spacing: spacing.between,
+      children: [
+        for (final row in itemRows) //
+          _buildRow(row),
+      ],
+    );
+  }
+
+  List<List<MapEntry<GoldenSceneScreenshot, GlobalKey>>> _breakDownRows() {
+    final rowBreakPolicy = this.rowBreakPolicy;
+    if (rowBreakPolicy == null) {
+      return [content.goldens.entries.toList()];
+    }
+
+    var allItems = content.goldens.entries.toList(growable: true);
+    final itemRows = <List<MapEntry<GoldenSceneScreenshot, GlobalKey>>>[];
+
+    if (rowBreakPolicy.maxColumnCount != null) {
+      // Break after a max column count.
+      while (allItems.isNotEmpty) {
+        final end = min(rowBreakPolicy.maxColumnCount!, allItems.length);
+        itemRows.add(
+          allItems.sublist(0, end),
+        );
+        if (end < allItems.length) {
+          allItems = allItems.sublist(end);
+        } else {
+          allItems = [];
+        }
+      }
+      return itemRows;
+    }
+
+    final beforeItemDescription = rowBreakPolicy.beforeItemDescription;
+    if (beforeItemDescription != null) {
+      var row = <MapEntry<GoldenSceneScreenshot, GlobalKey>>[];
+      for (int i = 0; i < allItems.length; i += 1) {
+        final screenshot = allItems[i].key;
+        if (screenshot.metadata.description == beforeItemDescription && row.isNotEmpty) {
+          itemRows.add(row);
+          row = <MapEntry<GoldenSceneScreenshot, GlobalKey>>[];
+        }
+        row.add(allItems[i]);
+      }
+      if (row.isNotEmpty) {
+        // Add the final row to the list of rows.
+        itemRows.add(row);
+      }
+
+      return itemRows;
+    }
+
+    final afterItemDescription = rowBreakPolicy.afterItemDescription;
+    if (afterItemDescription != null) {
+      var row = <MapEntry<GoldenSceneScreenshot, GlobalKey>>[];
+      for (int i = 0; i < allItems.length; i += 1) {
+        row.add(allItems[i]);
+
+        final screenshot = allItems[i].key;
+        if (screenshot.metadata.description == afterItemDescription && row.isNotEmpty) {
+          itemRows.add(row);
+          row = <MapEntry<GoldenSceneScreenshot, GlobalKey>>[];
+        }
+      }
+      if (row.isNotEmpty) {
+        // Add the final row to the list of rows.
+        itemRows.add(row);
+      }
+
+      return itemRows;
+    }
+
+    throw Exception("Unhandled row break policy: $rowBreakPolicy");
+  }
+
+  Widget _buildRow(List<MapEntry<GoldenSceneScreenshot, GlobalKey>> items) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          spacing: spacing.between,
+          children: [
+            for (final entry in items) //
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IntrinsicWidth(
+                    // ^ Intrinsic width is needed in case the following decorator has a `Column`, to not blow up
+                    //   when the `Flex` above is a row.
+                    child: Builder(builder: (context) {
+                      return _decorator(
+                        context,
+                        entry.key.metadata,
+                        Image.memory(
+                          key: entry.value,
+                          entry.key.pngBytes,
+                          width: entry.key.size.width.toDouble(),
+                          height: entry.key.size.height.toDouble(),
+                        ),
+                      );
+                    }),
+                  ),
+                  Center(
+                    child: Container(
+                      width: 2,
+                      height: 20,
+                      color: _accentColor,
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+        Divider(height: 2, thickness: 2, color: _accentColor),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Text(
+              "Start >",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            Spacer(),
+            Text(
+              "> End",
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

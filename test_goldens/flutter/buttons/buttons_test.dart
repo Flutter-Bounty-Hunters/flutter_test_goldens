@@ -14,7 +14,7 @@ void main() {
       fileName: "button_elevated_interactions",
       layout: RowSceneLayout(),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
             child: ElevatedButton(
@@ -39,7 +39,7 @@ void main() {
       fileName: "button_text_interactions",
       layout: RowSceneLayout(),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
             child: TextButton(
@@ -64,7 +64,7 @@ void main() {
       fileName: "button_icon_interactions",
       layout: RowSceneLayout(),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return MaterialApp(
             theme: ThemeData(
               fontFamily: goldenBricks,
@@ -98,7 +98,7 @@ void main() {
       fileName: "button_fab_interactions",
       layout: RowSceneLayout(),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
             child: FloatingActionButton(
@@ -130,7 +130,7 @@ void main() {
         ),
       ),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
             child: FloatingActionButton.extended(
