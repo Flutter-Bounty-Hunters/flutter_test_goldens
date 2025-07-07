@@ -265,13 +265,15 @@ main.page-content {
     margin-bottom: 1.5em;
   }
 
-  code {
-    padding: 3px 6px;
-    background: #7f00a6;
-    border: 1px solid #a218cc;
-    border-radius: 4px;
+  p, li > {
+    code {
+      padding: 3px 6px;
+      background: #7f00a6;
+      border: 1px solid #a218cc;
+      border-radius: 4px;
 
-    color: WHITE;
+      color: WHITE;
+    }
   }
 
   li {
