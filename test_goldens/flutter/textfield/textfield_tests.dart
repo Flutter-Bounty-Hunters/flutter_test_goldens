@@ -13,7 +13,7 @@ void main() {
       fileName: "textfield_interactions",
       layout: ColumnSceneLayout(),
     )
-        .setupWithPump(() {
+        .setupWithBuilder(() {
           return FlutterWidgetScaffold(
             goldenKey: goldenKey,
             child: SizedBox(

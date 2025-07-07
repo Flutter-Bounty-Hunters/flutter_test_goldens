@@ -57,7 +57,7 @@ class Timeline {
   /// Setup the scene before taking any photos.
   ///
   /// If you only need to provide a widget tree, without taking other [WidgetTester]
-  /// actions, consider using [setupWithPump] for convenience.
+  /// actions, consider using [setupWithBuilder] for convenience.
   Timeline setup(TimelineSetupDelegate delegate) {
     if (_setup != null) {
       throw Exception("Timeline was already set up, but tried to call setup() again.");
@@ -72,10 +72,10 @@ class Timeline {
     return this;
   }
 
-  /// Setup the scene before taking any photos, by pumping a widget tree.
+  /// Setup the scene before taking any photos, by building a widget tree.
   ///
-  /// If you need to take additional actions, beyond a single pump, use [setup] instead.
-  Timeline setupWithPump(TimelineSetupWithPumpFactory sceneBuilder) {
+  /// If you need to take additional actions, beyond a builder delegate, use [setup] instead.
+  Timeline setupWithBuilder(TimelineSetupBuilder sceneBuilder) {
     if (_setup != null) {
       throw Exception("Timeline was already set up, but tried to call setupWithPump() again.");
     }
@@ -565,7 +565,7 @@ class _TimelineSetup {
 
 typedef TimelineSetupDelegate = Future<void> Function(WidgetTester tester);
 
-typedef TimelineSetupWithPumpFactory = Widget Function();
+typedef TimelineSetupBuilder = Widget Function();
 
 class _TimelinePhotoRequest {
   const _TimelinePhotoRequest(this.photoBoundsFinder, this.description);
