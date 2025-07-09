@@ -96,17 +96,10 @@ class RenderPositionedBoxAtPixel extends RenderPositionedBox {
         );
       }
 
-      if (_snapSize &&
-          (child.size.width != child.size.width.floorToDouble() ||
-              child.size.height != child.size.height.floorToDouble())) {
+      if (_snapSize && (!child.size.isInteger)) {
         // This child doesn't have an integer width/height - run layout again,
-        // forcing the nearest smaller size.
-        child.layout(
-          BoxConstraints.tightFor(
-            width: child.size.width.floorToDouble(),
-            height: child.size.height.floorToDouble(),
-          ),
-        );
+        // forcing an integer size. Prefer to expand, but fallback to shrink.
+        _resizeToIntegerSizeStartingWithWidth(constraints, child);
       }
     }
   }
@@ -310,131 +303,129 @@ class RenderPixelSnapFlex extends RenderFlex {
         // For this reason, we treat Columns and Rows differently for re-sizing - we
         // try to fit the cross-axis first, and then the main-axis second.
         if (direction == Axis.vertical) {
-          _resizeChildForColumn(child);
+          _resizeToIntegerSizeStartingWithWidth(constraints, child);
         } else {
-          _resizeChildForRow(child);
+          _resizeToIntegerSizeStartingWithHeight(constraints, child);
         }
       }
     }
   }
+}
 
-  void _resizeChildForColumn(RenderBox child) {
-    if (child.size.isInteger) {
-      return;
-    }
+void _resizeToIntegerSizeStartingWithWidth(BoxConstraints constraints, RenderBox child) {
+  if (child.size.isInteger) {
+    return;
+  }
 
-    // This is a column. Start by working on the cross-axis, which is more likely
-    // to be bounded than the main-axis.
-    final widest = constraints.biggest.width;
-    late final int newWidth;
-    late final bool didShrinkWidth;
-    if (!child.size.widthIsInteger) {
-      if (child.size.width <= widest) {
-        // We prefer to increase size rather than decrease size, because text
-        // wrapping becomes a problem when shrinking intrinsic size. We can fit
-        // a bigger width, so use that.
-        newWidth = child.size.width.ceil();
-        didShrinkWidth = false;
-      } else {
-        // We prefer wider over narrower, but we can't fit any wider. Shrink instead.
-        newWidth = child.size.width.floor();
-        didShrinkWidth = true;
-      }
-    } else {
-      newWidth = child.size.width.toInt();
+  // Start with width.
+  final widest = constraints.biggest.width;
+  late final int newWidth;
+  late final bool didShrinkWidth;
+  if (!child.size.widthIsInteger) {
+    if (child.size.width <= widest) {
+      // We prefer to increase size rather than decrease size, because text
+      // wrapping becomes a problem when shrinking intrinsic size. We can fit
+      // a bigger width, so use that.
+      newWidth = child.size.width.ceil();
       didShrinkWidth = false;
-    }
-
-    if (didShrinkWidth) {
-      // Shrinking the width has a non-trivial chance of significantly impacting the
-      // height, so run layout again with the new width and then deal with the height.
-      child.layout(BoxConstraints.tightFor(width: newWidth.toDouble()), parentUsesSize: true);
-    }
-
-    // Now do the main-axis.
-    final tallest = constraints.biggest.height;
-    late final int newHeight;
-    if (!child.size.heightIsInteger) {
-      if (child.size.height <= tallest) {
-        newHeight = child.size.height.ceil();
-      } else {
-        newHeight = child.size.height.floor();
-      }
     } else {
-      newHeight = child.size.height.toInt();
+      // We prefer wider over narrower, but we can't fit any wider. Shrink instead.
+      newWidth = child.size.width.floor();
+      didShrinkWidth = true;
     }
-
-    // Note: This layout process can fail if a situation arises in which both the
-    // width and height need to contract, or if contracting the width produces a
-    // much taller height that violates constraints. If this happens to you, please
-    // file an issue on GitHub for flutter_test_goldens and provide us with the exact
-    // situation that's breaking for you.
-    child.layout(
-      BoxConstraints.tightFor(
-        width: newWidth.toDouble(),
-        height: newHeight.toDouble(),
-      ),
-    );
+  } else {
+    newWidth = child.size.width.toInt();
+    didShrinkWidth = false;
   }
 
-  void _resizeChildForRow(RenderBox child) {
-    if (child.size.isInteger) {
-      return;
-    }
+  if (didShrinkWidth) {
+    // Shrinking the width has a non-trivial chance of significantly impacting the
+    // height, so run layout again with the new width and then deal with the height.
+    child.layout(BoxConstraints.tightFor(width: newWidth.toDouble()), parentUsesSize: true);
+  }
 
-    // This is a row. Start by working on the cross-axis, which is more likely
-    // to be bounded than the main-axis.
-    final tallest = constraints.biggest.height;
-    late final int newHeight;
-    late final bool didShrinkHeight;
-    if (!child.size.heightIsInteger) {
-      if (child.size.height <= tallest) {
-        // We prefer to increase size rather than decrease size, because text
-        // wrapping (and other layouts) becomes a problem when shrinking intrinsic
-        // size. We can fit a bigger height, so use that.
-        newHeight = child.size.height.ceil();
-        didShrinkHeight = false;
-      } else {
-        // We prefer taller over shorter, but we can't fit any taller. Shrink instead.
-        newHeight = child.size.height.floor();
-        didShrinkHeight = true;
-      }
+  // Now do the main-axis.
+  final tallest = constraints.biggest.height;
+  late final int newHeight;
+  if (!child.size.heightIsInteger) {
+    if (child.size.height <= tallest) {
+      newHeight = child.size.height.ceil();
     } else {
-      newHeight = child.size.height.toInt();
+      newHeight = child.size.height.floor();
+    }
+  } else {
+    newHeight = child.size.height.toInt();
+  }
+
+  // Note: This layout process can fail if a situation arises in which both the
+  // width and height need to contract, or if contracting the width produces a
+  // much taller height that violates constraints. If this happens to you, please
+  // file an issue on GitHub for flutter_test_goldens and provide us with the exact
+  // situation that's breaking for you.
+  child.layout(
+    BoxConstraints.tightFor(
+      width: newWidth.toDouble(),
+      height: newHeight.toDouble(),
+    ),
+  );
+}
+
+void _resizeToIntegerSizeStartingWithHeight(BoxConstraints constraints, RenderBox child) {
+  if (child.size.isInteger) {
+    return;
+  }
+
+  // Start with the height.
+  final tallest = constraints.biggest.height;
+  late final int newHeight;
+  late final bool didShrinkHeight;
+  if (!child.size.heightIsInteger) {
+    if (child.size.height <= tallest) {
+      // We prefer to increase size rather than decrease size, because text
+      // wrapping (and other layouts) becomes a problem when shrinking intrinsic
+      // size. We can fit a bigger height, so use that.
+      newHeight = child.size.height.ceil();
       didShrinkHeight = false;
-    }
-
-    if (didShrinkHeight) {
-      // Shrinking the height has a non-trivial chance of significantly impacting the
-      // width, so run layout again with the new height and then deal with the width.
-      child.layout(BoxConstraints.tightFor(height: newHeight.toDouble()), parentUsesSize: true);
-    }
-
-    // Now do the main-axis.
-    final widest = constraints.biggest.width;
-    late final int newWidth;
-    if (!child.size.widthIsInteger) {
-      if (child.size.width <= widest) {
-        newWidth = child.size.width.ceil();
-      } else {
-        newWidth = child.size.width.floor();
-      }
     } else {
-      newWidth = child.size.width.toInt();
+      // We prefer taller over shorter, but we can't fit any taller. Shrink instead.
+      newHeight = child.size.height.floor();
+      didShrinkHeight = true;
     }
-
-    // Note: This layout process can fail if a situation arises in which both the
-    // width and height need to contract, or if contracting the width produces a
-    // much taller height that violates constraints. If this happens to you, please
-    // file an issue on GitHub for flutter_test_goldens and provide us with the exact
-    // situation that's breaking for you.
-    child.layout(
-      BoxConstraints.tightFor(
-        width: newWidth.toDouble(),
-        height: newHeight.toDouble(),
-      ),
-    );
+  } else {
+    newHeight = child.size.height.toInt();
+    didShrinkHeight = false;
   }
+
+  if (didShrinkHeight) {
+    // Shrinking the height has a non-trivial chance of significantly impacting the
+    // width, so run layout again with the new height and then deal with the width.
+    child.layout(BoxConstraints.tightFor(height: newHeight.toDouble()), parentUsesSize: true);
+  }
+
+  // Now do the main-axis.
+  final widest = constraints.biggest.width;
+  late final int newWidth;
+  if (!child.size.widthIsInteger) {
+    if (child.size.width <= widest) {
+      newWidth = child.size.width.ceil();
+    } else {
+      newWidth = child.size.width.floor();
+    }
+  } else {
+    newWidth = child.size.width.toInt();
+  }
+
+  // Note: This layout process can fail if a situation arises in which both the
+  // width and height need to contract, or if contracting the width produces a
+  // much taller height that violates constraints. If this happens to you, please
+  // file an issue on GitHub for flutter_test_goldens and provide us with the exact
+  // situation that's breaking for you.
+  child.layout(
+    BoxConstraints.tightFor(
+      width: newWidth.toDouble(),
+      height: newHeight.toDouble(),
+    ),
+  );
 }
 
 extension on Size {
