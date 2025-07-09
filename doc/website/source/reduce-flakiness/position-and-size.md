@@ -152,7 +152,7 @@ SizedBox(
 ```
 
 The version with `PixelSnapCenter` positions the square at `(12, 12)` and forces the
-square to become `(24, 24)`. No more partial pixels.
+square to become `(25, 25)`. No more partial pixels.
 
 These snapping widgets MUST be used when building Golden Scenes, to ensure that new/updated
 goldens are consistent with extracted goldens. However, if desired, these widgets can also
