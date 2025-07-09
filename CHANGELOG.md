@@ -1,3 +1,12 @@
+## 0.0.6
+### July 8, 2025
+ * FEATURE: Added widgets for to snap children to whole-pixel offsets, and snap size to whole pixels.
+   * `PixelSnapCenter`
+   * `PixelSnapAlign`
+   * `PixelSnapRow`
+   * `PixelSnapColumn`
+   * `PixelSnapFlex`
+
 ## 0.0.5
 ### July 6, 2025
  * FEATURE: Add itemSetup to Gallery so that a single setup can be applied to all items.
