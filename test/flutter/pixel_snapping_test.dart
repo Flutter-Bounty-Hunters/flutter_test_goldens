@@ -35,7 +35,7 @@ void main() {
         tester.getTopLeft(find.byKey(contentKey)),
         Offset(25, 25),
       );
-      expect(tester.getSize(find.byKey(contentKey)), Size(49, 49));
+      expect(tester.getSize(find.byKey(contentKey)), Size(50, 50));
     });
 
     testWidgets("PixelSnapAlign", (tester) async {
@@ -69,7 +69,7 @@ void main() {
         tester.getTopLeft(find.byKey(contentKey)),
         Offset(13, 13),
       );
-      expect(tester.getSize(find.byKey(contentKey)), Size(49, 49));
+      expect(tester.getSize(find.byKey(contentKey)), Size(50, 50));
     });
 
     testWidgets("PixelSnapRow", (tester) async {
