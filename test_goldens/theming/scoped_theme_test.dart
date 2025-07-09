@@ -60,7 +60,7 @@ Widget yellowItemScaffold(WidgetTester tester, Widget content) {
 }
 
 Widget yellowItemDecorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget content) {
-  return Column(
+  return PixelSnapColumn(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Container(
@@ -105,7 +105,7 @@ Widget redItemScaffold(WidgetTester tester, Widget content) {
 }
 
 Widget redItemDecorator(BuildContext context, GoldenScreenshotMetadata metadata, Widget content) {
-  return Column(
+  return PixelSnapColumn(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       Container(

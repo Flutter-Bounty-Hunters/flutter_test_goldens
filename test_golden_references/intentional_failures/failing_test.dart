@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
 
 void main() {
   testWidgets("failing test", (tester) async {
@@ -22,7 +23,7 @@ void main() {
 // ignore: unused_element
 Widget _buildVersion1() {
   return Center(
-    child: Column(
+    child: PixelSnapColumn(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
@@ -52,7 +53,7 @@ Widget _buildVersion1() {
 
 Widget _buildVersion2() {
   return Center(
-    child: Column(
+    child: PixelSnapColumn(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(

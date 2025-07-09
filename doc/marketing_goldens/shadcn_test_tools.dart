@@ -87,7 +87,7 @@ class ShadcnSingleShotSceneLayout implements SceneLayout {
           margin: const EdgeInsets.all(48),
           padding: const EdgeInsets.all(48),
           color: ShadBlueColorScheme.dark().background,
-          child: Column(
+          child: PixelSnapColumn(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.center,
             spacing: 24,
@@ -148,7 +148,7 @@ class ShadcnGalleryLayout implements SceneLayout {
           ),
           child: Padding(
             padding: const EdgeInsets.all(48),
-            child: Column(
+            child: PixelSnapColumn(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
               spacing: 24,
@@ -187,7 +187,7 @@ class ShadcnGalleryLayout implements SceneLayout {
             child: Container(
               padding: const EdgeInsets.all(48),
               color: ShadBlueColorScheme.dark().background,
-              child: Column(
+              child: PixelSnapColumn(
                 mainAxisSize: MainAxisSize.min,
                 spacing: 24,
                 children: [
@@ -251,7 +251,7 @@ Widget shadcnItemDecorator(
 ) {
   return ColoredBox(
     color: ShadBlueColorScheme.dark().background,
-    child: Column(
+    child: PixelSnapColumn(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

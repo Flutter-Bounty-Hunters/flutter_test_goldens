@@ -97,12 +97,12 @@ Widget _itemDecorator(
 ) {
   return Padding(
     padding: const EdgeInsets.all(24),
-    child: Column(
+    child: PixelSnapColumn(
       mainAxisSize: MainAxisSize.min,
       children: [
         content,
         Divider(),
-        Row(
+        PixelSnapRow(
           mainAxisSize: MainAxisSize.min,
           spacing: 16,
           children: [

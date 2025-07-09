@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
 import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
@@ -213,22 +214,23 @@ Widget defaultGoldenSceneItemDecorator(
   return ColoredBox(
     // TODO: need this to be configurable, e.g., light vs dark
     color: Colors.white,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Align(
-          alignment: Alignment.centerLeft,
-          child: content,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            metadata.description,
-            style: TextStyle(fontFamily: TestFonts.openSans),
+    child: IntrinsicWidth(
+      child: PixelSnapColumn(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PixelSnapCenter(
+            child: content,
           ),
-        ),
-      ],
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              metadata.description,
+              style: TextStyle(fontFamily: TestFonts.openSans),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

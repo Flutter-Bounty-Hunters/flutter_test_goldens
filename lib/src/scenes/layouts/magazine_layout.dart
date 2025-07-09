@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
 import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
@@ -101,7 +102,7 @@ class MagazineGoldenScene extends StatelessWidget {
   Widget build(BuildContext context) {
     return GoldenSceneBounds(
       child: IntrinsicHeight(
-        child: Row(
+        child: PixelSnapRow(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Stack(
@@ -193,7 +194,7 @@ class MagazineGoldenScene extends StatelessWidget {
                       IntrinsicWidth(
                         child: Padding(
                           padding: const EdgeInsets.all(12),
-                          child: Column(
+                          child: PixelSnapColumn(
                             mainAxisSize: MainAxisSize.min,
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [

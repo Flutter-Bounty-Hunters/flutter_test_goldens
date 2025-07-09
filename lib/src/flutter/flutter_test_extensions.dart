@@ -102,3 +102,9 @@ extension FlutterTestGoldens on WidgetTester {
     return Future.wait(futures);
   }
 }
+
+extension Snapshot on WidgetTester {
+  Future<void> takePhoto(String name, {Finder? finder}) async {
+    expectLater(finder ?? find.byType(WidgetsApp), matchesGoldenFile(name));
+  }
+}
