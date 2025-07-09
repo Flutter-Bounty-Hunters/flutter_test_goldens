@@ -1,3 +1,7 @@
+## 0.0.7
+### July 9, 2025
+ * ADJUSTMENT: Change pixel snapping widgets to prefer bigger sizes instead of smaller.
+
 ## 0.0.6
 ### July 8, 2025
  * FEATURE: Added widgets for to snap children to whole-pixel offsets, and snap size to whole pixels.
