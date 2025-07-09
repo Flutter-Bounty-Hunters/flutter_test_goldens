@@ -99,11 +99,11 @@ void main() {
 
       // Ensure a whole-pixel offset.
       expect(tester.getTopLeft(find.byKey(item1Key)), Offset(7, 38));
-      expect(tester.getSize(find.byKey(item1Key)), Size(23, 23));
+      expect(tester.getSize(find.byKey(item1Key)), Size(24, 24));
       expect(tester.getTopLeft(find.byKey(item2Key)), Offset(38, 38));
-      expect(tester.getSize(find.byKey(item2Key)), Size(23, 23));
+      expect(tester.getSize(find.byKey(item2Key)), Size(24, 24));
       expect(tester.getTopLeft(find.byKey(item3Key)), Offset(69, 38));
-      expect(tester.getSize(find.byKey(item3Key)), Size(23, 23));
+      expect(tester.getSize(find.byKey(item3Key)), Size(24, 24));
     });
 
     testWidgets("PixelSnapColumn", (tester) async {
@@ -133,11 +133,11 @@ void main() {
 
       // Ensure a whole-pixel offset.
       expect(tester.getTopLeft(find.byKey(item1Key)), Offset(38, 7));
-      expect(tester.getSize(find.byKey(item1Key)), Size(23, 23));
+      expect(tester.getSize(find.byKey(item1Key)), Size(24, 24));
       expect(tester.getTopLeft(find.byKey(item2Key)), Offset(38, 38));
-      expect(tester.getSize(find.byKey(item2Key)), Size(23, 23));
+      expect(tester.getSize(find.byKey(item2Key)), Size(24, 24));
       expect(tester.getTopLeft(find.byKey(item3Key)), Offset(38, 69));
-      expect(tester.getSize(find.byKey(item3Key)), Size(23, 23));
+      expect(tester.getSize(find.byKey(item3Key)), Size(24, 24));
     });
   });
 }
