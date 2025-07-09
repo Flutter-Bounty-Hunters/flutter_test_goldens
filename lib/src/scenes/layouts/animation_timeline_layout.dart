@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
 import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
@@ -129,7 +130,7 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
   Widget _buildGoldens() {
     return Padding(
       padding: spacing.around,
-      child: Column(
+      child: PixelSnapColumn(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
@@ -162,7 +163,7 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
   Widget _buildRows() {
     final itemRows = _breakDownRows();
 
-    return Column(
+    return PixelSnapColumn(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: spacing.between,
@@ -241,17 +242,17 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
   }
 
   Widget _buildRow(List<MapEntry<GoldenSceneScreenshot, GlobalKey>> items) {
-    return Column(
+    return PixelSnapColumn(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        PixelSnapRow(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.start,
           spacing: spacing.between,
           children: [
             for (final entry in items) //
-              Column(
+              PixelSnapColumn(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   IntrinsicWidth(
@@ -283,7 +284,7 @@ class AnimationTimelineGoldenScene extends StatelessWidget {
         ),
         Divider(height: 2, thickness: 2, color: _accentColor),
         const SizedBox(height: 16),
-        Row(
+        PixelSnapRow(
           children: [
             Text(
               "Start >",
@@ -320,7 +321,7 @@ Widget _itemDecorator(
 ) {
   return ColoredBox(
     color: const Color(0xff020817),
-    child: Column(
+    child: PixelSnapColumn(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [

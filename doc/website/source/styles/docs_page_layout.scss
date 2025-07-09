@@ -258,7 +258,7 @@ main.page-content {
   }
 
   h2, h3, h4, h5, h6 {
-    margin-top: 1em;
+    margin-top: 2em;
   }
 
   p {
@@ -278,6 +278,11 @@ main.page-content {
 
   li {
     margin-bottom: 1.5em;
+  }
+
+  img {
+    display: block;
+    margin: auto;
   }
 
   pre code {

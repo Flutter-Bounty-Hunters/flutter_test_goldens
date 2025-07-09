@@ -78,13 +78,12 @@ class GridGoldenScene extends StatelessWidget {
   Widget _buildGoldens() {
     final entries = goldens.entries.toList();
 
-    final rows = <TableRow>[];
+    final rows = <Widget>[];
     for (int row = 0; row < goldens.length / 3; row += 1) {
       final items = <Widget>[];
       for (int col = 0; col < 3; col += 1) {
         final index = row * 3 + col;
         if (index >= entries.length) {
-          items.add(const SizedBox());
           continue;
         }
 
@@ -92,7 +91,6 @@ class GridGoldenScene extends StatelessWidget {
           Padding(
             padding: EdgeInsets.only(
               top: row > 0 ? defaultGridSpacing.between : 0,
-              left: col > 0 ? defaultGridSpacing.between : 0,
             ),
             child: Builder(builder: (context) {
               return _decorator(
@@ -111,14 +109,18 @@ class GridGoldenScene extends StatelessWidget {
       }
 
       rows.add(
-        TableRow(
+        PixelSnapRow(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.start,
+          spacing: spacing.between,
           children: items,
         ),
       );
     }
 
-    return Table(
-      defaultColumnWidth: IntrinsicColumnWidth(),
+    return PixelSnapColumn(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: rows,
     );
   }

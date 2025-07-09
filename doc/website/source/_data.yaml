@@ -53,6 +53,10 @@ navigation:
       tag: failure-scenes
       sortBy: navOrder
 
+    - title: Reduce Flakiness
+      tag: reduce-flakiness
+      sortBy: navOrder
+
     - title: Flutter's Implementation
       tag: flutter-implementation
       sortBy: navOrder

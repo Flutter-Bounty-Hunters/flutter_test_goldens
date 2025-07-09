@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
@@ -118,7 +119,7 @@ class FlexGoldenScene extends StatelessWidget {
   Widget _buildGoldens() {
     return Padding(
       padding: spacing.around,
-      child: Flex(
+      child: PixelSnapFlex(
         direction: direction,
         mainAxisSize: MainAxisSize.min,
         spacing: spacing.between,

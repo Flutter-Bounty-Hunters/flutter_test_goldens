@@ -543,19 +543,19 @@ Widget _itemDecorator(
   return Padding(
     padding: const EdgeInsets.all(24),
     child: IntrinsicWidth(
-      child: Column(
+      child: PixelSnapColumn(
         mainAxisSize: MainAxisSize.min,
         spacing: 4,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Row(
+          PixelSnapRow(
             children: [
               Expanded(child: Text('Golden')),
               Expanded(child: Text('Candidate')),
             ],
           ),
           content,
-          Row(
+          PixelSnapRow(
             children: [
               Expanded(child: Text('Absolute Diff')),
               Expanded(child: Text('Relative Diff')),

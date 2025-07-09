@@ -47,21 +47,23 @@ Widget _centeredItemDecorator(
   return ColoredBox(
     // TODO: need this to be configurable, e.g., light vs dark
     color: Colors.white,
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        Center(
-          child: content,
-        ),
-        Padding(
-          padding: const EdgeInsets.all(24),
-          child: Text(
-            metadata.description,
-            style: TextStyle(fontFamily: TestFonts.openSans),
+    child: IntrinsicWidth(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          PixelSnapCenter(
+            child: content,
           ),
-        ),
-      ],
+          Padding(
+            padding: const EdgeInsets.all(24),
+            child: Text(
+              metadata.description,
+              style: TextStyle(fontFamily: TestFonts.openSans),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }

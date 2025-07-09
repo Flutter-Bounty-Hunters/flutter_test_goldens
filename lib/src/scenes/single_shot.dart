@@ -51,6 +51,15 @@ class SingleShotConfigurator {
     );
   }
 
+  SingleShotConfigurator withConstraints(BoxConstraints constraints) {
+    _ensureStepNotComplete("constraints");
+
+    return SingleShotConfigurator(
+      _config.copyWith(constraints: constraints),
+      {..._stepsCompleted, "constraints"},
+    );
+  }
+
   SingleShotConfigurator withSetup(GoldenSetup setup) {
     _ensureStepNotComplete("setup");
 
