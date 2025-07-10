@@ -8,9 +8,9 @@ test execution path.
 
 The following are some noteworthy details about goldens:
 
- * [How to write and run a test](/how-flutter-does-goldens/write-and-run-a-test)
- * [How Flutter finds the test directory](/how-flutter-does-goldens/find-the-test-directory)
- * [How Flutter compares screenshots](/how-flutter-does-goldens/compare-screenshots)
+ * [How to write and run a test](/flutters-implementation/write-and-run-a-test)
+ * [How Flutter finds the test directory](/flutters-implementation/find-the-test-directory)
+ * [How Flutter compares screenshots](/flutters-implementation/compare-screenshots)
 
 Flutter golden tests are implemented via the following packages, all of which are defined
 within the Dart SDK, or Flutter SDK:
