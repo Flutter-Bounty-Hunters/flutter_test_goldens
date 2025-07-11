@@ -9,7 +9,7 @@ import 'package:platform/platform.dart';
 /// Loads the Material icons font into the [FontLoader], which doesn't happen by
 /// default in widget tests.
 ///
-/// In widget tests. icons render as empty squares. This is because in widget tests
+/// In widget tests, Icons render as empty squares. This is because in widget tests
 /// the Material icons font isn't loaded by default. Unfortunately, Flutter doesn't
 /// provide a first-class ability to load the font, so this method was copied from
 /// Flutter to dig into implementation details and load it.
