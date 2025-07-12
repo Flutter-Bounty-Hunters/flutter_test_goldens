@@ -81,7 +81,7 @@ void testWidgets("load a file image", (tester) async {
     MyApp(
       // File images are globally key'd on their `File`, so you don't have to
       // pass the same `ImageProvider` that you used to load the image.
-      child: Image.network(File("path/to/my_image.png")),
+      child: Image.file(File("path/to/my_image.png")),
     ),
   );
 });
