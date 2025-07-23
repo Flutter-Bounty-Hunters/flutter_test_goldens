@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
@@ -11,19 +10,9 @@ import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
-import 'package:flutter_test_goldens/src/scenes/golden_files.dart';
 import 'package:golden_bricks/golden_bricks.dart';
 
-/// A theme, which is applied to various [GoldenScene]s.
-///
-/// The purpose of [GoldenSceneTheme] is to make it easy to configure similar visual styles
-/// for all [GoldenScene]s in a project, file, group, or within a test.
-///
-/// A [GoldenSceneTheme] captures various details that are visually common among
-/// [GoldenScene]s. For example, a theme includes an [itemScaffold] and [itemDecorator] that are
-/// built around every golden in a scene. It includes a [background] that renders behind the
-/// golden images. For logistics, it includes a relative [directory] path, which says where
-/// to store [GoldenScene]s in relation to each golden test file.
+/// A theme, which contains visual aspects that are common to most types of Golden Scenes.
 class GoldenSceneTheme {
   /// The [GoldenSceneTheme] that should be used for the currently executing test.
   ///
@@ -50,16 +39,16 @@ class GoldenSceneTheme {
     addTearDown(() => GoldenSceneTheme.pop());
   }
 
-  /// Pushes the given [theme] on to the global theme stack, which will make it
+  /// Pushes the given [theme] on to the global config stack, which will make it
   /// the global theme until there's a call to [pop].
   ///
   /// Pushing and popping themes is useful within group and test setups and teardowns
   /// to configure a [GoldenSceneTheme] for that group or test.
   static void push(GoldenSceneTheme theme) => _themeStack.add(theme);
 
-  /// Removes to the top theme on the global stack, which was added with [push].
+  /// Removes to the top config on the global stack, which was added with [push].
   ///
-  /// If there is no corresponding theme that was added by an earlier [push], then
+  /// If there is no corresponding config that was added by an earlier [push], then
   /// this method does nothing.
   static void pop() {
     if (_themeStack.length > 1) {
@@ -69,7 +58,6 @@ class GoldenSceneTheme {
 
   /// The default [GoldenSceneTheme] for all tests.
   static final standard = GoldenSceneTheme(
-    directory: defaultGoldenDirectory,
     background: defaultGoldenSceneBackground,
     defaultTextStyle: TextStyle(
       color: Colors.black,
@@ -84,7 +72,6 @@ class GoldenSceneTheme {
   /// This theme isn't used anywhere by default, but it's a convenient theme if
   /// you want a dark theme and you don't care about all the specifics.
   static final standardDark = GoldenSceneTheme(
-    directory: defaultGoldenDirectory,
     background: defaultDarkGoldenSceneBackground,
     defaultTextStyle: TextStyle(
       color: Colors.white,
@@ -96,19 +83,11 @@ class GoldenSceneTheme {
   );
 
   const GoldenSceneTheme({
-    required this.directory,
     required this.background,
     required this.defaultTextStyle,
     required this.itemScaffold,
     required this.itemDecorator,
   });
-
-  /// The relative path from a running test to where that test's goldens are
-  /// stored.
-  ///
-  /// The [standard] directory is `Directory("./goldens/")`. To store goldens in the same
-  /// directory as the running tests, use `Directory(".")`.
-  final Directory directory;
 
   /// The background that's painted full-bleed across the scene, behind the goldens.
   ///
@@ -133,14 +112,12 @@ class GoldenSceneTheme {
   final GoldenSceneItemDecorator itemDecorator;
 
   GoldenSceneTheme copyWith({
-    Directory? directory,
     GoldenSceneBackground? background,
     TextStyle? defaultTextStyle,
     GoldenSceneItemScaffold? itemScaffold,
     GoldenSceneItemDecorator? itemDecorator,
   }) {
     return GoldenSceneTheme(
-      directory: directory ?? this.directory,
       background: background ?? this.background,
       defaultTextStyle: defaultTextStyle ?? this.defaultTextStyle,
       itemScaffold: itemScaffold ?? this.itemScaffold,

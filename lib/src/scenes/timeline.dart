@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/test_config.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -548,7 +549,7 @@ class Timeline {
 
   String get _goldenDirectory => "$_testFileDirectory$_relativeGoldenDirectory$separator";
 
-  String get _relativeGoldenDirectory => _directory?.path ?? GoldenSceneTheme.current.directory.path;
+  String get _relativeGoldenDirectory => _directory?.path ?? GoldenTestConfig.current.directory.path;
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional

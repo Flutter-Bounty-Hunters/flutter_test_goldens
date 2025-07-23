@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/test_config.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -40,7 +41,7 @@ class Gallery {
         _itemBoundsFinder = itemBoundsFinder,
         _layout = layout,
         _itemSetup = itemSetup {
-    _directory = directory ?? GoldenSceneTheme.current.directory;
+    _directory = directory ?? GoldenTestConfig.current.directory;
   }
 
   /// A scaffold built around each item widget tree in this scene when new screenshots are

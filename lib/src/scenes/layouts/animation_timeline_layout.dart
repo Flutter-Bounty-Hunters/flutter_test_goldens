@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/test_config.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
 import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';

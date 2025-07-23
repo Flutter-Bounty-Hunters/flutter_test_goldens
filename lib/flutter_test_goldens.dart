@@ -17,5 +17,6 @@ export 'src/scenes/layouts/magazine_layout.dart';
 export 'src/scenes/layouts/row_and_column_layout.dart';
 export 'src/scenes/scene_layout.dart';
 export 'src/scenes/single_shot.dart';
+export 'src/test_config.dart';
 export 'src/logging.dart';
 export 'src/test_runners.dart';
