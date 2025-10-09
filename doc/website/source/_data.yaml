@@ -1,3 +1,20 @@
+website:
+  social:
+    opengraph:
+      url: https://fluttergoldens.com
+      title: Flutter Test Goldens
+      description: The best package for writing golden tests.
+      image: https://fluttergoldens.com/images/branding/social.png
+      type: website
+
+    twitter:
+      card: summary_large_image
+      site: "@SuprDeclarative"
+      url: https://fluttergoldens.com
+      title: Flutter Test Goldens
+      description: The best package for writing golden tests.
+      image: https://fluttergoldens.com/images/branding/social.png
+
 # Configuration for the package that this website documents.
 package:
   name: flutter_test_goldens
@@ -36,6 +53,10 @@ navigation:
 
     - title: "Get Started"
       url: /get-started
+
+    - title: Create a Test
+      tag: create-a-test
+      sortBy: navOrder
 
     - title: Galleries
       tag: gallery
