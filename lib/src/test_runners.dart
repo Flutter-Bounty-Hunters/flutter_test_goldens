@@ -217,6 +217,10 @@ void testGoldenSceneOnLinux(
 /// {@endtemplate}
 @isGoldenScene
 @isTest
+@Deprecated(
+  'Use testWidgets directly. Flutter Test Goldens now automatically '
+  'configures the test environment for golden scene tests.',
+)
 void testGoldenScene(
   String description,
   WidgetTesterCallback test, {
