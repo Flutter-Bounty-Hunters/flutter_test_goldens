@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/fonts/golden_toolkit_fonts.dart'
-    as golden_toolkit;
+import 'package:flutter_test_goldens/src/fonts/golden_toolkit_fonts.dart' as golden_toolkit;
 
 /// Remember if fonts have already been loaded in this isolate.
 bool _fontsLoaded = false;

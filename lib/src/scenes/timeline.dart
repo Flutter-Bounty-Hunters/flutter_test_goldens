@@ -61,8 +61,7 @@ class Timeline {
   /// actions, consider using [setupWithBuilder] for convenience.
   Timeline setup(TimelineSetupDelegate delegate) {
     if (_setup != null) {
-      throw Exception(
-          "Timeline was already set up, but tried to call setup() again.");
+      throw Exception("Timeline was already set up, but tried to call setup() again.");
     }
 
     _setup = _TimelineSetup((tester) async {
@@ -79,8 +78,7 @@ class Timeline {
   /// If you need to take additional actions, beyond a builder delegate, use [setup] instead.
   Timeline setupWithBuilder(TimelineSetupBuilder sceneBuilder) {
     if (_setup != null) {
-      throw Exception(
-          "Timeline was already set up, but tried to call setupWithPump() again.");
+      throw Exception("Timeline was already set up, but tried to call setupWithPump() again.");
     }
 
     _setup = _TimelineSetup((tester) async {
@@ -98,8 +96,7 @@ class Timeline {
   /// If you need to take additional actions, beyond a single pump, use [setup] instead.
   Timeline setupWithWidget(Widget widget) {
     if (_setup != null) {
-      throw Exception(
-          "Timeline was already set up, but tried to call setupWithWidget().");
+      throw Exception("Timeline was already set up, but tried to call setupWithWidget().");
     }
 
     _setup = _TimelineSetup((tester) async {
@@ -129,12 +126,10 @@ class Timeline {
   /// {@endtemplate}
   Timeline takePhoto(String description, [Finder? photoBoundsFinder]) {
     if (_setup == null) {
-      throw Exception(
-          "Can't take a photo before setup. Please call setup() or setupWithPump()");
+      throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
     }
 
-    _steps.add(_TimelinePhotoRequest(
-        photoBoundsFinder ?? find.byType(GoldenImageBounds), description));
+    _steps.add(_TimelinePhotoRequest(photoBoundsFinder ?? find.byType(GoldenImageBounds), description));
 
     return this;
   }
@@ -145,11 +140,9 @@ class Timeline {
   /// appended to to, starting at "1". E.g., with a [baseName] of "step-", the steps would
   /// be called "step-1", "step-2", etc. If [baseName] is `null` then the description will
   /// consist only of the number, e.g., "1", "2", etc.
-  Timeline takePhotos(int count, Duration timeBeforeEach,
-      [String baseName = "", Finder? photoBoundsFinder]) {
+  Timeline takePhotos(int count, Duration timeBeforeEach, [String baseName = "", Finder? photoBoundsFinder]) {
     if (_setup == null) {
-      throw Exception(
-          "Can't take a photo before setup. Please call setup() or setupWithPump()");
+      throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
     }
 
     for (int i = 1; i <= count; i += 1) {
@@ -217,8 +210,7 @@ class Timeline {
   /// Change the scene in this [Timeline] to prepare to take another photo.
   Timeline modifyScene(TimelineModifySceneDelegate delegate) {
     if (_setup == null) {
-      throw Exception(
-          "Can't modify the scene before setup. Please call setup() or setupWithPump()");
+      throw Exception("Can't modify the scene before setup. Please call setup() or setupWithPump()");
     }
 
     _steps.add(_TimelineModifySceneAction(delegate));
@@ -249,8 +241,7 @@ class Timeline {
       final testContext = TimelineTestContext();
 
       // Setup the scene.
-      FtgLog.pipeline
-          .info("Running any given setup delegate before running steps.");
+      FtgLog.pipeline.info("Running any given setup delegate before running steps.");
       await _setup!.setupDelegate(tester);
 
       // Take photos and modify scene over time.
@@ -266,8 +257,7 @@ class Timeline {
         if (step is _TimelinePhotoRequest) {
           expect(step.photoBoundsFinder, findsOne);
 
-          final renderObject =
-              step.photoBoundsFinder.evaluate().first.findRenderObject();
+          final renderObject = step.photoBoundsFinder.evaluate().first.findRenderObject();
           expect(
             renderObject,
             isNotNull,
@@ -282,8 +272,7 @@ class Timeline {
           continue;
         }
 
-        throw Exception(
-            "Tried to run a step when rendering a Timeline, but we don't recognize this step type: $step");
+        throw Exception("Tried to run a step when rendering a Timeline, but we don't recognize this step type: $step");
       }
 
       // Lay out photos in a row.
@@ -292,8 +281,7 @@ class Timeline {
       final renderablePhotos = <GoldenSceneScreenshot, GlobalKey>{};
       await tester.runAsync(() async {
         for (final photo in photos) {
-          final byteData =
-              (await photo.pixels.toByteData(format: ui.ImageByteFormat.png))!;
+          final byteData = (await photo.pixels.toByteData(format: ui.ImageByteFormat.png))!;
 
           final candidate = GoldenSceneScreenshot(
             // FIXME: When I refactored image modeling to become FlutterScreenshot and GoldenImage, I changed
@@ -407,21 +395,18 @@ class Timeline {
           GoldenImageMetadata(
             id: golden.id,
             metadata: golden.metadata,
-            topLeft: (content.goldens[golden]!.currentContext!
-                    .findRenderObject() as RenderBox)
-                .localToGlobal(Offset.zero),
+            topLeft:
+                (content.goldens[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
             size: content.goldens[golden]!.currentContext!.size!,
           ),
       ],
     );
   }
 
-  Future<void> _updateGoldenScene(WidgetTester tester,
-      String relativeGoldenFilePath, GoldenSceneMetadata sceneMetadata) async {
-    FtgLog.pipeline.finer(
-        "Doing golden generation - window height: ${tester.view.physicalSize.height}");
-    await expectLater(
-        find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
+  Future<void> _updateGoldenScene(
+      WidgetTester tester, String relativeGoldenFilePath, GoldenSceneMetadata sceneMetadata) async {
+    FtgLog.pipeline.finer("Doing golden generation - window height: ${tester.view.physicalSize.height}");
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
 
     final goldenFile = File(_goldenFilePath());
     var pngData = goldenFile.readAsBytesSync();
@@ -452,34 +437,27 @@ class Timeline {
   ) async {
     FtgLog.pipeline.finer("Comparing existing goldens...");
 
-    FtgLog.pipeline
-        .fine("Extracting golden collection from scene file (goldens).");
-    final testFileDirectory =
-        (goldenFileComparator as LocalFileComparator).basedir.path;
+    FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
+    final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
     final goldenFile = File(_goldenFilePath());
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
-      throw Exception(
-          "Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
+      throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
 
-    FtgLog.pipeline.fine(
-        "Extracting golden collection from current widget tree (screenshots).");
+    FtgLog.pipeline.fine("Extracting golden collection from current widget tree (screenshots).");
     late final ScreenshotCollection screenshotCollection;
     await tester.runAsync(() async {
-      screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(
-          tester, sceneMetadata);
+      screenshotCollection = await extractGoldenCollectionFromSceneWidgetTree(tester, sceneMetadata);
     });
 
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
-    final mismatches =
-        compareGoldenCollections(goldenCollection, screenshotCollection);
+    final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
     if (mismatches.mismatches.isNotEmpty) {
       FtgLog.pipeline.fine("Mismatches ($relativeGoldenFilePath):");
       for (final mismatch in mismatches.mismatches.values) {
-        FtgLog.pipeline.fine(
-            " - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
+        FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
       }
 
       for (final mismatch in mismatches.mismatches.values) {
@@ -526,10 +504,7 @@ class Timeline {
           final absoluteDiffColor = ColorUint32.rgb(255, 255, 0);
           for (int x = 0; x < maxWidth; x += 1) {
             for (int y = 0; y < maxHeight; y += 1) {
-              if (x >= goldenWidth ||
-                  x >= screenshotWidth ||
-                  y >= goldenHeight ||
-                  y >= screenshotHeight) {
+              if (x >= goldenWidth || x >= screenshotWidth || y >= goldenHeight || y >= screenshotHeight) {
                 // This pixel doesn't exist in the golden, or it doesn't exist in the
                 // screenshot. Therefore, we have nothing to compare. Treat this pixel
                 // as a max severity difference.
@@ -538,8 +513,7 @@ class Timeline {
                 failureImage.setPixel(x, maxHeight + y, absoluteDiffColor);
 
                 // Paint this pixel in the relative severity diff image.
-                failureImage.setPixel(
-                    maxWidth + x, maxHeight + y, absoluteDiffColor);
+                failureImage.setPixel(maxWidth + x, maxHeight + y, absoluteDiffColor);
 
                 continue;
               }
@@ -556,14 +530,12 @@ class Timeline {
               failureImage.setPixel(x, maxHeight + y, absoluteDiffColor);
 
               // Paint this pixel in the relative severity diff image.
-              final mismatchPercent =
-                  calculateColorMismatchPercent(goldenPixel, screenshotPixel);
+              final mismatchPercent = calculateColorMismatchPercent(goldenPixel, screenshotPixel);
               final yellowAmount = ui.lerpDouble(0.2, 1.0, mismatchPercent)!;
               failureImage.setPixel(
                 goldenWidth + x,
                 goldenHeight + y,
-                ColorUint32.rgb((255 * yellowAmount).round(),
-                    (255 * yellowAmount).round(), 0),
+                ColorUint32.rgb((255 * yellowAmount).round(), (255 * yellowAmount).round(), 0),
               );
             }
           }
@@ -575,8 +547,7 @@ class Timeline {
         });
       }
 
-      throw Exception(
-          "Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
+      throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
     } else {
       FtgLog.pipeline.info("No golden mismatches found");
     }
@@ -584,14 +555,11 @@ class Timeline {
     FtgLog.pipeline.finer("Done comparing goldens for timeline");
   }
 
-  String get _testFileDirectory =>
-      (goldenFileComparator as LocalFileComparator).basedir.path;
+  String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
-  String get _goldenDirectory =>
-      "$_testFileDirectory$_relativeGoldenDirectory$separator";
+  String get _goldenDirectory => "$_testFileDirectory$_relativeGoldenDirectory$separator";
 
-  String get _relativeGoldenDirectory =>
-      _directory?.path ?? GoldenSceneTheme.current.directory.path;
+  String get _relativeGoldenDirectory => _directory?.path ?? GoldenSceneTheme.current.directory.path;
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
@@ -623,8 +591,7 @@ class _TimelineModifySceneAction {
   final TimelineModifySceneDelegate delegate;
 }
 
-typedef TimelineModifySceneDelegate = Future<void> Function(
-    WidgetTester tester, TimelineTestContext testContext);
+typedef TimelineModifySceneDelegate = Future<void> Function(WidgetTester tester, TimelineTestContext testContext);
 
 class TimelineTestContext {
   TestGesture? activeGesture;

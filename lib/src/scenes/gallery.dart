@@ -310,8 +310,7 @@ class Gallery {
 
       // Convert each `FlutterScreenshot` to a golden `GoldenSceneScreenshot`, which includes
       // additional metadata, and multiple image representations.
-      final screenshots = await _convertFlutterScreenshotsToSceneScreenshots(
-          tester, camera.photos);
+      final screenshots = await _convertFlutterScreenshotsToSceneScreenshots(tester, camera.photos);
 
       if (autoUpdateGoldenFiles) {
         // Generate new goldens.
@@ -338,22 +337,17 @@ class Gallery {
 
   /// For each scene screenshot request, pumps its widget tree, and then screenshots it with
   /// the given [camera].
-  Future<void> _takeNewScreenshots(
-      WidgetTester tester, FlutterCamera camera) async {
+  Future<void> _takeNewScreenshots(WidgetTester tester, FlutterCamera camera) async {
     for (final item in _requests.values) {
       FtgLog.pipeline.info("Building gallery item: ${item.description}");
-      final itemScaffold = item.scaffold ??
-          _itemScaffold ??
-          GoldenSceneTheme.current.itemScaffold;
+      final itemScaffold = item.scaffold ?? _itemScaffold ?? GoldenSceneTheme.current.itemScaffold;
       final itemConstraints = item.constraints ?? _itemConstraints;
 
       // Simulate the desired platform for this item.
       final previousPlatform = debugDefaultTargetPlatformOverride;
       debugDefaultTargetPlatformOverride = item.platform ?? previousPlatform;
 
-      if (itemConstraints != null &&
-          itemConstraints.hasBoundedWidth &&
-          itemConstraints.hasBoundedHeight) {
+      if (itemConstraints != null && itemConstraints.hasBoundedWidth && itemConstraints.hasBoundedHeight) {
         // Some tests may want to control the size of the window. If we're given bounded
         // constraints, make the window the biggest allowable size.
         final previousSize = tester.view.physicalSize;
@@ -370,8 +364,7 @@ class Gallery {
           KeyedSubtree(
             // ^ Always pump with a new GlobalKey to force a fresh tree between screenshots.
             key: GlobalKey(),
-            child: _buildItem(tester, itemScaffold, itemConstraints,
-                Builder(builder: item.builder!)),
+            child: _buildItem(tester, itemScaffold, itemConstraints, Builder(builder: item.builder!)),
           ),
         );
       } else {
@@ -380,8 +373,7 @@ class Gallery {
           KeyedSubtree(
             // ^ Always pump with a new GlobalKey to force a fresh tree between screenshots.
             key: GlobalKey(),
-            child:
-                _buildItem(tester, itemScaffold, itemConstraints, item.child!),
+            child: _buildItem(tester, itemScaffold, itemConstraints, item.child!),
           ),
         );
       }
@@ -391,13 +383,11 @@ class Gallery {
 
       // Take a screenshot.
       expect(item.boundsFinder, findsOne);
-      final renderObject =
-          item.boundsFinder.evaluate().first.findRenderObject();
+      final renderObject = item.boundsFinder.evaluate().first.findRenderObject();
       expect(
         renderObject,
         isNotNull,
-        reason:
-            "Failed to find a render object for gallery item '${item.description}'",
+        reason: "Failed to find a render object for gallery item '${item.description}'",
       );
 
       await tester.runAsync(() async {
@@ -424,8 +414,7 @@ class Gallery {
     );
   }
 
-  Future<Map<String, GoldenSceneScreenshot>>
-      _convertFlutterScreenshotsToSceneScreenshots(
+  Future<Map<String, GoldenSceneScreenshot>> _convertFlutterScreenshotsToSceneScreenshots(
     WidgetTester tester,
     List<FlutterScreenshot> flutterScreenshots,
   ) async {
@@ -433,8 +422,7 @@ class Gallery {
     await tester.runAsync(() async {
       for (final flutterScreenshot in flutterScreenshots) {
         // Decode Flutter screenshot to raw PNG data.
-        final byteData = (await flutterScreenshot.pixels
-            .toByteData(format: ui.ImageByteFormat.png))!;
+        final byteData = (await flutterScreenshot.pixels.toByteData(format: ui.ImageByteFormat.png))!;
 
         // Create a golden representation of the screenshot and store it.
         final candidate = GoldenSceneScreenshot(
@@ -460,8 +448,7 @@ class Gallery {
     Map<String, GoldenSceneScreenshot> newGoldens,
   ) async {
     // Layout candidate screenshots in the gallery so we can lookup their final offsets and sizes.
-    var sceneMetadata =
-        await _layoutGalleryWithNewGoldens(tester, _layout, newGoldens);
+    var sceneMetadata = await _layoutGalleryWithNewGoldens(tester, _layout, newGoldens);
 
     FtgLog.pipeline.finer("Running momentary delay for render flakiness");
     await tester.runAsync(() async {
@@ -472,8 +459,7 @@ class Gallery {
     });
     await tester.pumpAndSettle();
 
-    FtgLog.pipeline.finer(
-        "Doing golden generation - window size: ${tester.view.physicalSize}");
+    FtgLog.pipeline.finer("Doing golden generation - window size: ${tester.view.physicalSize}");
     expect(
       find.byType(GoldenSceneBounds),
       findsOne,
@@ -498,8 +484,7 @@ Image.memory(
 )''',
       );
     }
-    await expectLater(
-        find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
+    await expectLater(find.byType(GoldenSceneBounds), matchesGoldenFile(_goldenFilePath()));
 
     FtgLog.pipeline.finer("Writing updated golden scene to file");
     final goldenFile = File(_goldenFilePath());
@@ -520,8 +505,7 @@ Image.memory(
     final content = SceneLayoutContent(
       description: _sceneDescription,
       goldens: Map<GoldenSceneScreenshot, GlobalKey>.fromEntries(
-        goldenScreenshots.entries
-            .map((entry) => MapEntry(entry.value, GlobalKey())),
+        goldenScreenshots.entries.map((entry) => MapEntry(entry.value, GlobalKey())),
       ),
     );
 
@@ -555,9 +539,8 @@ Image.memory(
           GoldenImageMetadata(
             id: golden.id,
             metadata: golden.metadata,
-            topLeft: (content.goldens[golden]!.currentContext!
-                    .findRenderObject() as RenderBox)
-                .localToGlobal(Offset.zero),
+            topLeft:
+                (content.goldens[golden]!.currentContext!.findRenderObject() as RenderBox).localToGlobal(Offset.zero),
             size: content.goldens[golden]!.currentContext!.size!,
           ),
       ],
@@ -576,13 +559,11 @@ Image.memory(
     Map<String, GoldenSceneScreenshot> candidateCollection,
   ) async {
     // Extract scene metadata and golden images from image file.
-    FtgLog.pipeline
-        .fine("Extracting golden collection from scene file (goldens).");
+    FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenFile = File(_goldenFilePath());
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
-      throw Exception(
-          "Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
+      throw Exception("Can't compare goldens. Golden file doesn't exist: ${goldenFile.path}");
     }
     final goldenCollection = extractGoldenCollectionFromSceneFile(goldenFile);
 
@@ -591,8 +572,7 @@ Image.memory(
     final pngText = scenePngBytes.readTextMetadata();
     final sceneJsonText = pngText["flutter_test_goldens"];
     if (sceneJsonText == null) {
-      throw Exception(
-          "Golden image is missing scene metadata: ${goldenFile.path}");
+      throw Exception("Golden image is missing scene metadata: ${goldenFile.path}");
     }
     final sceneJson = JsonDecoder().convert(sceneJsonText);
     final metadata = GoldenSceneMetadata.fromJson(sceneJson);
@@ -602,8 +582,7 @@ Image.memory(
     final mismatches = compareGoldenCollections(
       goldenCollection,
       ScreenshotCollection(candidateCollection),
-      tolerances:
-          _requests.map((id, request) => MapEntry(id, request.tolerancePx)),
+      tolerances: _requests.map((id, request) => MapEntry(id, request.tolerancePx)),
     );
 
     final items = <GoldenReport>[];
@@ -612,8 +591,7 @@ Image.memory(
 
     FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
     for (final mismatch in mismatches.mismatches.values) {
-      FtgLog.pipeline.fine(
-          " - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
+      FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
       switch (mismatch) {
         case MissingCandidateMismatch():
           // A golden candidate is missing.
@@ -636,8 +614,7 @@ Image.memory(
       }
 
       // Find the golden metadata for this candidate.
-      final goldenMetadata =
-          metadata.images.where((image) => image.id == candidateId).first;
+      final goldenMetadata = metadata.images.where((image) => image.id == candidateId).first;
 
       final mismatch = mismatches.mismatches[candidateId];
       if (mismatch == null) {
@@ -661,8 +638,7 @@ Image.memory(
       return;
     }
 
-    FtgLog.pipeline.info(
-        "Found ${mismatches.mismatches.length} golden mismatches in scene.");
+    FtgLog.pipeline.info("Found ${mismatches.mismatches.length} golden mismatches in scene.");
     final report = GoldenSceneReport(
       metadata: metadata,
       items: items,
@@ -681,8 +657,7 @@ Image.memory(
         const JsonEncoder().convert(metadata.toJson()),
       );
 
-      final file = File(
-          "$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
+      final file = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
       file.writeAsBytesSync(pngData);
     });
 
@@ -694,11 +669,9 @@ Image.memory(
   }
 
   // TODO: Dedup following with Timeline
-  String get _testFileDirectory =>
-      (goldenFileComparator as LocalFileComparator).basedir.path;
+  String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
-  String get _goldenDirectory =>
-      "$_testFileDirectory${_directory.path}$separator";
+  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
