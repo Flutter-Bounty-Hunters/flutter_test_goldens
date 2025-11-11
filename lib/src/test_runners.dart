@@ -1,6 +1,5 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:meta/meta.dart';
 
 /// Annotation for tests that generate a golden scene, which allows them to be easily
@@ -33,10 +32,6 @@ void testGoldenSceneOnIOS(
     description,
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
-
-      tester.view
-        ..devicePixelRatio = 1.0
-        ..platformDispatcher.textScaleFactorTestValue = 1.0;
 
       try {
         await test(tester);
@@ -76,10 +71,6 @@ void testGoldenSceneOnAndroid(
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.android;
 
-      tester.view
-        ..devicePixelRatio = 1.0
-        ..platformDispatcher.textScaleFactorTestValue = 1.0;
-
       try {
         await test(tester);
       } finally {
@@ -117,10 +108,6 @@ void testGoldenSceneOnMac(
     description,
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.macOS;
-
-      tester.view
-        ..devicePixelRatio = 1.0
-        ..platformDispatcher.textScaleFactorTestValue = 1.0;
 
       try {
         await test(tester);
@@ -160,10 +147,6 @@ void testGoldenSceneOnWindows(
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.windows;
 
-      tester.view
-        ..devicePixelRatio = 1.0
-        ..platformDispatcher.textScaleFactorTestValue = 1.0;
-
       try {
         await test(tester);
       } finally {
@@ -201,10 +184,6 @@ void testGoldenSceneOnLinux(
     description,
     (tester) async {
       debugDefaultTargetPlatformOverride = TargetPlatform.linux;
-
-      tester.view
-        ..devicePixelRatio = 1.0
-        ..platformDispatcher.textScaleFactorTestValue = 1.0;
 
       try {
         await test(tester);
@@ -251,17 +230,7 @@ void testGoldenScene(
   testWidgets(
     description,
     (tester) async {
-      await TestFonts.loadAppFonts();
-
-      tester.view
-        ..devicePixelRatio = 1.0
-        ..platformDispatcher.textScaleFactorTestValue = 1.0;
-
-      try {
-        await test(tester);
-      } finally {
-        tester.view.reset();
-      }
+      await test(tester);
     },
     skip: skip,
     variant: variant,

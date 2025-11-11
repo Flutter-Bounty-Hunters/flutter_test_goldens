@@ -1,12 +1,20 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/fonts/golden_toolkit_fonts.dart' as golden_toolkit;
+import 'package:flutter_test_goldens/src/fonts/golden_toolkit_fonts.dart'
+    as golden_toolkit;
+
+/// Remember if fonts have already been loaded in this isolate.
+bool _fontsLoaded = false;
 
 /// Tools for working with fonts in tests.
 abstract class TestFonts {
   /// Load all fonts registered with the app and make them available
   /// to widget tests.
   static Future<void> loadAppFonts() async {
+    if (_fontsLoaded) {
+      return;
+    }
     await golden_toolkit.loadAppFonts();
+    _fontsLoaded = true;
   }
 
   static const openSans = "packages/flutter_test_goldens/OpenSans";
