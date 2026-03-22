@@ -1,3 +1,7 @@
+## 0.0.8
+### March 21, 2026
+ * FIX: Don't let widget state leak from one screenshot to the next.
+
 ## 0.0.7
 ### July 9, 2025
  * ADJUSTMENT: Change pixel snapping widgets to prefer bigger sizes instead of smaller.
