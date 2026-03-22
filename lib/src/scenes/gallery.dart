@@ -345,6 +345,10 @@ class Gallery {
         addTearDown(() => tester.view.physicalSize = previousSize);
       }
 
+      // Pump and empty tree to clear out any previous widget state. We don't
+      // want any state to accidentally cross between golden images.
+      await tester.pumpWidget(const SizedBox());
+
       if (item.pumper != null) {
         // Defer to the `pumper` to pump the entire widget tree for this gallery item.
         await item.pumper!.call(tester, itemScaffold, item.description);
