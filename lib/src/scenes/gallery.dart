@@ -372,8 +372,15 @@ class Gallery {
         );
       }
 
-      // Run the item's setup function, if there is one.
-      await (item.setup ?? _itemSetup)?.call(tester);
+      // Run the gallery's global setup function.
+      if (_itemSetup != null) {
+        await _itemSetup(tester);
+      }
+
+      // Run this item's setup function.
+      if (item.setup != null) {
+        await item.setup!(tester);
+      }
 
       // Take a screenshot.
       expect(item.boundsFinder, findsOne);
