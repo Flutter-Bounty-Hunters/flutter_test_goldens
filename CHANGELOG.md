@@ -1,3 +1,7 @@
+## 0.0.9
+### Match 26, 2026
+ * [BREAKING] - ADJUSTMENT: Always run gallery setup function, even when an item has its own setup function
+
 ## 0.0.8
 ### March 21, 2026
  * FIX: Don't let widget state leak from one screenshot to the next.
