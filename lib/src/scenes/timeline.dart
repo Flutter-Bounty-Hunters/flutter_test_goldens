@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -223,119 +224,129 @@ class Timeline {
           "Can't render or compare golden file without a setup action. Please call setup() or setupWithPump().");
     }
 
-    FtgLog.pipeline.info("Rendering or comparing golden - $_fileName");
+    await TestFonts.loadAppFonts();
 
-    // Always operate at a 1:1 logical-to-physical pixel ratio to help reduce
-    // anti-aliasing and other artifacts from fractional pixel offsets.
-    tester.view.devicePixelRatio = 1.0;
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..platformDispatcher.textScaleFactorTestValue = 1.0;
 
-    final camera = FlutterCamera();
-    final testContext = TimelineTestContext();
+    try {
+      FtgLog.pipeline.info("Rendering or comparing golden - $_fileName");
 
-    // Setup the scene.
-    FtgLog.pipeline.info("Running any given setup delegate before running steps.");
-    await _setup!.setupDelegate(tester);
+      // Always operate at a 1:1 logical-to-physical pixel ratio to help reduce
+      // anti-aliasing and other artifacts from fractional pixel offsets.
+      tester.view.devicePixelRatio = 1.0;
 
-    // Take photos and modify scene over time.
-    for (int i = 0; i < _steps.length; i += 1) {
-      final step = _steps[i];
-      FtgLog.pipeline.info("Running step: $step");
+      final camera = FlutterCamera();
+      final testContext = TimelineTestContext();
 
-      if (step is _TimelineModifySceneAction) {
-        await step.delegate(tester, testContext);
-        continue;
+      // Setup the scene.
+      FtgLog.pipeline.info("Running any given setup delegate before running steps.");
+      await _setup!.setupDelegate(tester);
+
+      // Take photos and modify scene over time.
+      for (int i = 0; i < _steps.length; i += 1) {
+        final step = _steps[i];
+        FtgLog.pipeline.info("Running step: $step");
+
+        if (step is _TimelineModifySceneAction) {
+          await step.delegate(tester, testContext);
+          continue;
+        }
+
+        if (step is _TimelinePhotoRequest) {
+          expect(step.photoBoundsFinder, findsOne);
+
+          final renderObject = step.photoBoundsFinder.evaluate().first.findRenderObject();
+          expect(
+            renderObject,
+            isNotNull,
+            reason:
+                "Failed to find a render object for photo '${step.description}', using finder '${step.photoBoundsFinder}'",
+          );
+
+          await tester.runAsync(() async {
+            await camera.takePhoto(step.description, step.photoBoundsFinder);
+          });
+
+          continue;
+        }
+
+        throw Exception("Tried to run a step when rendering a Timeline, but we don't recognize this step type: $step");
       }
 
-      if (step is _TimelinePhotoRequest) {
-        expect(step.photoBoundsFinder, findsOne);
+      // Lay out photos in a row.
+      final photos = camera.photos;
+      // TODO: cleanup the modeling of these photos vs renderable photos once things are working
+      final renderablePhotos = <GoldenSceneScreenshot, GlobalKey>{};
+      await tester.runAsync(() async {
+        for (final photo in photos) {
+          final byteData = (await photo.pixels.toByteData(format: ui.ImageByteFormat.png))!;
 
-        final renderObject = step.photoBoundsFinder.evaluate().first.findRenderObject();
-        expect(
-          renderObject,
-          isNotNull,
-          reason:
-              "Failed to find a render object for photo '${step.description}', using finder '${step.photoBoundsFinder}'",
-        );
+          final candidate = GoldenSceneScreenshot(
+            // FIXME: When I refactored image modeling to become FlutterScreenshot and GoldenImage, I changed
+            //        how IDs and descriptions were stored. The new structure worked fine for Galleries, where
+            //        we already had an ID and a description. But timeline didn't appear to have an explicit
+            //        ID for a given screenshot, so I gave the description as the "photo ID", which is why it's
+            //        now used in 2 places here. We should probably create a first-class concept of an ID for
+            //        a given timeline screenshot (independent from step index).
+            photo.id,
+            GoldenScreenshotMetadata(
+              description: photo.id,
+              simulatedPlatform: photo.simulatedPlatform,
+            ),
+            decodePng(byteData.buffer.asUint8List())!,
+            byteData.buffer.asUint8List(),
+          );
 
-        await tester.runAsync(() async {
-          await camera.takePhoto(step.description, step.photoBoundsFinder);
-        });
+          renderablePhotos[candidate] = GlobalKey();
+        }
+      });
 
-        continue;
-      }
-
-      throw Exception("Tried to run a step when rendering a Timeline, but we don't recognize this step type: $step");
-    }
-
-    // Lay out photos in a row.
-    final photos = camera.photos;
-    // TODO: cleanup the modeling of these photos vs renderable photos once things are working
-    final renderablePhotos = <GoldenSceneScreenshot, GlobalKey>{};
-    await tester.runAsync(() async {
-      for (final photo in photos) {
-        final byteData = (await photo.pixels.toByteData(format: ui.ImageByteFormat.png))!;
-
-        final candidate = GoldenSceneScreenshot(
-          // FIXME: When I refactored image modeling to become FlutterScreenshot and GoldenImage, I changed
-          //        how IDs and descriptions were stored. The new structure worked fine for Galleries, where
-          //        we already had an ID and a description. But timeline didn't appear to have an explicit
-          //        ID for a given screenshot, so I gave the description as the "photo ID", which is why it's
-          //        now used in 2 places here. We should probably create a first-class concept of an ID for
-          //        a given timeline screenshot (independent from step index).
-          photo.id,
-          GoldenScreenshotMetadata(
-            description: photo.id,
-            simulatedPlatform: photo.simulatedPlatform,
-          ),
-          decodePng(byteData.buffer.asUint8List())!,
-          byteData.buffer.asUint8List(),
-        );
-
-        renderablePhotos[candidate] = GlobalKey();
-      }
-    });
-
-    // Layout photos in the timeline.
-    final sceneMetadata = await _layoutPhotos(
-      tester,
-      photos,
-      SceneLayoutContent(
-        description: _description,
-        goldens: renderablePhotos,
-      ),
-      _layout,
-      goldenBackground: _goldenBackground,
-    );
-
-    FtgLog.pipeline.finer("Running momentary delay for render flakiness");
-    await tester.runAsync(() async {
-      // Without this delay, the screenshot loading is spotty. However, with
-      // this delay, we seem to always get screenshots displayed in the widget tree.
-      // FIXME: Root cause this render flakiness and see if we can fix it.
-      await Future.delayed(const Duration(milliseconds: 1));
-    });
-
-    await tester.pumpAndSettle();
-
-    final relativeGoldenFilePath = "$_relativeGoldenDirectory/$_fileName.png";
-    if (autoUpdateGoldenFiles) {
-      // Generate new goldens.
-      await _updateGoldenScene(
+      // Layout photos in the timeline.
+      final sceneMetadata = await _layoutPhotos(
         tester,
-        relativeGoldenFilePath,
-        sceneMetadata,
+        photos,
+        SceneLayoutContent(
+          description: _description,
+          goldens: renderablePhotos,
+        ),
+        _layout,
+        goldenBackground: _goldenBackground,
       );
-    } else {
-      // Compare to existing goldens.
-      await _compareGoldens(
-        tester,
-        sceneMetadata,
-        relativeGoldenFilePath,
-        find.byType(GoldenSceneBounds),
-      );
-    }
 
-    FtgLog.pipeline.finer("Done with golden generation/comparison");
+      FtgLog.pipeline.finer("Running momentary delay for render flakiness");
+      await tester.runAsync(() async {
+        // Without this delay, the screenshot loading is spotty. However, with
+        // this delay, we seem to always get screenshots displayed in the widget tree.
+        // FIXME: Root cause this render flakiness and see if we can fix it.
+        await Future.delayed(const Duration(milliseconds: 1));
+      });
+
+      await tester.pumpAndSettle();
+
+      final relativeGoldenFilePath = "$_relativeGoldenDirectory/$_fileName.png";
+      if (autoUpdateGoldenFiles) {
+        // Generate new goldens.
+        await _updateGoldenScene(
+          tester,
+          relativeGoldenFilePath,
+          sceneMetadata,
+        );
+      } else {
+        // Compare to existing goldens.
+        await _compareGoldens(
+          tester,
+          sceneMetadata,
+          relativeGoldenFilePath,
+          find.byType(GoldenSceneBounds),
+        );
+      }
+
+      FtgLog.pipeline.finer("Done with golden generation/comparison");
+    } finally {
+      tester.view.reset();
+    }
   }
 
   Future<GoldenSceneMetadata> _layoutPhotos(

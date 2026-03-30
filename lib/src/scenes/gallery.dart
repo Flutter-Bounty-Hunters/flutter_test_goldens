@@ -7,6 +7,7 @@ import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
+import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
@@ -296,33 +297,42 @@ class Gallery {
   Future<void> run(WidgetTester tester) async {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
 
-    // Build each golden tree and take `FlutterScreenshot`s.
-    final camera = FlutterCamera();
-    await _takeNewScreenshots(tester, camera);
+    await TestFonts.loadAppFonts();
 
-    // Convert each `FlutterScreenshot` to a golden `GoldenSceneScreenshot`, which includes
-    // additional metadata, and multiple image representations.
-    final screenshots = await _convertFlutterScreenshotsToSceneScreenshots(tester, camera.photos);
+    tester.view
+      ..devicePixelRatio = 1.0
+      ..platformDispatcher.textScaleFactorTestValue = 1.0;
 
-    if (autoUpdateGoldenFiles) {
-      // Generate new goldens.
-      FtgLog.pipeline.finer("Generating new goldens...");
-      // TODO: Return a success/failure report that we can publish to the test output.
-      await _updateGoldenScene(
-        tester,
-        _fileName,
-        screenshots,
-      );
-      FtgLog.pipeline.finer("Done generating new goldens.");
-    } else {
-      // Compare to existing goldens.
-      FtgLog.pipeline.finer("Comparing existing goldens...");
-      // TODO: Return a success/failure report that we can publish to the test output.
-      await _compareGoldens(tester, _fileName, screenshots);
-      FtgLog.pipeline.finer("Done comparing goldens.");
+    try {
+      // Build each golden tree and take `FlutterScreenshot`s.
+      final camera = FlutterCamera();
+      await _takeNewScreenshots(tester, camera);
+
+      // Convert each `FlutterScreenshot` to a golden `GoldenSceneScreenshot`, which includes
+      // additional metadata, and multiple image representations.
+      final screenshots = await _convertFlutterScreenshotsToSceneScreenshots(tester, camera.photos);
+
+      if (autoUpdateGoldenFiles) {
+        // Generate new goldens.
+        FtgLog.pipeline.finer("Generating new goldens...");
+        // TODO: Return a success/failure report that we can publish to the test output.
+        await _updateGoldenScene(
+          tester,
+          _fileName,
+          screenshots,
+        );
+        FtgLog.pipeline.finer("Done generating new goldens.");
+      } else {
+        // Compare to existing goldens.
+        FtgLog.pipeline.finer("Comparing existing goldens...");
+        // TODO: Return a success/failure report that we can publish to the test output.
+        await _compareGoldens(tester, _fileName, screenshots);
+        FtgLog.pipeline.finer("Done comparing goldens.");
+      }
+      FtgLog.pipeline.fine("Done with golden generation/comparison");
+    } finally {
+      tester.view.reset();
     }
-
-    FtgLog.pipeline.fine("Done with golden generation/comparison");
   }
 
   /// For each scene screenshot request, pumps its widget tree, and then screenshots it with
