@@ -6,7 +6,7 @@ import 'package:super_text_layout/super_text_layout.dart';
 
 Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // Adjust the theme that's applied to all golden tests in this suite.
-  GoldenSceneTheme.push(GoldenSceneTheme.standard.copyWith(
+  GoldenTestConfig.push(GoldenTestConfig.standard.copyWith(
     directory: Directory("."),
   ));
 

@@ -5,9 +5,11 @@ import 'package:golden_bricks/golden_bricks.dart';
 
 void main() {
   group("Theming > theme scopes >", () {
-    GoldenSceneTheme.useForGroup(GoldenSceneTheme.current.copyWith(
-      itemScaffold: yellowItemScaffold,
-      itemDecorator: yellowItemDecorator,
+    GoldenTestConfig.useForGroup(GoldenTestConfig.current.copyWith(
+      theme: GoldenSceneTheme.current.copyWith(
+        itemScaffold: yellowItemScaffold,
+        itemDecorator: yellowItemDecorator,
+      ),
     ));
 
     testGoldenScene("group scope", (tester) async {
@@ -20,9 +22,11 @@ void main() {
     });
 
     testGoldenScene("test scope", (tester) async {
-      GoldenSceneTheme.useForTest(GoldenSceneTheme.current.copyWith(
-        itemScaffold: redItemScaffold,
-        itemDecorator: redItemDecorator,
+      GoldenTestConfig.useForTest(GoldenTestConfig.current.copyWith(
+        theme: GoldenSceneTheme.current.copyWith(
+          itemScaffold: redItemScaffold,
+          itemDecorator: redItemDecorator,
+        ),
       ));
 
       // This theme should be red.
