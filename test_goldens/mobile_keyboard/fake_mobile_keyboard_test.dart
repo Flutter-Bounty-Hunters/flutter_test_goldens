@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
-import 'package:flutter_test_goldens/src/scenes/fake_screen.dart';
 
 void main() {
-  // TODO: Show fake mobile keyboard (with optional animation)
   testGoldenSceneOnIOS('iPhone keyboard', (tester) async {
     await Timeline(
       "iPhone Keyboard",
