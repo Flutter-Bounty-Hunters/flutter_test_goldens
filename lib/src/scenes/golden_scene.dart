@@ -185,7 +185,6 @@ const defaultGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFFF0F0E
 /// The ancestor widget tree for every item in a golden scene, unless using a custom
 /// [GoldenSceneTheme], or is configured directly on a gallery, timeline, etc.
 Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
-  print("BUILDING DEFAULT GOLDEN SCENE WITH GOLDEN BRICKS FONT");
   return MaterialApp(
     home: Scaffold(
       // FIXME: background probably needs to be configurable.
