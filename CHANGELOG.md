@@ -1,3 +1,9 @@
+## 0.0.10
+### April 1, 2026
+* FEATURE: Add `FakeScreen` widget which adds a `MediaQuery` and also adds a software
+  keyboard simulator, which renders a fake keyboard, and takes up space similar to a
+  real software keyboard.
+
 ## 0.0.9
 ### Match 26, 2026
  * [BREAKING] - ADJUSTMENT: Always run gallery setup function, even when an item has its own setup function
