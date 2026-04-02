@@ -13,6 +13,8 @@ void main() {
           FakeScreen(
             // iPhone 16 point resolution
             size: const Size(393, 852),
+            renderSimulatedKeyboard: true,
+            animateKeyboard: true,
             child: Material(
               color: Colors.white,
               child: Center(
