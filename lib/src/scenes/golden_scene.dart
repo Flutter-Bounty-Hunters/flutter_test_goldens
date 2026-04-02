@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
+import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData, Theme;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
@@ -185,17 +185,30 @@ const defaultGoldenSceneBackground = GoldenSceneBackground.color(Color(0xFFF0F0E
 /// The ancestor widget tree for every item in a golden scene, unless using a custom
 /// [GoldenSceneTheme], or is configured directly on a gallery, timeline, etc.
 Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
+  print("BUILDING DEFAULT GOLDEN SCENE WITH GOLDEN BRICKS FONT");
   return MaterialApp(
     home: Scaffold(
       // FIXME: background probably needs to be configurable.
       backgroundColor: Colors.white,
       body: Builder(builder: (context) {
-        return DefaultTextStyle(
-          style: DefaultTextStyle.of(context).style.copyWith(
-                fontFamily: goldenBricks,
-              ),
-          child: GoldenImageBounds(
-            child: content,
+        return Theme(
+          data: Theme.of(context).copyWith(
+            // Apply the font to the standard text theme
+            textTheme: Theme.of(context).textTheme.apply(
+                  fontFamily: goldenBricks,
+                ),
+            // Apply the font to the primary text theme (used by material elements like AppBars)
+            primaryTextTheme: Theme.of(context).primaryTextTheme.apply(
+                  fontFamily: goldenBricks,
+                ),
+          ),
+          child: DefaultTextStyle(
+            style: DefaultTextStyle.of(context).style.copyWith(
+                  fontFamily: goldenBricks,
+                ),
+            child: GoldenImageBounds(
+              child: content,
+            ),
           ),
         );
       }),
