@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
@@ -509,6 +510,9 @@ Image.memory(
         goldenScreenshots.entries.map((entry) => MapEntry(entry.value, GlobalKey())),
       ),
     );
+
+    // Load fonts so that the golden image captions are legible.
+    await TestFonts.loadAppFonts();
 
     // Layout the gallery scene with the new goldens, check the intrinsic size of the
     // gallery, then change the test window size to match it, so it fits exactly.
