@@ -22,6 +22,7 @@ dependencies:
   path: ^1.9.0
   patterns_canvas: ^0.5.0
   platform: ^3.1.6
+  super_keyboard: ^0.4.0
 
 dev_dependencies:
   flutter_lints: ^5.0.0
@@ -31,11 +32,7 @@ dev_dependencies:
 
   # For demos:
   device_frame: ^1.3.0
-  super_editor:
-    git:
-      url: https://github.com/superlistapp/super_editor
-      path: super_editor
-      ref: ff6a80515df33cb52623f3e5ac0af4e39502c262
+  super_editor: ^0.3.0-dev.51
   super_text_layout: ^0.1.18
   shadcn_ui: ^0.27.2
   flutter_svg: ^2.2.0

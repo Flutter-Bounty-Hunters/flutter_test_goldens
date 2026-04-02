@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData;
+import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData, Theme;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_pixel_alignment.dart';
@@ -190,12 +190,24 @@ Widget defaultGoldenSceneItemScaffold(WidgetTester tester, Widget content) {
       // FIXME: background probably needs to be configurable.
       backgroundColor: Colors.white,
       body: Builder(builder: (context) {
-        return DefaultTextStyle(
-          style: DefaultTextStyle.of(context).style.copyWith(
-                fontFamily: goldenBricks,
-              ),
-          child: GoldenImageBounds(
-            child: content,
+        return Theme(
+          data: Theme.of(context).copyWith(
+            // Apply the font to the standard text theme
+            textTheme: Theme.of(context).textTheme.apply(
+                  fontFamily: goldenBricks,
+                ),
+            // Apply the font to the primary text theme (used by material elements like AppBars)
+            primaryTextTheme: Theme.of(context).primaryTextTheme.apply(
+                  fontFamily: goldenBricks,
+                ),
+          ),
+          child: DefaultTextStyle(
+            style: DefaultTextStyle.of(context).style.copyWith(
+                  fontFamily: goldenBricks,
+                ),
+            child: GoldenImageBounds(
+              child: content,
+            ),
           ),
         );
       }),

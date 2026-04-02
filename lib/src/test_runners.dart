@@ -251,8 +251,6 @@ void testGoldenScene(
   testWidgets(
     description,
     (tester) async {
-      await TestFonts.loadAppFonts();
-
       tester.view
         ..devicePixelRatio = 1.0
         ..platformDispatcher.textScaleFactorTestValue = 1.0;

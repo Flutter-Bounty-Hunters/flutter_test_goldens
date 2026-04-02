@@ -9,5 +9,8 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
     directory: Directory("."),
   ));
 
+  // Load fonts so that Golden Bricks font is loaded.
+  await TestFonts.loadAppFonts();
+
   return testMain();
 }

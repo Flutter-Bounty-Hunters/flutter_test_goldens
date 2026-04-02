@@ -26,7 +26,12 @@ class FlutterWidgetScaffold extends StatelessWidget {
             key: goldenKey,
             child: Padding(
               padding: const EdgeInsets.all(48),
-              child: child,
+              child: DefaultTextStyle(
+                style: TextStyle(
+                  fontFamily: goldenBricks,
+                ),
+                child: child,
+              ),
             ),
           ),
         ),

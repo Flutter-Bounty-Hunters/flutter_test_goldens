@@ -7,6 +7,7 @@ import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
+import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
@@ -352,6 +353,9 @@ class Timeline {
     // FIXME: When we're comparing existing goldens, we shouldn't need to actually
     //        run full golden layout, we should be able to directly compare the renderable
     //        images to the regions of the existing golden.
+
+    // Load fonts so that the golden image captions are legible.
+    await TestFonts.loadAppFonts();
 
     final contentKey = GlobalKey();
     final galleryKey = GlobalKey();

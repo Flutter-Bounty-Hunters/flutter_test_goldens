@@ -9,6 +9,7 @@ export 'src/goldens/golden_comparisons.dart';
 export 'src/goldens/golden_rendering.dart';
 export 'src/goldens/golden_scenes.dart';
 export 'src/scenes/timeline.dart';
+export 'src/scenes/fake_screen.dart';
 export 'src/scenes/gallery.dart';
 export 'src/scenes/golden_scene.dart';
 export 'src/scenes/layouts/animation_timeline_layout.dart';
