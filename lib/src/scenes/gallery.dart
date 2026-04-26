@@ -294,11 +294,14 @@ class Gallery {
 
   /// Either renders a new golden to a scene file, or compares new screenshots against an existing
   /// golden scene file.
-  Future<void> run(WidgetTester tester) async {
+  Future<void> run(
+    WidgetTester tester, {
+    FlutterCamera? camera,
+  }) async {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
 
     // Build each golden tree and take `FlutterScreenshot`s.
-    final camera = FlutterCamera();
+    camera ??= FlutterCamera();
     await _takeNewScreenshots(tester, camera);
 
     // Convert each `FlutterScreenshot` to a golden `GoldenSceneScreenshot`, which includes
