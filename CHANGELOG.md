@@ -1,3 +1,8 @@
+## 0.0.11
+### April 26, 2026
+* FEATURE: Users can provide a custom `FlutterCamera` to generate the screenshots
+  for a `Gallery`.
+
 ## 0.0.10
 ### April 1, 2026
 * FEATURE: Add `FakeScreen` widget which adds a `MediaQuery` and also adds a software
