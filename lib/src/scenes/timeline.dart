@@ -431,7 +431,6 @@ class Timeline {
     FtgLog.pipeline.finer("Comparing existing goldens...");
 
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
-    final testFileDirectory = (goldenFileComparator as LocalFileComparator).basedir.path;
     final goldenFile = File(_goldenFilePath());
     if (!goldenFile.existsSync()) {
       // TODO: report error in structured way.
@@ -459,7 +458,7 @@ class Timeline {
         }
 
         FtgLog.pipeline.fine("Painting a golden failure: $mismatch");
-        final failureDirectory = Directory("${testFileDirectory}failures");
+        final failureDirectory = Directory(_goldenFailureDirectoryPath);
         failureDirectory.createSync();
 
         await tester.runAsync(() async {
@@ -534,7 +533,7 @@ class Timeline {
           }
 
           await encodePngFile(
-            "${failureDirectory.path}/failure_${relativeGoldenFilePath}_${mismatch.golden!.id}.png",
+            "${failureDirectory.path}/failure_${_fileName}_${mismatch.golden!.id}.png",
             failureImage,
           );
         });
@@ -553,6 +552,8 @@ class Timeline {
   String get _goldenDirectory => "$_testFileDirectory$_relativeGoldenDirectory$separator";
 
   String get _relativeGoldenDirectory => _directory?.path ?? GoldenSceneTheme.current.directory.path;
+
+  String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
