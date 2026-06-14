@@ -605,6 +605,7 @@ Image.memory(
     final items = <GoldenReport>[];
     final missingCandidates = <MissingCandidateMismatch>[];
     final extraCandidates = <MissingGoldenMismatch>[];
+    final goldenFilePath = path.normalize(goldenFile.path);
 
     FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
     for (final mismatch in mismatches.mismatches.values) {
@@ -637,7 +638,10 @@ Image.memory(
       if (mismatch == null) {
         // The golden check passed.
         items.add(
-          GoldenReport.success(goldenMetadata),
+          GoldenReport.success(
+            goldenMetadata,
+            goldenFilePath: goldenFilePath,
+          ),
         );
       } else {
         // The golden check failed.
@@ -645,6 +649,7 @@ Image.memory(
           GoldenReport.failure(
             metadata: goldenMetadata,
             mismatch: mismatch,
+            goldenFilePath: goldenFilePath,
           ),
         );
       }
@@ -661,15 +666,26 @@ Image.memory(
     }
 
     FtgLog.pipeline.info("Found ${mismatches.mismatches.length} golden mismatches in scene.");
+    Directory(_goldenFailureDirectoryPath).createSync();
+    final failureFile = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
+    final failureFilePath = path.normalize(failureFile.path);
     final report = GoldenSceneReport(
       metadata: metadata,
-      items: items,
+      items: [
+        for (final item in items)
+          if (item.status == GoldenTestStatus.failure)
+            GoldenReport.failure(
+              metadata: item.metadata,
+              mismatch: item.mismatch!,
+              goldenFilePath: item.goldenFilePath,
+              failureFilePaths: [failureFilePath],
+            )
+          else
+            item,
+      ],
       missingCandidates: missingCandidates,
       extraCandidates: extraCandidates,
     );
-
-    Directory(_goldenFailureDirectoryPath).createSync();
-    final failureFile = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
 
     await tester.runAsync(() async {
       final (failureImage, metadata) = await paintFailureScene(tester, report);
@@ -684,11 +700,7 @@ Image.memory(
     });
 
     // Report success/failures in this scene.
-    GoldenSceneReportPrinter().printReport(
-      report,
-      goldenFilePath: path.normalize(goldenFile.path),
-      failureFilePaths: [path.normalize(failureFile.path)],
-    );
+    GoldenSceneReportPrinter().printReport(report);
 
     // Log the number of passed/failed goldens in this scene for the overall
     // test run report.

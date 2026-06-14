@@ -454,8 +454,7 @@ class Timeline {
         FtgLog.pipeline.fine(" - ${mismatch.golden?.id ?? mismatch.screenshot?.id}: $mismatch");
       }
 
-      final report = _buildReport(sceneMetadata, goldenCollection, screenshotCollection, mismatches);
-      final failureFilePaths = <String>[];
+      final failureFilePathsByGoldenId = <String, String>{};
 
       for (final mismatch in mismatches.mismatches.values) {
         if (mismatch.golden == null || mismatch.screenshot == null) {
@@ -538,20 +537,27 @@ class Timeline {
           }
 
           final failureFilePath = "${failureDirectory.path}/failure_${_fileName}_${mismatch.golden!.id}.png";
-          failureFilePaths.add(failureFilePath);
+          failureFilePathsByGoldenId[mismatch.golden!.id] = failureFilePath;
           await encodePngFile(failureFilePath, failureImage);
         });
       }
+
+      final report = _buildReport(
+        sceneMetadata,
+        goldenCollection,
+        screenshotCollection,
+        mismatches,
+        goldenFilePath: path.normalize(goldenFile.path),
+        failureFilePathsByGoldenId: failureFilePathsByGoldenId.map(
+          (id, failureFilePath) => MapEntry(id, path.normalize(failureFilePath)),
+        ),
+      );
 
       GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
         passed: report.totalPassed,
         failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
       );
-      GoldenSceneReportPrinter().printReport(
-        report,
-        goldenFilePath: path.normalize(goldenFile.path),
-        failureFilePaths: failureFilePaths.map(path.normalize).toList(growable: false),
-      );
+      GoldenSceneReportPrinter().printReport(report);
 
       throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
     } else {
@@ -577,8 +583,10 @@ class Timeline {
     GoldenSceneMetadata metadata,
     ScreenshotCollection goldenCollection,
     ScreenshotCollection screenshotCollection,
-    GoldenCollectionMismatches mismatches,
-  ) {
+    GoldenCollectionMismatches mismatches, {
+    required String goldenFilePath,
+    required Map<String, String> failureFilePathsByGoldenId,
+  }) {
     final items = <GoldenReport>[];
     final missingCandidates = <MissingCandidateMismatch>[];
     final extraCandidates = <MissingGoldenMismatch>[];
@@ -602,11 +610,18 @@ class Timeline {
       final imageMetadata = metadata.images.where((image) => image.id == screenshotId).first;
       final mismatch = mismatches.mismatches[screenshotId];
       if (mismatch == null) {
-        items.add(GoldenReport.success(imageMetadata));
+        items.add(GoldenReport.success(
+          imageMetadata,
+          goldenFilePath: goldenFilePath,
+        ));
       } else {
         items.add(GoldenReport.failure(
           metadata: imageMetadata,
           mismatch: mismatch,
+          goldenFilePath: goldenFilePath,
+          failureFilePaths: [
+            if (failureFilePathsByGoldenId[screenshotId] != null) failureFilePathsByGoldenId[screenshotId]!,
+          ],
         ));
       }
     }

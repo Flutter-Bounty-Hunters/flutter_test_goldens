@@ -29,7 +29,10 @@ void main() {
           ],
         ),
         items: [
-          GoldenReport.success(_imageMetadata("Left (Constrained)")),
+          GoldenReport.success(
+            _imageMetadata("Left (Constrained)"),
+            goldenFilePath: "/project/test_goldens/preferred_position_aligner.png",
+          ),
           GoldenReport.failure(
             metadata: _imageMetadata("Top (Constrained)"),
             mismatch: PixelGoldenMismatch(
@@ -37,6 +40,8 @@ void main() {
               screenshot: topCandidate,
               mismatchPixelCount: 240,
             ),
+            goldenFilePath: "/project/test_goldens/preferred_position_aligner.png",
+            failureFilePaths: ["/project/test_goldens/failures/failure_preferred_position_aligner_top.png"],
           ),
           GoldenReport.failure(
             metadata: _imageMetadata("Right (Constrained)"),
@@ -45,8 +50,13 @@ void main() {
               screenshot: rightCandidate,
               mismatchPixelCount: 220,
             ),
+            goldenFilePath: "/project/test_goldens/preferred_position_aligner.png",
+            failureFilePaths: ["/project/test_goldens/failures/failure_preferred_position_aligner_right.png"],
           ),
-          GoldenReport.success(_imageMetadata("Bottom (Constrained)")),
+          GoldenReport.success(
+            _imageMetadata("Bottom (Constrained)"),
+            goldenFilePath: "/project/test_goldens/preferred_position_aligner.png",
+          ),
         ],
         missingCandidates: const [],
         extraCandidates: const [],
@@ -60,11 +70,6 @@ void main() {
       final output = StringBuffer();
       GoldenSceneReportPrinter().printReport(
         report,
-        goldenFilePath: "/project/test_goldens/preferred_position_aligner.png",
-        failureFilePaths: [
-          "/project/test_goldens/failures/failure_preferred_position_aligner_top.png",
-          "/project/test_goldens/failures/failure_preferred_position_aligner_right.png",
-        ],
         output: output,
       );
       reporter.printSummary(output: output);

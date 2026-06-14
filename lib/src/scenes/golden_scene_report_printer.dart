@@ -3,8 +3,6 @@ import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 class GoldenSceneReportPrinter {
   void printReport(
     GoldenSceneReport report, {
-    required String goldenFilePath,
-    required List<String> failureFilePaths,
     StringSink? output,
   }) {
     if (report.totalFailed == 0 && //
@@ -36,7 +34,17 @@ class GoldenSceneReportPrinter {
     }
     buffer.writeln("):");
     buffer.writeln("Scene: ${report.metadata.description}");
-    buffer.writeln("Golden file: $goldenFilePath");
+    final goldenFilePaths = report.items.map((item) => item.goldenFilePath).toSet().toList(growable: false);
+    if (goldenFilePaths.length == 1) {
+      buffer.writeln("Golden file: ${goldenFilePaths.single}");
+    } else if (goldenFilePaths.length > 1) {
+      buffer.writeln("Golden files:");
+      for (final goldenFilePath in goldenFilePaths) {
+        buffer.writeln("  - $goldenFilePath");
+      }
+    }
+
+    final failureFilePaths = report.items.expand((item) => item.failureFilePaths).toSet().toList(growable: false);
     if (failureFilePaths.isEmpty) {
       buffer.writeln("Failure scene: No failure scene was written.");
     } else if (failureFilePaths.length == 1) {
