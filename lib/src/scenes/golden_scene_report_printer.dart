@@ -1,7 +1,10 @@
 import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 
 class GoldenSceneReportPrinter {
-  void printReport(GoldenSceneReport report) {
+  void printReport(
+    GoldenSceneReport report, {
+    StringSink? output,
+  }) {
     if (report.totalFailed == 0 && //
         report.missingCandidates.isEmpty &&
         report.extraCandidates.isEmpty) {
@@ -30,6 +33,29 @@ class GoldenSceneReportPrinter {
       }
     }
     buffer.writeln("):");
+    buffer.writeln("Scene: ${report.metadata.description}");
+    final goldenFilePaths = report.items.map((item) => item.goldenFilePath).toSet().toList(growable: false);
+    if (goldenFilePaths.length == 1) {
+      buffer.writeln("Golden file: ${goldenFilePaths.single}");
+    } else if (goldenFilePaths.length > 1) {
+      buffer.writeln("Golden files:");
+      for (final goldenFilePath in goldenFilePaths) {
+        buffer.writeln("  - $goldenFilePath");
+      }
+    }
+
+    final failureFilePaths = report.items.expand((item) => item.failureFilePaths).toSet().toList(growable: false);
+    if (failureFilePaths.isEmpty) {
+      buffer.writeln("Failure scene: No failure scene was written.");
+    } else if (failureFilePaths.length == 1) {
+      buffer.writeln("Failure scene: ${failureFilePaths.single}");
+    } else {
+      buffer.writeln("Failure scenes:");
+      for (final failureFilePath in failureFilePaths) {
+        buffer.writeln("  - $failureFilePath");
+      }
+    }
+    buffer.writeln("");
 
     if (report.totalFailed > 0) {
       for (final item in report.items) {
@@ -101,7 +127,11 @@ class GoldenSceneReportPrinter {
       }
     }
 
-    // ignore: avoid_print
-    print(buffer.toString());
+    if (output != null) {
+      output.write(buffer.toString());
+    } else {
+      // ignore: avoid_print
+      print(buffer.toString());
+    }
   }
 }

@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/src/fonts/fonts.dart';
+import 'package:flutter_test_goldens/src/test_runner/test_run_reporter.dart';
 import 'package:meta/meta.dart';
 
 /// Annotation for tests that generate a golden scene, which allows them to be easily
@@ -248,6 +248,14 @@ void testGoldenScene(
   dynamic tags,
   int? retry,
 }) {
+  if (!_didRegisterGoldenTestRunSummary) {
+    _didRegisterGoldenTestRunSummary = true;
+
+    // After all golden tests and golden scenes are run, print a report for the
+    // entire test run with the golden pass and failure counts.
+    tearDownAll(GoldenTestRunReporter.instance.printSummary);
+  }
+
   testWidgets(
     description,
     (tester) async {
@@ -269,3 +277,12 @@ void testGoldenScene(
     retry: retry,
   );
 }
+
+/// Whether the current running test suite has scheduled itself to print a
+/// summary during `tearDownAll()`.
+///
+/// Once set to `true`, this will never be set to `false` because we expect
+/// a single test run execution to run a single set of tests, which means
+/// a followup test run should spin up a new process with this value once
+/// again initializing to `false`.
+var _didRegisterGoldenTestRunSummary = false;

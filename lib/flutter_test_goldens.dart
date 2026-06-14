@@ -19,4 +19,4 @@ export 'src/scenes/layouts/row_and_column_layout.dart';
 export 'src/scenes/scene_layout.dart';
 export 'src/scenes/single_shot.dart';
 export 'src/logging.dart';
-export 'src/test_runners.dart';
+export 'src/test_runner/test_runners.dart';

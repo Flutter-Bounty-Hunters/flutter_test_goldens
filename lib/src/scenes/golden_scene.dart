@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Colors, MaterialApp, Scaffold, ThemeData, Theme;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -366,32 +365,43 @@ class GoldenSceneReport {
 ///
 /// A [GoldenReport] holds the test results for a candidate that has a corresponding golden.
 class GoldenReport {
-  factory GoldenReport.success(GoldenImageMetadata metadata) {
+  factory GoldenReport.success(
+    GoldenImageMetadata metadata, {
+    required String goldenFilePath,
+  }) {
     return GoldenReport(
       status: GoldenTestStatus.success,
       metadata: metadata,
+      goldenFilePath: goldenFilePath,
     );
   }
 
   factory GoldenReport.failure({
     required GoldenImageMetadata metadata,
     required GoldenMismatch mismatch,
+    required String goldenFilePath,
+    List<String> failureFilePaths = const [],
   }) {
     return GoldenReport(
       status: GoldenTestStatus.failure,
       metadata: metadata,
       mismatch: mismatch,
+      goldenFilePath: goldenFilePath,
+      failureFilePaths: failureFilePaths,
     );
   }
 
   GoldenReport({
     required this.status,
     required this.metadata,
+    required this.goldenFilePath,
     this.mismatch,
-  }) : assert(
+    List<String> failureFilePaths = const [],
+  })  : assert(
           status == GoldenTestStatus.success || mismatch != null,
           "A failure report must have a mismatch.",
-        );
+        ),
+        failureFilePaths = List.unmodifiable(failureFilePaths);
 
   /// Whether the gallery item passed or failed the golden check.
   final GoldenTestStatus status;
@@ -403,6 +413,12 @@ class GoldenReport {
   ///
   /// Non-`null` if [status] is [GoldenTestStatus.failure] and `null` otherwise.
   final GoldenMismatch? mismatch;
+
+  /// The path to the golden file that this item was compared against.
+  final String goldenFilePath;
+
+  /// The paths to any failure scene files that were written for this item.
+  final List<String> failureFilePaths;
 }
 
 enum GoldenTestStatus {

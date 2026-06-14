@@ -5,13 +5,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
+import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
+import 'package:flutter_test_goldens/src/test_runner/test_run_reporter.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/failure_scene.dart';
@@ -19,7 +20,7 @@ import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene_report_printer.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 
 /// A golden builder that builds independent widget tree UIs and then either
 /// renders those into a single scene file, or compares them against an existing
@@ -297,8 +298,10 @@ class Gallery {
   Future<void> run(
     WidgetTester tester, {
     FlutterCamera? camera,
+    GoldenTestRunReporter? testRunReporter,
   }) async {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
+    testRunReporter ??= GoldenTestRunReporter.instance;
 
     // Build each golden tree and take `FlutterScreenshot`s.
     camera ??= FlutterCamera();
@@ -322,7 +325,12 @@ class Gallery {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
       // TODO: Return a success/failure report that we can publish to the test output.
-      await _compareGoldens(tester, _fileName, screenshots);
+      await _compareGoldens(
+        tester,
+        _fileName,
+        screenshots,
+        testRunReporter: testRunReporter,
+      );
       FtgLog.pipeline.finer("Done comparing goldens.");
     }
 
@@ -564,8 +572,9 @@ Image.memory(
   Future<void> _compareGoldens(
     WidgetTester tester,
     String existingGoldenFileName,
-    Map<String, GoldenSceneScreenshot> candidateCollection,
-  ) async {
+    Map<String, GoldenSceneScreenshot> candidateCollection, {
+    required GoldenTestRunReporter testRunReporter,
+  }) async {
     // Extract scene metadata and golden images from image file.
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenFile = File(_goldenFilePath());
@@ -596,6 +605,7 @@ Image.memory(
     final items = <GoldenReport>[];
     final missingCandidates = <MissingCandidateMismatch>[];
     final extraCandidates = <MissingGoldenMismatch>[];
+    final goldenFilePath = path.normalize(goldenFile.path);
 
     FtgLog.pipeline.fine("Mismatches ($existingGoldenFileName):");
     for (final mismatch in mismatches.mismatches.values) {
@@ -628,7 +638,10 @@ Image.memory(
       if (mismatch == null) {
         // The golden check passed.
         items.add(
-          GoldenReport.success(goldenMetadata),
+          GoldenReport.success(
+            goldenMetadata,
+            goldenFilePath: goldenFilePath,
+          ),
         );
       } else {
         // The golden check failed.
@@ -636,25 +649,43 @@ Image.memory(
           GoldenReport.failure(
             metadata: goldenMetadata,
             mismatch: mismatch,
+            goldenFilePath: goldenFilePath,
           ),
         );
       }
     }
 
     if (mismatches.mismatches.isEmpty) {
+      // Report this scene's successes to overall test run reporter.
+      testRunReporter.recordGoldenPassesAndFailures(
+        passed: candidateCollection.length,
+        failed: 0,
+      );
       FtgLog.pipeline.info("No golden mismatches found");
       return;
     }
 
     FtgLog.pipeline.info("Found ${mismatches.mismatches.length} golden mismatches in scene.");
+    Directory(_goldenFailureDirectoryPath).createSync();
+    final failureFile = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
+    final failureFilePath = path.normalize(failureFile.path);
     final report = GoldenSceneReport(
       metadata: metadata,
-      items: items,
+      items: [
+        for (final item in items)
+          if (item.status == GoldenTestStatus.failure)
+            GoldenReport.failure(
+              metadata: item.metadata,
+              mismatch: item.mismatch!,
+              goldenFilePath: item.goldenFilePath,
+              failureFilePaths: [failureFilePath],
+            )
+          else
+            item,
+      ],
       missingCandidates: missingCandidates,
       extraCandidates: extraCandidates,
     );
-
-    Directory(_goldenFailureDirectoryPath).createSync();
 
     await tester.runAsync(() async {
       final (failureImage, metadata) = await paintFailureScene(tester, report);
@@ -665,11 +696,18 @@ Image.memory(
         const JsonEncoder().convert(metadata.toJson()),
       );
 
-      final file = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
-      file.writeAsBytesSync(pngData);
+      failureFile.writeAsBytesSync(pngData);
     });
 
-    _printReport(report);
+    // Report success/failures in this scene.
+    GoldenSceneReportPrinter().printReport(report);
+
+    // Log the number of passed/failed goldens in this scene for the overall
+    // test run report.
+    testRunReporter.recordGoldenPassesAndFailures(
+      passed: report.totalPassed,
+      failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
+    );
 
     if (mismatches.mismatches.isNotEmpty) {
       fail("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
@@ -679,7 +717,7 @@ Image.memory(
   // TODO: Dedup following with Timeline
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
-  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
+  String get _goldenDirectory => "$_testFileDirectory${_directory.path}${path.separator}";
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
@@ -688,11 +726,6 @@ Image.memory(
       "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
 
   String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
-
-  /// Prints the report in an human readable format to the console.
-  void _printReport(GoldenSceneReport report) {
-    GoldenSceneReportPrinter().printReport(report);
-  }
 }
 
 /// A request for a single UI screenshot within a gallery of independent screenshots.
