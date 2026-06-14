@@ -651,6 +651,7 @@ Image.memory(
     }
 
     if (mismatches.mismatches.isEmpty) {
+      // Report this scene's successes to overall test run reporter.
       testRunReporter.recordGoldenPassesAndFailures(
         passed: candidateCollection.length,
         failed: 0,
