@@ -548,7 +548,8 @@ class Timeline {
         });
       }
 
-      final report = _buildReport(
+      // Print a report for this scene.
+      final sceneReport = _createSceneReport(
         sceneMetadata,
         goldenCollection,
         screenshotCollection,
@@ -558,12 +559,13 @@ class Timeline {
           (id, failureFilePath) => MapEntry(id, path.normalize(failureFilePath)),
         ),
       );
+      GoldenSceneReportPrinter().printReport(sceneReport);
 
+      // Report our success/failure numbers to the overall test run report.
       testRunReporter.recordGoldenPassesAndFailures(
-        passed: report.totalPassed,
-        failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
+        passed: sceneReport.totalPassed,
+        failed: sceneReport.totalFailed + sceneReport.missingCandidates.length + sceneReport.extraCandidates.length,
       );
-      GoldenSceneReportPrinter().printReport(report);
 
       throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
     } else {
@@ -585,7 +587,7 @@ class Timeline {
 
   String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 
-  GoldenSceneReport _buildReport(
+  GoldenSceneReport _createSceneReport(
     GoldenSceneMetadata metadata,
     ScreenshotCollection goldenCollection,
     ScreenshotCollection screenshotCollection,
