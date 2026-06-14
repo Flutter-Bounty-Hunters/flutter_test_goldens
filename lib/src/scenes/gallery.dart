@@ -298,8 +298,10 @@ class Gallery {
   Future<void> run(
     WidgetTester tester, {
     FlutterCamera? camera,
+    GoldenTestRunReporter? testRunReporter,
   }) async {
     FtgLog.pipeline.info("Rendering or comparing golden - $_sceneDescription");
+    testRunReporter ??= GoldenTestRunReporter.instance;
 
     // Build each golden tree and take `FlutterScreenshot`s.
     camera ??= FlutterCamera();
@@ -323,7 +325,12 @@ class Gallery {
       // Compare to existing goldens.
       FtgLog.pipeline.finer("Comparing existing goldens...");
       // TODO: Return a success/failure report that we can publish to the test output.
-      await _compareGoldens(tester, _fileName, screenshots);
+      await _compareGoldens(
+        tester,
+        _fileName,
+        screenshots,
+        testRunReporter: testRunReporter,
+      );
       FtgLog.pipeline.finer("Done comparing goldens.");
     }
 
@@ -565,8 +572,9 @@ Image.memory(
   Future<void> _compareGoldens(
     WidgetTester tester,
     String existingGoldenFileName,
-    Map<String, GoldenSceneScreenshot> candidateCollection,
-  ) async {
+    Map<String, GoldenSceneScreenshot> candidateCollection, {
+    required GoldenTestRunReporter testRunReporter,
+  }) async {
     // Extract scene metadata and golden images from image file.
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
     final goldenFile = File(_goldenFilePath());
@@ -643,7 +651,7 @@ Image.memory(
     }
 
     if (mismatches.mismatches.isEmpty) {
-      GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
+      testRunReporter.recordGoldenPassesAndFailures(
         passed: candidateCollection.length,
         failed: 0,
       );
@@ -674,7 +682,7 @@ Image.memory(
       failureFile.writeAsBytesSync(pngData);
     });
 
-    GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
+    testRunReporter.recordGoldenPassesAndFailures(
       passed: report.totalPassed,
       failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
     );
