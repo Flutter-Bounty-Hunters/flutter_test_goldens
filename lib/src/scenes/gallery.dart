@@ -682,14 +682,18 @@ Image.memory(
       failureFile.writeAsBytesSync(pngData);
     });
 
-    testRunReporter.recordGoldenPassesAndFailures(
-      passed: report.totalPassed,
-      failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
-    );
-    _printReport(
+    // Report success/failures in this scene.
+    GoldenSceneReportPrinter().printReport(
       report,
       goldenFilePath: path.normalize(goldenFile.path),
       failureFilePaths: [path.normalize(failureFile.path)],
+    );
+
+    // Log the number of passed/failed goldens in this scene for the overall
+    // test run report.
+    testRunReporter.recordGoldenPassesAndFailures(
+      passed: report.totalPassed,
+      failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
     );
 
     if (mismatches.mismatches.isNotEmpty) {
@@ -709,19 +713,6 @@ Image.memory(
       "$_goldenDirectory$_fileName${includeExtension ? ".png" : ""}";
 
   String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
-
-  /// Prints the report in an human readable format to the console.
-  void _printReport(
-    GoldenSceneReport report, {
-    required String goldenFilePath,
-    required List<String> failureFilePaths,
-  }) {
-    GoldenSceneReportPrinter().printReport(
-      report,
-      goldenFilePath: goldenFilePath,
-      failureFilePaths: failureFilePaths,
-    );
-  }
 }
 
 /// A request for a single UI screenshot within a gallery of independent screenshots.
