@@ -220,13 +220,17 @@ class Timeline {
     return this;
   }
 
-  Future<void> run(WidgetTester tester) async {
+  Future<void> run(
+    WidgetTester tester, {
+    GoldenTestRunReporter? testRunReporter,
+  }) async {
     if (_setup == null) {
       throw Exception(
           "Can't render or compare golden file without a setup action. Please call setup() or setupWithPump().");
     }
 
     FtgLog.pipeline.info("Rendering or comparing golden - $_fileName");
+    testRunReporter ??= GoldenTestRunReporter.instance;
 
     // Always operate at a 1:1 logical-to-physical pixel ratio to help reduce
     // anti-aliasing and other artifacts from fractional pixel offsets.
@@ -335,6 +339,7 @@ class Timeline {
         sceneMetadata,
         relativeGoldenFilePath,
         find.byType(GoldenSceneBounds),
+        testRunReporter: testRunReporter,
       );
     }
 
@@ -428,8 +433,9 @@ class Timeline {
     WidgetTester tester,
     GoldenSceneMetadata sceneMetadata,
     String relativeGoldenFilePath,
-    Finder goldenBounds,
-  ) async {
+    Finder goldenBounds, {
+    required GoldenTestRunReporter testRunReporter,
+  }) async {
     FtgLog.pipeline.finer("Comparing existing goldens...");
 
     FtgLog.pipeline.fine("Extracting golden collection from scene file (goldens).");
@@ -553,7 +559,7 @@ class Timeline {
         ),
       );
 
-      GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
+      testRunReporter.recordGoldenPassesAndFailures(
         passed: report.totalPassed,
         failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
       );
@@ -561,7 +567,7 @@ class Timeline {
 
       throw Exception("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
     } else {
-      GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
+      testRunReporter.recordGoldenPassesAndFailures(
         passed: screenshotCollection.screenshotsById.length,
         failed: 0,
       );
