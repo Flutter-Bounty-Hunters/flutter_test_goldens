@@ -5,13 +5,14 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' hide Image;
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_test_goldens/flutter_test_goldens.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_camera.dart';
 import 'package:flutter_test_goldens/src/flutter/flutter_test_extensions.dart';
+import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_collections.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_comparisons.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_rendering.dart';
 import 'package:flutter_test_goldens/src/goldens/golden_scenes.dart';
+import 'package:flutter_test_goldens/src/test_runner/test_run_reporter.dart';
 import 'package:flutter_test_goldens/src/logging.dart';
 import 'package:flutter_test_goldens/src/png/png_metadata.dart';
 import 'package:flutter_test_goldens/src/scenes/failure_scene.dart';
@@ -19,7 +20,7 @@ import 'package:flutter_test_goldens/src/scenes/golden_scene.dart';
 import 'package:flutter_test_goldens/src/scenes/golden_scene_report_printer.dart';
 import 'package:flutter_test_goldens/src/scenes/scene_layout.dart';
 import 'package:image/image.dart';
-import 'package:path/path.dart';
+import 'package:path/path.dart' as path;
 
 /// A golden builder that builds independent widget tree UIs and then either
 /// renders those into a single scene file, or compares them against an existing
@@ -642,6 +643,10 @@ Image.memory(
     }
 
     if (mismatches.mismatches.isEmpty) {
+      GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
+        passed: candidateCollection.length,
+        failed: 0,
+      );
       FtgLog.pipeline.info("No golden mismatches found");
       return;
     }
@@ -655,6 +660,7 @@ Image.memory(
     );
 
     Directory(_goldenFailureDirectoryPath).createSync();
+    final failureFile = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
 
     await tester.runAsync(() async {
       final (failureImage, metadata) = await paintFailureScene(tester, report);
@@ -665,11 +671,18 @@ Image.memory(
         const JsonEncoder().convert(metadata.toJson()),
       );
 
-      final file = File("$_goldenFailureDirectoryPath/failure_$existingGoldenFileName.png");
-      file.writeAsBytesSync(pngData);
+      failureFile.writeAsBytesSync(pngData);
     });
 
-    _printReport(report);
+    GoldenTestRunReporter.instance.recordGoldenPassesAndFailures(
+      passed: report.totalPassed,
+      failed: report.totalFailed + report.missingCandidates.length + report.extraCandidates.length,
+    );
+    _printReport(
+      report,
+      goldenFilePath: path.normalize(goldenFile.path),
+      failureFilePaths: [path.normalize(failureFile.path)],
+    );
 
     if (mismatches.mismatches.isNotEmpty) {
       fail("Goldens failed with ${mismatches.mismatches.length} mismatch(es)");
@@ -679,7 +692,7 @@ Image.memory(
   // TODO: Dedup following with Timeline
   String get _testFileDirectory => (goldenFileComparator as LocalFileComparator).basedir.path;
 
-  String get _goldenDirectory => "$_testFileDirectory${_directory.path}$separator";
+  String get _goldenDirectory => "$_testFileDirectory${_directory.path}${path.separator}";
 
   /// Calculates and returns a complete file path to the golden file specified by
   /// this gallery, which consists of the current test file directory + an optional
@@ -690,8 +703,16 @@ Image.memory(
   String get _goldenFailureDirectoryPath => "${_goldenDirectory}failures";
 
   /// Prints the report in an human readable format to the console.
-  void _printReport(GoldenSceneReport report) {
-    GoldenSceneReportPrinter().printReport(report);
+  void _printReport(
+    GoldenSceneReport report, {
+    required String goldenFilePath,
+    required List<String> failureFilePaths,
+  }) {
+    GoldenSceneReportPrinter().printReport(
+      report,
+      goldenFilePath: goldenFilePath,
+      failureFilePaths: failureFilePaths,
+    );
   }
 }
 
