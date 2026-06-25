@@ -1,3 +1,7 @@
+## 0.0.12
+### June 25, 2026
+* REVERT: Bring back font loading in each test runner.
+
 ## 0.0.11
 ### April 26, 2026
 * FEATURE: Users can provide a custom `FlutterCamera` to generate the screenshots
