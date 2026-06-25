@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_test_goldens/src/fonts/fonts.dart';
 import 'package:flutter_test_goldens/src/test_runner/test_run_reporter.dart';
 import 'package:meta/meta.dart';
 
@@ -247,7 +248,9 @@ void testGoldenScene(
   TestVariant<Object?> variant = const DefaultTestVariant(),
   dynamic tags,
   int? retry,
-}) {
+}) async {
+  await TestFonts.loadAppFonts();
+
   if (!_didRegisterGoldenTestRunSummary) {
     _didRegisterGoldenTestRunSummary = true;
 
