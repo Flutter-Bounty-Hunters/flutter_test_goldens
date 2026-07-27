@@ -1,3 +1,7 @@
+## 0.0.13
+### July 27, 2026
+* FIX: Regression - previous font loading reversion didn't load fonts at correct place in test definitions.
+
 ## 0.0.12
 ### June 25, 2026
 * REVERT: Bring back font loading in each test runner.
