@@ -248,9 +248,7 @@ void testGoldenScene(
   TestVariant<Object?> variant = const DefaultTestVariant(),
   dynamic tags,
   int? retry,
-}) async {
-  await TestFonts.loadAppFonts();
-
+}) {
   if (!_didRegisterGoldenTestRunSummary) {
     _didRegisterGoldenTestRunSummary = true;
 
@@ -262,6 +260,8 @@ void testGoldenScene(
   testWidgets(
     description,
     (tester) async {
+      await TestFonts.loadAppFonts();
+
       tester.view
         ..devicePixelRatio = 1.0
         ..platformDispatcher.textScaleFactorTestValue = 1.0;
