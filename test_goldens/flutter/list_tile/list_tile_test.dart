@@ -31,11 +31,11 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(ListTile))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 }

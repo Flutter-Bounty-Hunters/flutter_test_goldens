@@ -126,12 +126,18 @@ class Timeline {
   /// a [GoldenImageBounds] widget. That widget is used as the boundary for this photo.
   /// If no such widget exists, an error is thrown.
   /// {@endtemplate}
-  Timeline takePhoto(String description, [Finder? photoBoundsFinder]) {
+  ///
+  /// {@macro tolerance}
+  Timeline takePhoto(String description, {Finder? boundsFinder, int tolerancePx = 0}) {
     if (_setup == null) {
       throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
     }
 
-    _steps.add(_TimelinePhotoRequest(photoBoundsFinder ?? find.byType(GoldenImageBounds), description));
+    _steps.add(_TimelinePhotoRequest(
+      boundsFinder ?? find.byType(GoldenImageBounds),
+      description,
+      tolerancePx: tolerancePx,
+    ));
 
     return this;
   }
@@ -142,14 +148,22 @@ class Timeline {
   /// appended to to, starting at "1". E.g., with a [baseName] of "step-", the steps would
   /// be called "step-1", "step-2", etc. If [baseName] is `null` then the description will
   /// consist only of the number, e.g., "1", "2", etc.
-  Timeline takePhotos(int count, Duration timeBeforeEach, [String baseName = "", Finder? photoBoundsFinder]) {
+  ///
+  /// {@macro tolerance}
+  Timeline takePhotos(
+    int count,
+    Duration timeBeforeEach, {
+    String baseName = "",
+    Finder? boundsFinder,
+    int tolerancePx = 0,
+  }) {
     if (_setup == null) {
       throw Exception("Can't take a photo before setup. Please call setup() or setupWithPump()");
     }
 
     for (int i = 1; i <= count; i += 1) {
       wait(timeBeforeEach);
-      takePhoto("$baseName$i", photoBoundsFinder);
+      takePhoto("$baseName$i", boundsFinder: boundsFinder, tolerancePx: tolerancePx);
     }
 
     return this;
@@ -453,7 +467,15 @@ class Timeline {
     });
 
     FtgLog.pipeline.fine("Comparing goldens and screenshots");
-    final mismatches = compareGoldenCollections(goldenCollection, screenshotCollection);
+    final tolerances = <String, int>{
+      for (final step in _steps)
+        if (step is _TimelinePhotoRequest) step.description: step.tolerancePx,
+    };
+    final mismatches = compareGoldenCollections(
+      goldenCollection,
+      screenshotCollection,
+      tolerances: tolerances,
+    );
     if (mismatches.mismatches.isNotEmpty) {
       FtgLog.pipeline.fine("Mismatches ($relativeGoldenFilePath):");
       for (final mismatch in mismatches.mismatches.values) {
@@ -660,10 +682,13 @@ typedef TimelineSetupDelegate = Future<void> Function(WidgetTester tester);
 typedef TimelineSetupBuilder = Widget Function();
 
 class _TimelinePhotoRequest {
-  const _TimelinePhotoRequest(this.photoBoundsFinder, this.description);
+  const _TimelinePhotoRequest(this.photoBoundsFinder, this.description, {this.tolerancePx = 0});
 
   final Finder photoBoundsFinder;
   final String description;
+
+  /// {@macro tolerance}
+  final int tolerancePx;
 }
 
 class _TimelineModifySceneAction {
