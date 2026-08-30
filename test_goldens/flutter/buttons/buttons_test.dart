@@ -23,11 +23,11 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(ElevatedButton))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 
@@ -48,11 +48,11 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(TextButton))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 
@@ -82,11 +82,11 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(IconButton))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 
@@ -107,11 +107,11 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 
@@ -140,11 +140,11 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(FloatingActionButton))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 

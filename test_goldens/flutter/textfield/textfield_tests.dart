@@ -26,13 +26,13 @@ void main() {
             ),
           );
         })
-        .takePhoto("idle", find.byKey(goldenKey))
+        .takePhoto("idle", boundsFinder: find.byKey(goldenKey))
         .hoverOver(find.byType(TextField))
-        .takePhoto("hover", find.byKey(goldenKey))
+        .takePhoto("hover", boundsFinder: find.byKey(goldenKey))
         .pressHover()
-        .takePhoto("pressed", find.byKey(goldenKey))
+        .takePhoto("pressed", boundsFinder: find.byKey(goldenKey))
         .releaseHover()
-        .takePhoto("placed caret", find.byKey(goldenKey))
+        .takePhoto("placed caret", boundsFinder: find.byKey(goldenKey))
         .modifyScene((tester, testContext) async {
           await tester.enterText(find.byType(TextField), "Hello, world!");
           await tester.pumpAndSettle();
@@ -41,7 +41,7 @@ void main() {
           expect(find.byType(TextField), findsOne);
           expect(find.text("Hello, world!"), findsOne);
         })
-        .takePhoto("typed text", find.byKey(goldenKey))
+        .takePhoto("typed text", boundsFinder: find.byKey(goldenKey))
         .run(tester);
   });
 }
