@@ -21,3 +21,24 @@ The following are examples of what you can render in your golden tests with `flu
 
 ### Interaction Timelines
 ![otp](https://github.com/user-attachments/assets/a0030a92-03d4-467d-984c-c6566069cd95)
+
+## CLI Commands
+Commands shipped with this package:
+
+```shell
+# Extract each individual golden image from a scene into its own file.
+golden-scene extract [scene/file/path.png]
+
+# Print what would be extracted.
+golden-scene extract --dry-run [scene/file/path.png]
+```
+
+Activate the package for global CLI access:
+
+```shell
+# From Pub
+dart pub global activate flutter_test_goldens
+
+# Locally from the repo (assuming repo is working directory)
+dart pub global activate --source path .
+```
