@@ -8,6 +8,9 @@ environment:
   sdk: ^3.6.0
   flutter: ">=1.17.0"
 
+executables:
+  golden-scene: golden_scene
+
 dependencies:
   file: ^7.0.1
   flutter:
