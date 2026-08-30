@@ -1,3 +1,8 @@
+## 0.1.0
+### Aug 30, 2026
+* FEATURE: Add CLI command to `extract` individual golden images from a scene.
+* FEATURE: Add pixel tolerances to `Timeline` photos.
+
 ## 0.0.13
 ### July 27, 2026
 * FIX: Regression - previous font loading reversion didn't load fonts at correct place in test definitions.
